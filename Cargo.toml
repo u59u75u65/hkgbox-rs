@@ -1,0 +1,8 @@
+[package]
+
+name = "hkg"
+version = "0.0.1"
+authors = [ "u59u75u65" ]
+
+[dependencies]
+hyper = "0.8"
