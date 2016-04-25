@@ -21,51 +21,7 @@ fn main() {
     // print_body(&rustbox, w, h, 2, 2);
     // rustbox.print(1, 23, rustbox::RB_BOLD, Color::White, Color::Black, "Press 'q' to quit.");
 
-    let mut offset_y = 2;
-
-    let s1 = String::from("紅魔英超睇敢帥　十分之高招");
-    for (b, c) in s1.chars().enumerate() {
-        rustbox.print(1,
-                      b + 2,
-                      rustbox::RB_BOLD,
-                      Color::White,
-                      Color::Black,
-                      &format!("{} 0x{:X}", c, c as u32));
-    }
-
-    offset_y = 16;
-
-    let s2 = String::from("<<100%成功率>>如何成為成功?香港Youtuber");
-    let mut s2count = 0;
-    for (d, c) in s2.chars().enumerate() {
-        if contains(c) {
-            rustbox.print(1,
-                          d + offset_y,
-                          rustbox::RB_BOLD,
-                          Color::White,
-                          Color::Black,
-                          &format!("[{:<2}] {:>2} 0x{:X} {}", d + offset_y, c, c as u32, &"YES"));
-                          s2count = s2count + 2;
-        } else {
-            rustbox.print(1,
-                          d + offset_y,
-                          rustbox::RB_BOLD,
-                          Color::White,
-                          Color::Black,
-                          &format!("[{:<2}] {:>2} 0x{:X} {}", d + offset_y, c, c as u32, &"NO"));
-                          s2count = s2count + 1;
-        }
-    }
-
-    let sum = s2.chars().map(|x| if contains(x) { 2 } else { 1 } ).collect::<Vec<u32>>().iter().fold(0, |acc, &x| acc + x);
-
-    rustbox.print(1,
-                  45,
-                  rustbox::RB_BOLD,
-                  Color::White,
-                  Color::Black,
-                  &format!("{} {}", sum, s2count));
-
+    print_cjk_count(&rustbox);
 
     loop {
         rustbox.present();
@@ -140,4 +96,53 @@ fn print_body(rustbox: &rustbox::RustBox,
                                title = &titles[i],
                                author = &authors[i]));
     }
+}
+
+fn print_cjk_count(rustbox: &rustbox::RustBox){
+
+    let mut offset_y = 2;
+
+    let s1 = String::from("紅魔英超睇敢帥　十分之高招");
+    for (b, c) in s1.chars().enumerate() {
+        rustbox.print(1,
+                      b + 2,
+                      rustbox::RB_BOLD,
+                      Color::White,
+                      Color::Black,
+                      &format!("{} 0x{:X}", c, c as u32));
+    }
+
+    offset_y = 16;
+
+    let s2 = String::from("<<100%成功率>>如何成為成功?香港Youtuber");
+    let mut s2count = 0;
+    for (d, c) in s2.chars().enumerate() {
+        if contains(c) {
+            rustbox.print(1,
+                          d + offset_y,
+                          rustbox::RB_BOLD,
+                          Color::White,
+                          Color::Black,
+                          &format!("[{:<2}] {:>2} 0x{:X} {}", d + offset_y, c, c as u32, &"YES"));
+                          s2count = s2count + 2;
+        } else {
+            rustbox.print(1,
+                          d + offset_y,
+                          rustbox::RB_BOLD,
+                          Color::White,
+                          Color::Black,
+                          &format!("[{:<2}] {:>2} 0x{:X} {}", d + offset_y, c, c as u32, &"NO"));
+                          s2count = s2count + 1;
+        }
+    }
+
+    let sum = s2.chars().map(|x| if contains(x) { 2 } else { 1 } ).collect::<Vec<u32>>().iter().fold(0, |acc, &x| acc + x);
+
+    rustbox.print(1,
+                  45,
+                  rustbox::RB_BOLD,
+                  Color::White,
+                  Color::Black,
+                  &format!("{} {}", sum, s2count));
+
 }
