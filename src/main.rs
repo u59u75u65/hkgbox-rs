@@ -18,8 +18,30 @@ fn main(){
     let h = rustbox.height();
     let title = String::from("高登");
     print_header(&rustbox, w, h, title);
-    print_body(&rustbox, w, h, 2, 2);
-    rustbox.print(1, 23, rustbox::RB_BOLD, Color::White, Color::Black, "Press 'q' to quit.");
+    // print_body(&rustbox, w, h, 2, 2);
+    // rustbox.print(1, 23, rustbox::RB_BOLD, Color::White, Color::Black, "Press 'q' to quit.");
+
+    let mut offset_y = 2;
+
+    let s1 = String::from("紅魔英超睇敢帥　十分之高招");
+    for (b, c) in s1.chars().enumerate(){
+        rustbox.print(1, b + 2, rustbox::RB_BOLD, Color::White, Color::Black, &format!("{} 0x{:X}", c, c as u32));
+    }
+
+    offset_y = 16;
+
+    let s2 = String::from("<<100%成功率>>如何成為成功?香港Youtuber");
+    for (d, c) in s2.chars().enumerate(){
+        if contains(c)
+        {
+            rustbox.print(1, d + offset_y, rustbox::RB_BOLD, Color::White, Color::Black, &format!("[{:<2}] {:>2} 0x{:X} {}", d + offset_y, c, c as u32, &"YES"));
+        }
+        else
+        {
+            rustbox.print(1, d + offset_y, rustbox::RB_BOLD, Color::White, Color::Black, &format!("[{:<2}] {:>2} 0x{:X} {}", d + offset_y, c, c as u32, &"NO"));
+        }
+
+    }
 
 
     loop {
@@ -37,6 +59,27 @@ fn main(){
     }
 }
 
+fn contains(c: char) -> bool
+{
+    let cjks = vec![
+     (0x4E00..0xA000),
+     (0x3400..0x4DC0),
+     (0x20000..0x2A6E0),
+     (0x2A700..0x2B740),
+     (0x2B740..0x2B820),
+     (0xF900..0xFB00),
+     (0x2F800..0x2FA20),
+     (0x9FA6..0x9FCC)
+    ];
+
+    for cjk in cjks {
+        let h = c as u32;
+        if cjk.start <=  h && h < cjk.end {
+            return true;
+        }
+    }
+    return false;
+}
 
 fn print_header(rustbox: &rustbox::RustBox, width: usize, height: usize, text: String)
 {
