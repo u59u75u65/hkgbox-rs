@@ -115,25 +115,19 @@ fn print_body(rustbox: &rustbox::RustBox,
     let mut title_spacing = 0;
     for i in (0..rows) {
 
-
-        let s1 = format!("{no:>2}|", no = i + 1);
-        let s2 = format!("{title}", title = &titles[i]);
-
         rustbox.print(0,
                       i + offset_x,
                       rustbox::RB_BOLD,
                       Color::White,
                       Color::Black,
-                      &(format!("{}{}", s1,s2)));
+                      &format!("{no:>2}| {title}", no = i + 1, title = &titles[i]));
 
-        title_spacing = s1.len() + real_count(&titles[i]) + 55 - real_count(&titles[i]);
-
-        rustbox.print(title_spacing,
+        rustbox.print(60,
                       i + offset_x,
                       rustbox::RB_BOLD,
                       Color::White,
                       Color::Black,
-                      &format!("|{author}", author = &authors[i]));
+                      &format!("| {author}", author = &authors[i]));
     }
 }
 
