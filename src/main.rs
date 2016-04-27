@@ -7,6 +7,36 @@ use std::default::Default;
 use rustbox::{Color, RustBox};
 use rustbox::Key;
 
+use std::io::prelude::*;
+use std::fs::File;
+use hkg::utility::cache;
+
+extern crate rustc_serialize;
+use rustc_serialize::json;
+
+#[derive(RustcDecodable)]
+pub struct TopicTitleItem {
+    url: String,
+    text: String,
+}
+
+#[derive(RustcDecodable)]
+pub struct TopicAuthorItem {
+    url: String,
+    name: String,
+}
+
+
+#[derive(RustcDecodable)]
+pub struct TopicItem {
+    titles: Vec<TopicTitleItem>,
+    author: TopicAuthorItem,
+    last_replied_date: String,
+    last_replied_time: String,
+    reply_count: String,
+    rating: String,
+}
+
 fn main() {
 
     let rustbox = match RustBox::init(Default::default()) {
@@ -188,4 +218,28 @@ fn print_cjk_count(rustbox: &rustbox::RustBox) {
                   Color::Black,
                   &format!("{} {}", sum, s2count));
 
+}
+
+fn debug_load_and_print_topics()
+{
+    let s = cache::readfile(String::from("topics.json"));
+    let collection: Vec<TopicItem> = json::decode(&s).unwrap();
+
+    println!("topics {:?}", collection.len());
+    debug_print_topics(collection);
+}
+
+fn debug_print_topics(collection: Vec<TopicItem>) {
+    for (i, item) in collection.iter().enumerate() {
+
+        println!("item[{}]= {title} {author_name} {last_replied_date} {last_replied_time} \
+                  {reply_count} {rating}",
+                 i,
+                 title = item.titles[0].text,
+                 author_name = item.author.name,
+                 last_replied_date = item.last_replied_date,
+                 last_replied_time = item.last_replied_time,
+                 reply_count = item.reply_count,
+                 rating = item.rating);
+    }
 }
