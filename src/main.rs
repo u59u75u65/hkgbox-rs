@@ -39,6 +39,7 @@ pub struct TopicItem {
 
 fn main() {
 
+    // GUI init
     let rustbox = match RustBox::init(Default::default()) {
         Result::Ok(v) => v,
         Result::Err(e) => panic!("{}", e),
@@ -48,9 +49,15 @@ fn main() {
     let h = rustbox.height();
     let title = String::from("高登");
     print_header(&rustbox, w, h, title);
-    print_body(&rustbox, w, h, 2, 2);
+
+    //
+    let s = cache::readfile(String::from("topics.json"));
+    let collection: Vec<TopicItem> = json::decode(&s).unwrap();
+
+    print_body(&rustbox, w, h, 2, h - 3, collection);
+
     rustbox.print(1,
-                  23,
+                  h - 1,
                   rustbox::RB_BOLD,
                   Color::White,
                   Color::Black,
@@ -137,31 +144,28 @@ fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               height: usize,
               offset_x: usize,
-              rows: usize) {
-    let titles = vec!["紅魔英超睇敢帥　十分之高招",
-                      "發覺好多後生仔女搭火車地鐵 有位都唔坐"];
-    let authors = vec!["電超", "程詠樂"];
+              rows: usize,
+              collection: Vec<TopicItem>) {
 
     let mut title_spacing = 0;
-    for i in (0..rows) {
+
+    for (i, item) in collection.iter().take(rows).enumerate() {
 
         rustbox.print(0,
                       i + offset_x,
-                      rustbox::RB_BOLD,
+                      rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("{no:>2}| {title}", no = i + 1, title = &titles[i]));
+                      &format!("[{no:0>2}] {title}", no = i + 1, title = item.titles[0].text));
 
-        rustbox.print(60,
+        rustbox.print(width - 12 - 3,
                       i + offset_x,
-                      rustbox::RB_BOLD,
+                      rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("| {author}", author = &authors[i]));
+                      &format!("| {author}", author = &item.author.name));
     }
 }
-
-
 
 fn print_cjk_count(rustbox: &rustbox::RustBox) {
 
@@ -220,8 +224,7 @@ fn print_cjk_count(rustbox: &rustbox::RustBox) {
 
 }
 
-fn debug_load_and_print_topics()
-{
+fn debug_load_and_print_topics() {
     let s = cache::readfile(String::from("topics.json"));
     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
 
