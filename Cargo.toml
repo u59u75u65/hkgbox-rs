@@ -8,3 +8,4 @@ authors = [ "u59u75u65" ]
 hyper = "0.8"
 kuchiki = "*"
 rustbox = "*"
+rustc-serialize = "0.3"

@@ -5,6 +5,7 @@ dependencies = [
  "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "kuchiki 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustbox 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
