@@ -39,29 +39,6 @@ pub struct TopicItem {
 
 fn main() {
 
-    // GUI init
-    let rustbox = match RustBox::init(Default::default()) {
-        Result::Ok(v) => v,
-        Result::Err(e) => panic!("{}", e),
-    };
-
-    let w = rustbox.width();
-    let h = rustbox.height();
-    let title = String::from("高登");
-    print_header(&rustbox, w, h, title);
-
-    //
-    let s = cache::readfile(String::from("topics.json"));
-    let collection: Vec<TopicItem> = json::decode(&s).unwrap();
-
-    print_body(&rustbox, w, h, 2, h - 3, collection);
-
-    rustbox.print(1,
-                  h - 1,
-                  rustbox::RB_BOLD,
-                  Color::White,
-                  Color::Black,
-                  "Press 'q' to quit.");
 
     // print_cjk_count(&rustbox);
     //
@@ -76,6 +53,31 @@ fn main() {
 
 
     loop {
+        // GUI init
+        let rustbox = match RustBox::init(Default::default()) {
+            Result::Ok(v) => v,
+            Result::Err(e) => panic!("{}", e),
+        };
+
+        let w = rustbox.width();
+        let h = rustbox.height();
+        let title = String::from("高登");
+        print_header(&rustbox, w, h, title);
+
+        //
+        let s = cache::readfile(String::from("topics.json"));
+        let collection: Vec<TopicItem> = json::decode(&s).unwrap();
+
+        print_body(&rustbox, w, h, 2, h - 3, collection);
+
+        rustbox.print(1,
+                      h - 1,
+                      rustbox::RB_BOLD,
+                      Color::White,
+                      Color::Black,
+                      "Press 'q' to quit.");
+
+
         rustbox.present();
         match rustbox.poll_event(false) {
             Ok(rustbox::Event::KeyEvent(key)) => {
