@@ -78,7 +78,16 @@ fn print_body(rustbox: &rustbox::RustBox,
               rows: usize,
               collection: Vec<TopicItem>) {
 
+    let right_offset = 3;
+    let author_max_width = 12;
+    let no_max_width = 5;
+    let title_max_width = width - no_max_width - author_max_width - right_offset;
+    let author_position = width - author_max_width - right_offset;
+
     for (i, item) in collection.iter().take(rows).enumerate() {
+
+        let title: String = item.titles[0].text.chars().take(title_max_width/2).collect();
+
         rustbox.print(0,
                       i + offset_x,
                       rustbox::RB_NORMAL,
@@ -86,15 +95,23 @@ fn print_body(rustbox: &rustbox::RustBox,
                       Color::Black,
                       &format!("[{no:0>2}] {title}",
                                no = i + 1,
-                               title = item.titles[0].text));
+                               title = title));
 
-        rustbox.print(width - 12 - 3,
+        rustbox.print(author_position,
                       i + offset_x,
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
                       &format!("| {author}", author = &item.author.name));
     }
+
+    rustbox.print(0,
+                  rows + 2,
+                  rustbox::RB_NORMAL,
+                  Color::White,
+                  Color::Black,
+                  &format!("{} {}", title_max_width, author_position));
+
 }
 
 // fn debug_load_and_print_topics() {
