@@ -14,31 +14,10 @@ use hkg::utility::cache;
 extern crate rustc_serialize;
 use rustc_serialize::json;
 
-#[derive(RustcDecodable)]
-pub struct TopicTitleItem {
-    url: String,
-    text: String,
-}
-
-#[derive(RustcDecodable)]
-pub struct TopicAuthorItem {
-    url: String,
-    name: String,
-}
-
-
-#[derive(RustcDecodable)]
-pub struct TopicItem {
-    titles: Vec<TopicTitleItem>,
-    author: TopicAuthorItem,
-    last_replied_date: String,
-    last_replied_time: String,
-    reply_count: String,
-    rating: String,
-}
+use hkg::model::{TopicItem};
 
 fn main() {
-    
+
     loop {
         // GUI init
         let rustbox = match RustBox::init(Default::default()) {
