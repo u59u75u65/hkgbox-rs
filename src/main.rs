@@ -14,12 +14,13 @@ use hkg::model::TopicItem;
 
 fn main() {
 
+    // GUI init
+    let rustbox = match RustBox::init(Default::default()) {
+        Result::Ok(v) => v,
+        Result::Err(e) => panic!("{}", e),
+    };
+
     loop {
-        // GUI init
-        let rustbox = match RustBox::init(Default::default()) {
-            Result::Ok(v) => v,
-            Result::Err(e) => panic!("{}", e),
-        };
 
         let w = rustbox.width();
         let h = rustbox.height();
@@ -58,6 +59,8 @@ fn main() {
 fn print_header(rustbox: &rustbox::RustBox, width: usize, text: String) {
     let padding = (width - text.len()) / 2;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
+
+    clearline(&rustbox, width, 0, 0);
     rustbox.print(padding,
                   0,
                   rustbox::RB_BOLD,
@@ -74,7 +77,7 @@ fn print_header(rustbox: &rustbox::RustBox, width: usize, text: String) {
 
 fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
-              offset_x: usize,
+              offset_y: usize,
               rows: usize,
               collection: Vec<TopicItem>) {
 
@@ -87,22 +90,31 @@ fn print_body(rustbox: &rustbox::RustBox,
     for (i, item) in collection.iter().take(rows).enumerate() {
 
         let title: String = item.titles[0].text.chars().take(title_max_width/2).collect();
+        let title_len = string_jks_len(&title);
+        let title_spacin_minus = no_max_width + title_len + author_max_width + right_offset;
+        let title_spacing_width = if width > title_spacin_minus {
+            width - title_spacin_minus
+        } else {
+            0
+        };
+        let title_spacing = (0..title_spacing_width).map(|_| " ").collect::<Vec<_>>().join("");
+
+        let author = item.author.name.clone();
+        let author_spacing_width = author_max_width - string_jks_len(&author) + right_offset;
+        let author_spacing = (0..author_spacing_width).map(|_| " ").collect::<Vec<_>>().join("");
 
         rustbox.print(0,
-                      i + offset_x,
+                      i + offset_y,
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("[{no:0>2}] {title}",
+                      &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
                                no = i + 1,
-                               title = title));
-
-        rustbox.print(author_position,
-                      i + offset_x,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("| {author}", author = &item.author.name));
+                               title = title,
+                               title_spacing = title_spacing,
+                               author = &author,
+                               author_spacing = author_spacing
+                           ));
     }
 
     rustbox.print(0,
@@ -114,6 +126,11 @@ fn print_body(rustbox: &rustbox::RustBox,
 
 }
 
+fn clearline(rustbox: &rustbox::RustBox, width: usize, x: usize, y: usize) {
+    let s = (0..width).map(|_| "  ").collect::<Vec<_>>().join("");
+
+    rustbox.print(x, y, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
+}
 
 fn contains(c: char) -> bool {
     let cjks = vec![(0x4E00..0xA000),
