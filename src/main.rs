@@ -38,20 +38,7 @@ pub struct TopicItem {
 }
 
 fn main() {
-
-
-    // print_cjk_count(&rustbox);
-    //
-    // let s2 = String::from("<<100%成功率>>如何成為成功?香港Youtuber");
-    //
-    // rustbox.print(1,
-    //               3,
-    //               rustbox::RB_BOLD,
-    //               Color::White,
-    //               Color::Black,
-    //               &format!("{}", real_count(s2)));
-
-
+    
     loop {
         // GUI init
         let rustbox = match RustBox::init(Default::default()) {
