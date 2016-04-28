@@ -114,6 +114,41 @@ fn print_body(rustbox: &rustbox::RustBox,
 
 }
 
+
+fn contains(c: char) -> bool {
+    let cjks = vec![(0x4E00..0xA000),
+                    (0x3400..0x4DC0),
+                    (0x20000..0x2A6E0),
+                    (0x2A700..0x2B740),
+                    (0x2B740..0x2B820),
+                    (0xF900..0xFB00),
+                    (0x2F800..0x2FA20),
+                    (0x9FA6..0x9FCC),
+
+                    (0x3000..0x303F), // CJK Symbols and Punctuation
+                    (0xff00..0xffef) /* Halfwidth and Fullwidth Forms */];
+
+    for cjk in cjks {
+        let h = c as u32;
+        if cjk.start <= h && h < cjk.end {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn string_jks_len(s: &str) -> usize {
+    return s.chars()
+            .map(|x| if contains(x) {
+                2
+            } else {
+                1
+            })
+            .collect::<Vec<usize>>()
+            .iter()
+            .fold(0, |acc, &x| acc + x);
+}
+
 // fn debug_load_and_print_topics() {
 //     let s = cache::readfile(String::from("topics.json"));
 //     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
