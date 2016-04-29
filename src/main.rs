@@ -20,25 +20,24 @@ fn main() {
         Result::Err(e) => panic!("{}", e),
     };
 
+    let title = String::from("高登");
+    let s = cache::readfile(String::from("topics.json"));
+    let collection: Vec<TopicItem> = json::decode(&s).unwrap();
+
     loop {
 
         let w = rustbox.width();
         let h = rustbox.height();
-        let title = String::from("高登");
-        print_header(&rustbox, w, title);
 
-        let s = cache::readfile(String::from("topics.json"));
-        let collection: Vec<TopicItem> = json::decode(&s).unwrap();
+        print_header(&rustbox, w, &title);
+        print_body(&rustbox, w, 2, h - 3, &collection);
 
-        print_body(&rustbox, w, 2, h - 3, collection);
-
-        rustbox.print(1,
-                      h - 1,
-                      rustbox::RB_BOLD,
-                      Color::White,
-                      Color::Black,
-                      "Press 'q' to quit.");
-
+        // rustbox.print(1,
+        //               h - 1,
+        //               rustbox::RB_BOLD,
+        //               Color::White,
+        //               Color::Black,
+        //               "Press 'q' to quit.");
 
         rustbox.present();
         match rustbox.poll_event(false) {
@@ -56,7 +55,7 @@ fn main() {
     }
 }
 
-fn print_header(rustbox: &rustbox::RustBox, width: usize, text: String) {
+fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
     let padding = (width - text.len()) / 2;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
 
@@ -66,7 +65,7 @@ fn print_header(rustbox: &rustbox::RustBox, width: usize, text: String) {
                   rustbox::RB_BOLD,
                   Color::White,
                   Color::Black,
-                  &text);
+                  text);
     rustbox.print(0,
                   1,
                   rustbox::RB_BOLD,
@@ -79,7 +78,7 @@ fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               offset_y: usize,
               rows: usize,
-              collection: Vec<TopicItem>) {
+              collection: &Vec<TopicItem>) {
 
     let right_offset = 3;
     let author_max_width = 12;
