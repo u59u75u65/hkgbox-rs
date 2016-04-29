@@ -85,7 +85,6 @@ fn print_body(rustbox: &rustbox::RustBox,
     let author_max_width = 12;
     let no_max_width = 5;
     let title_max_width = width - no_max_width - author_max_width - right_offset;
-    let author_position = width - author_max_width - right_offset;
 
     for (i, item) in collection.iter().take(rows).enumerate() {
 
@@ -117,12 +116,6 @@ fn print_body(rustbox: &rustbox::RustBox,
                            ));
     }
 
-    rustbox.print(0,
-                  rows + 2,
-                  rustbox::RB_NORMAL,
-                  Color::White,
-                  Color::Black,
-                  &format!("{} {}", title_max_width, author_position));
 
 }
 
