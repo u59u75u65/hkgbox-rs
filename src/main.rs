@@ -88,8 +88,33 @@ fn print_body(rustbox: &rustbox::RustBox,
 
     for (i, item) in collection.iter().take(rows).enumerate() {
 
-        let title: String = item.titles[0].text.chars().take(title_max_width/2).collect();
-        let title_len = string_jks_len(&title);
+        let original_title = item.titles[0].text.clone();
+
+        let mut v = Vec::new();
+        let mut c = 0;
+
+        for jtem in original_title.chars() {
+            if contains(jtem) {
+                if c <= title_max_width - 3 {
+                    v.push(jtem);
+                    c = c + 2;
+                } else {
+                    break;
+                }
+
+            } else {
+                if c <= title_max_width - 2 {
+                    v.push(jtem);
+                    c = c + 1;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        let title: String = v.iter().cloned().collect();
+        let title_len = c;
+
         let title_spacin_minus = no_max_width + title_len + author_max_width + right_offset;
         let title_spacing_width = if width > title_spacin_minus {
             width - title_spacin_minus
