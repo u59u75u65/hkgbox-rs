@@ -24,9 +24,9 @@ fn main() {
     let s = cache::readfile(String::from("topics.json"));
     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
 
-    let mut status = String::from(">");
+    let mut status = String::from("> ");
 
-    let mut selected_topic_index: usize = 0; // no selection by default 
+    let mut selected_topic_index: usize = 0; // no selection by default
 
     loop {
 
@@ -63,7 +63,7 @@ fn main() {
         };
         let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
 
-        rustbox.print(1,
+        rustbox.print(0,
                       h - 1,
                       rustbox::RB_BOLD,
                       Color::White,
@@ -81,22 +81,13 @@ fn main() {
                     }
 
                     Key::Up => {
-                        if status.len() >= w {
-                            status = String::from("U");
-                        } else {
-                            status = String::from(format!("{}{}", &status, &"U"));
-                        }
-
+                        status = format_status(status, w, "U");
                         if selected_topic_index > 1 {
                             selected_topic_index = selected_topic_index - 1;
                         }
                     }
                     Key::Down => {
-                        if status.len() >= w {
-                            status = String::from("D");
-                        } else {
-                            status = String::from(format!("{}{}", &status, &"D"));
-                        }
+                        status = format_status(status, w, "D");
 
                         if selected_topic_index < body_height {
                             selected_topic_index = selected_topic_index + 1;
@@ -109,6 +100,15 @@ fn main() {
             Err(e) => panic!("{}", e),
             _ => {}
         }
+    }
+}
+
+fn format_status(status: String, w: usize, s: &str) -> String
+{
+    if status.len() >= w {
+        String::from(format!("{}{}", &"> ", s))
+    } else {
+        String::from(format!("{}{}", &status, s))
     }
 }
 
