@@ -24,6 +24,7 @@ fn main() {
     let s = cache::readfile(String::from("topics.json"));
     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
 
+    let mut status = String::from(">");
     loop {
 
         let w = rustbox.width();
@@ -32,12 +33,21 @@ fn main() {
         print_header(&rustbox, w, &title);
         print_body(&rustbox, w, 2, h - 3, &collection);
 
-        // rustbox.print(1,
-        //               h - 1,
-        //               rustbox::RB_BOLD,
-        //               Color::White,
-        //               Color::Black,
-        //               "Press 'q' to quit.");
+        let status_width = if w > status.len() {
+            w - status.len()
+        } else {
+            0
+        };
+        let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
+
+        rustbox.print(1,
+                      h - 1,
+                      rustbox::RB_BOLD,
+                      Color::White,
+                      Color::Black,
+                      &format!("{status}{status_spacing}",
+                               status = status,
+                               status_spacing = status_spacing));
 
         rustbox.present();
         match rustbox.poll_event(false) {
@@ -46,6 +56,24 @@ fn main() {
                     Key::Char('q') => {
                         break;
                     }
+
+                    Key::Up => {
+                        if status.len() >= w {
+                            status = String::from("U");
+                        } else {
+                            status = String::from(format!("{}{}", &status, &"U"));
+                        }
+
+                    }
+                    Key::Down => {
+                        if status.len() >= w {
+                            status = String::from("D");
+                        } else {
+                            status = String::from(format!("{}{}", &status, &"D"));
+                        }
+
+                    }
+
                     _ => {}
                 }
             }
