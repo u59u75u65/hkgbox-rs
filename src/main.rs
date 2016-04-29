@@ -89,31 +89,8 @@ fn print_body(rustbox: &rustbox::RustBox,
     for (i, item) in collection.iter().take(rows).enumerate() {
 
         let original_title = item.titles[0].text.clone();
-
-        let mut v = Vec::new();
-        let mut c = 0;
-
-        for jtem in original_title.chars() {
-            if contains(jtem) {
-                if c <= title_max_width - 3 {
-                    v.push(jtem);
-                    c = c + 2;
-                } else {
-                    break;
-                }
-
-            } else {
-                if c <= title_max_width - 2 {
-                    v.push(jtem);
-                    c = c + 1;
-                } else {
-                    break;
-                }
-            }
-        }
-
-        let title: String = v.iter().cloned().collect();
-        let title_len = c;
+        let title: String = substring(&original_title, title_max_width);
+        let title_len = string_jks_len(&title);
 
         let title_spacin_minus = no_max_width + title_len + author_max_width + right_offset;
         let title_spacing_width = if width > title_spacin_minus {
@@ -148,6 +125,33 @@ fn clearline(rustbox: &rustbox::RustBox, width: usize, x: usize, y: usize) {
     let s = (0..width).map(|_| "  ").collect::<Vec<_>>().join("");
 
     rustbox.print(x, y, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
+}
+
+fn substring(s: &str, length: usize) -> String {
+    let mut v = Vec::new();
+    let mut c = 0;
+
+    for x in s.chars() {
+        if contains(x) {
+            if c < length - 2 {
+                v.push(x);
+                c = c + 2;
+            } else {
+                break;
+            }
+
+        } else {
+            if c < length - 1 {
+                v.push(x);
+                c = c + 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    let s: String = v.iter().cloned().collect();
+    return s;
 }
 
 fn contains(c: char) -> bool {
