@@ -25,13 +25,36 @@ fn main() {
     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
 
     let mut status = String::from(">");
+
+    let mut selected_topic_index: usize = 0; // no selection by default 
+
     loop {
 
         let w = rustbox.width();
         let h = rustbox.height();
 
+        let body_height = if h >= 3 {
+            h - 3
+        } else {
+            0
+        };
+        let body_width = if w >= 2 {
+            w - 2
+        } else {
+            0
+        };
+
+        if selected_topic_index > body_height {
+            selected_topic_index = body_height;
+        }
+
         print_header(&rustbox, w, &title);
-        print_body(&rustbox, w, 2, h - 3, &collection);
+        print_body(&rustbox,
+                   body_width,
+                   2,
+                   body_height,
+                   &collection,
+                   selected_topic_index);
 
         let status_width = if w > status.len() {
             w - status.len()
@@ -64,6 +87,9 @@ fn main() {
                             status = String::from(format!("{}{}", &status, &"U"));
                         }
 
+                        if selected_topic_index > 1 {
+                            selected_topic_index = selected_topic_index - 1;
+                        }
                     }
                     Key::Down => {
                         if status.len() >= w {
@@ -72,6 +98,9 @@ fn main() {
                             status = String::from(format!("{}{}", &status, &"D"));
                         }
 
+                        if selected_topic_index < body_height {
+                            selected_topic_index = selected_topic_index + 1;
+                        }
                     }
 
                     _ => {}
@@ -106,7 +135,8 @@ fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               offset_y: usize,
               rows: usize,
-              collection: &Vec<TopicItem>) {
+              collection: &Vec<TopicItem>,
+              selected_topic_index: usize) {
 
     let right_offset = 3;
     let author_max_width = 12;
@@ -131,18 +161,32 @@ fn print_body(rustbox: &rustbox::RustBox,
         let author_spacing_width = author_max_width - string_jks_len(&author) + right_offset;
         let author_spacing = (0..author_spacing_width).map(|_| " ").collect::<Vec<_>>().join("");
 
-        rustbox.print(0,
-                      i + offset_y,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
-                               no = i + 1,
-                               title = title,
-                               title_spacing = title_spacing,
-                               author = &author,
-                               author_spacing = author_spacing
-                           ));
+        if selected_topic_index == i + 1 {
+            rustbox.print(0,
+                          i + offset_y,
+                          rustbox::RB_NORMAL,
+                          Color::Black,
+                          Color::Yellow,
+                          &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+                                   no = i + 1,
+                                   title = title,
+                                   title_spacing = title_spacing,
+                                   author = &author,
+                                   author_spacing = author_spacing));
+        } else {
+            rustbox.print(0,
+                          i + offset_y,
+                          rustbox::RB_NORMAL,
+                          Color::White,
+                          Color::Black,
+                          &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+                                   no = i + 1,
+                                   title = title,
+                                   title_spacing = title_spacing,
+                                   author = &author,
+                                   author_spacing = author_spacing));
+        }
+
     }
 
 
