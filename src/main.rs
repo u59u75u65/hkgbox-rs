@@ -24,7 +24,7 @@ fn main() {
 
     let mut status = String::from("> ");
 
-    let mut list = hkg::screen::list::List::new();
+    let mut list = hkg::screen::list::List::new(&rustbox);
 
     loop {
 
@@ -47,7 +47,6 @@ fn main() {
         }
 
         list.print(
-            &rustbox,
             &title,
             w,
             body_width,

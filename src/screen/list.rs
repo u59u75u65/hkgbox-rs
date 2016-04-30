@@ -4,32 +4,33 @@ use screen::common::*;
 use utility::string::*;
 use model::TopicItem;
 
-pub struct List {
-    selected_topic_index: usize
+pub struct List<'a> {
+    rustbox: &'a rustbox::RustBox,
+    selected_topic_index: usize,
 }
 
-impl List  {
-    pub fn new() -> Self {
-        List { selected_topic_index: 0 }
+impl<'a> List<'a> {
+    pub fn new(rustbox: &'a rustbox::RustBox) -> Self {
+        List {
+            rustbox: &rustbox,
+            selected_topic_index: 0,
+        }
     }
 
-    pub fn select_topic(&mut self, index: usize){
+    pub fn select_topic(&mut self, index: usize) {
         self.selected_topic_index = index;
     }
     pub fn get_selected_topic(&self) -> usize {
         self.selected_topic_index
     }
-    pub fn print(
-        &self,
-        rustbox: &rustbox::RustBox,
-        title: &str,
-        screen_width: usize,
-        body_width: usize,
-        body_height: usize,
-        collection: &Vec<TopicItem>)
-    {
-        print_header(&rustbox, screen_width, &title);
-        print_body(&rustbox,
+    pub fn print(&self,
+                 title: &str,
+                 screen_width: usize,
+                 body_width: usize,
+                 body_height: usize,
+                 collection: &Vec<TopicItem>) {
+        print_header(&self.rustbox, screen_width, &title);
+        print_body(&self.rustbox,
                    body_width,
                    2,
                    body_height,
