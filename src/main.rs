@@ -10,6 +10,7 @@ use rustc_serialize::json;
 use hkg::utility::cache;
 use hkg::model::TopicItem;
 
+
 fn main() {
 
     // GUI init
@@ -27,32 +28,12 @@ fn main() {
     let mut list = hkg::screen::list::List::new(&rustbox);
 
     loop {
+        
+        list.print(&title, &collection);
 
+        // for status bar only
         let w = rustbox.width();
         let h = rustbox.height();
-
-        let body_height = if h >= 3 {
-            h - 3
-        } else {
-            0
-        };
-        let body_width = if w >= 2 {
-            w - 2
-        } else {
-            0
-        };
-
-        if list.get_selected_topic() > body_height {
-            list.select_topic(body_height);
-        }
-
-        list.print(
-            &title,
-            w,
-            body_width,
-            body_height,
-            &collection
-        );
 
         let status_width = if w > status.len() {
             w - status.len()
@@ -70,7 +51,10 @@ fn main() {
                                status = status,
                                status_spacing = status_spacing));
 
+
+        // show UI
         rustbox.present();
+
         match rustbox.poll_event(false) {
             Ok(rustbox::Event::KeyEvent(key)) => {
                 match key {
@@ -88,7 +72,7 @@ fn main() {
                     Key::Down => {
                         status = format_status(status, w, "D");
                         let tmp = list.get_selected_topic();
-                        if tmp < body_height {
+                        if tmp < list.body_height() {
                             list.select_topic( tmp + 1 );
                         }
                     }

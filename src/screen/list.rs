@@ -23,20 +23,38 @@ impl<'a> List<'a> {
     pub fn get_selected_topic(&self) -> usize {
         self.selected_topic_index
     }
-    pub fn print(&self,
+    pub fn print(&mut self,
                  title: &str,
-                 screen_width: usize,
-                 body_width: usize,
-                 body_height: usize,
                  collection: &Vec<TopicItem>) {
-        print_header(&self.rustbox, screen_width, &title);
+
+        if self.selected_topic_index > self.body_height() {
+            self.selected_topic_index = self.body_height();
+        }
+
+        print_header(&self.rustbox, self.rustbox.width(), &title);
         print_body(&self.rustbox,
-                   body_width,
+                   self.body_width(),
                    2,
-                   body_height,
+                   self.body_height(),
                    &collection,
                    self.selected_topic_index);
 
+    }
+
+    pub fn body_height(&self) -> usize {
+        if self.rustbox.height() >= 3 {
+            self.rustbox.height() - 3
+        } else {
+            0
+        }
+    }
+
+    pub fn body_width(&self) -> usize {
+        if self.rustbox.width() >= 2 {
+            self.rustbox.width() - 2
+        } else {
+            0
+        }
     }
 }
 
