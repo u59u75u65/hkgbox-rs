@@ -78,7 +78,7 @@ fn print_body(rustbox: &rustbox::RustBox,
 
     let mut y = offset_y;
     let replier_max_width = 14;
-    let time_max_width = 3;
+    let time_max_width = 5;
 
     let separator_width = if rustbox.width() >= 4 {
         rustbox.width() - 4
@@ -129,7 +129,7 @@ fn print_body(rustbox: &rustbox::RustBox,
         rustbox.print(0,
                       m + y,
                       rustbox::RB_NORMAL,
-                      Color::White,
+                      Color::Green,
                       Color::Black,
                       &separator_top);
         m += 1;
@@ -137,7 +137,7 @@ fn print_body(rustbox: &rustbox::RustBox,
         rustbox.print(0,
                       m + y,
                       rustbox::RB_NORMAL,
-                      Color::White,
+                      Color::Green,
                       Color::Black,
                       &separator_bottom);
         m += 1;
@@ -171,11 +171,11 @@ fn make_separator_replier_name(separator_width: usize,
                                          .join("");
 
     let separator_replier = format!("{}{}{}{}{}",
-                                    "",
+                                    "╭",
                                     replier_name_left_spacing,
                                     replier_name,
                                     replier_name_right_spacing,
-                                    "╮");
+                                    "");
 
     return separator_replier;
 }
@@ -211,11 +211,11 @@ fn make_separator_time(separator_width: usize,
                                  .join("");
 
     let separator_time = format!("{}{}{}{}{}",
-                                 "╭",
+                                 "",
                                  time_left_spacing,
                                  time,
                                  time_right_spacing,
-                                 "");
+                                 "╮");
 
 
     return separator_time;
@@ -258,8 +258,8 @@ fn make_separator_top(separator_width: usize,
     let separator_top = format!("{}{}{}{}{}",
                                 separator_padding,
                                 separator_top_middle,
-                                separator_time,
                                 separator_replier,
+                                separator_time,
                                 separator_padding);
     return separator_top;
 }
