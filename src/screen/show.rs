@@ -1,8 +1,13 @@
 extern crate rustbox;
+extern crate chrono;
+
 use rustbox::*;
+use chrono::*;
+
 use screen::common::*;
 use utility::string::*;
 use model::ShowItem;
+
 
 pub struct Show<'a> {
     rustbox: &'a rustbox::RustBox,
@@ -73,7 +78,7 @@ fn print_body(rustbox: &rustbox::RustBox,
 
     let mut y = offset_y;
     let replier_max_width = 14;
-    let time_max_width = 17;
+    let time_max_width = 3;
 
     let separator_width = if rustbox.width() >= 4 {
         rustbox.width() - 4
@@ -105,7 +110,15 @@ fn print_body(rustbox: &rustbox::RustBox,
             m += 1;
         }
         let replier_name = reply.username.clone();
-        let time = reply.published_at.clone();
+
+        let published_at = reply.published_at.clone();
+        let now = Local::now();
+        let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+            Ok(v) => v,
+            Err(e) => Local::now(),
+        };
+        let time = published_at_format(&(now - published_at_dt));
+
         let separator_top = make_separator_top(separator_width,
                                                &separator_padding,
                                                replier_max_width,
@@ -268,4 +281,24 @@ fn make_separator_bottom(separator_width: usize, separator_padding: &str) -> Str
                                    "╯",
                                    separator_padding);
     return separator_bottom;
+}
+
+
+fn published_at_format(duration: &Duration) -> String {
+    let weeks = duration.num_weeks();
+    let days = duration.num_days();
+    let hours = duration.num_hours();
+    let minutes = duration.num_minutes();
+
+    if weeks > 0 {
+        format!("{}w", weeks)
+    } else if days > 0 {
+        format!("{}d", days)
+    } else if hours > 0 {
+        format!("{}h", hours)
+    } else if minutes > 0 {
+        format!("{}m", minutes)
+    } else {
+        String::from("1m")
+    }
 }

@@ -1,12 +1,15 @@
 extern crate hkg;
 extern crate rustbox;
 extern crate rustc_serialize;
+extern crate chrono;
 
 use std::default::Default;
 
 use rustbox::{Color, RustBox, Key};
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
+
+use chrono::*;
 
 use hkg::utility::cache;
 use hkg::model::ListTopicItem;
@@ -108,6 +111,33 @@ fn format_status(status: String, w: usize, s: &str) -> String
         String::from(format!("{}{}", &status, s))
     }
 }
+
+// fn date_operation_example(rustbox: &rustbox::RustBox) {
+//     let now = Local::now();
+//
+//     let dt1 = match Local.datetime_from_str("30/4/2016 9:22", "%d/%m/%Y %H:%M") {
+//         Ok(v) => v,
+//         Err(e) => Local::now(),
+//     };
+//
+//     let dt2 = now.checked_sub(Duration::seconds(46)).unwrap();
+//     let dt3 = now.checked_sub(Duration::minutes(6)).unwrap();
+//     let dt4 = now.checked_sub(Duration::days(17)).unwrap();
+//     let dt5 = now.checked_sub(Duration::weeks(9)).unwrap();
+//
+//     rustbox.print(0,
+//                   0,
+//                   rustbox::RB_BOLD,
+//                   Color::White,
+//                   Color::Black,
+//                   &format!("{} {} {} {}",
+//                    duration_format(&(now - dt2)),
+//                    duration_format(&(now - dt3)),
+//                    duration_format(&(now - dt4)),
+//                    duration_format(&(now - dt5))
+//               ));
+//
+// }
 
 // fn debug_load_and_print_topics() {
 //     let s = cache::readfile(String::from("topics.json"));
