@@ -26,10 +26,13 @@ fn main() {
     let mut status = String::from("> ");
 
     let mut list = hkg::screen::list::List::new(&rustbox);
+    let mut show = hkg::screen::show::Show::new(&rustbox);
 
     loop {
 
-        list.print(&title, &collection);
+        show.print(&format!("{} - {}","護士係一份辛苦得來又卑微?工作", title));
+
+        // list.print(&title, &collection);
 
         print_status(&rustbox, &status);
 
