@@ -5,14 +5,18 @@ use utility::string::*;
 use model::TopicItem;
 
 pub struct List {
-    pub selected_topic_index: usize
+    selected_topic_index: usize
 }
 
 impl List  {
-    fn set_index(&mut self, index: usize){
+    pub fn new() -> Self {
+        List { selected_topic_index: 0 }
+    }
+
+    pub fn set_index(&mut self, index: usize){
         self.selected_topic_index = index;
     }
-    fn get_index(&self) -> usize {
+    pub fn get_index(&self) -> usize {
         self.selected_topic_index
     }
     pub fn print(
@@ -22,8 +26,7 @@ impl List  {
         screen_width: usize,
         body_width: usize,
         body_height: usize,
-        collection: &Vec<TopicItem>,
-        selected_topic_index: usize)
+        collection: &Vec<TopicItem>)
     {
         print_header(&rustbox, screen_width, &title);
         print_body(&rustbox,
@@ -31,7 +34,7 @@ impl List  {
                    2,
                    body_height,
                    &collection,
-                   selected_topic_index);
+                   self.selected_topic_index);
 
     }
 }

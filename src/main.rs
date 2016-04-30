@@ -24,7 +24,7 @@ fn main() {
 
     let mut status = String::from("> ");
 
-    let mut selected_topic_index: usize = 0; // no selection by default
+    let mut list = hkg::screen::list::List::new();
 
     loop {
 
@@ -42,19 +42,17 @@ fn main() {
             0
         };
 
-        if selected_topic_index > body_height {
-            selected_topic_index = body_height;
+        if list.get_index() > body_height {
+            list.set_index(body_height);
         }
 
-        let mut l = hkg::screen::list::List { selected_topic_index:0 };
-        l.print(
+        list.print(
             &rustbox,
             &title,
             w,
             body_width,
             body_height,
-            &collection,
-            selected_topic_index
+            &collection
         );
 
         let status_width = if w > status.len() {
@@ -83,15 +81,16 @@ fn main() {
 
                     Key::Up => {
                         status = format_status(status, w, "U");
-                        if selected_topic_index > 1 {
-                            selected_topic_index = selected_topic_index - 1;
+                        let tmp = list.get_index();
+                        if tmp > 1 {
+                            list.set_index( tmp - 1 );
                         }
                     }
                     Key::Down => {
                         status = format_status(status, w, "D");
-
-                        if selected_topic_index < body_height {
-                            selected_topic_index = selected_topic_index + 1;
+                        let tmp = list.get_index();
+                        if tmp < body_height {
+                            list.set_index( tmp + 1 );
                         }
                     }
 
