@@ -15,6 +15,12 @@ use hkg::utility::cache;
 use hkg::model::ListTopicItem;
 use hkg::model::ShowItem;
 
+#[derive(PartialEq, Eq, Copy, Clone)]
+enum Status {
+    List,
+    Show,
+}
+
 fn main() {
 
     // GUI init
@@ -32,22 +38,42 @@ fn main() {
 
     let mut status = String::from("> ");
 
+    let mut state = Status::List;
+    let mut prev_state = state;
+    let mut prev_width = rustbox.width();
+
     let mut list = hkg::screen::list::List::new(&rustbox);
     let mut show = hkg::screen::show::Show::new(&rustbox);
 
     loop {
 
-        show.print(&title, &item);
+        // show UI
+        if prev_state != state {
+            hkg::screen::common::clear(&rustbox); // clear screen when switching state
+            prev_state = state;
+        }
 
-        // list.print(&title, &collection);
+        match state {
+            Status::List => {
+                list.print(&title, &collection);
+            }
+            Status::Show => {
+                show.print(&title, &item);
+            }
+        }
 
         print_status(&rustbox, &status);
 
-        // show UI
         rustbox.present();
 
         match rustbox.poll_event(false) {
             Ok(rustbox::Event::KeyEvent(key)) => {
+
+                if prev_width != rustbox.width() {
+                    hkg::screen::common::clear(&rustbox);
+                    prev_width = rustbox.width();
+                }
+
                 match key {
                     Key::Char('q') => {
                         break;
@@ -58,7 +84,7 @@ fn main() {
                         status = format_status(status, w, "U");
                         let tmp = list.get_selected_topic();
                         if tmp > 1 {
-                            list.select_topic( tmp - 1 );
+                            list.select_topic(tmp - 1);
                         }
                     }
                     Key::Down => {
@@ -66,7 +92,27 @@ fn main() {
                         status = format_status(status, w, "D");
                         let tmp = list.get_selected_topic();
                         if tmp < list.body_height() {
-                            list.select_topic( tmp + 1 );
+                            list.select_topic(tmp + 1);
+                        }
+                    }
+                    Key::Enter => {
+                        let w = rustbox.width();
+                        status = format_status(status, w, "E");
+                        match state {
+                            Status::List => {
+                                state = Status::Show;
+                            }
+                            Status::Show => {}
+                        }
+                    }
+                    Key::Backspace => {
+                        let w = rustbox.width();
+                        status = format_status(status, w, "B");
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                state = Status::List;
+                            }
                         }
                     }
 
@@ -79,8 +125,7 @@ fn main() {
     }
 }
 
-fn print_status(rustbox : &rustbox::RustBox, status: &str)
-{
+fn print_status(rustbox: &rustbox::RustBox, status: &str) {
     // for status bar only
     let w = rustbox.width();
     let h = rustbox.height();
@@ -103,8 +148,7 @@ fn print_status(rustbox : &rustbox::RustBox, status: &str)
 
 }
 
-fn format_status(status: String, w: usize, s: &str) -> String
-{
+fn format_status(status: String, w: usize, s: &str) -> String {
     if status.len() >= w {
         String::from(format!("{}{}", &"> ", s))
     } else {
