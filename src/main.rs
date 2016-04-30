@@ -38,12 +38,20 @@ fn main() {
 
     let mut status = String::from("> ");
 
+    let mut state = Status::List;
+    let mut prev_state = state;
+
     let mut list = hkg::screen::list::List::new(&rustbox);
     let mut show = hkg::screen::show::Show::new(&rustbox);
 
     loop {
 
         // show UI
+        if prev_state != state {
+            hkg::screen::common::clear(&rustbox); // clear screen when switching state
+            prev_state = state;
+        }
+
         match state {
             Status::List => {
                 list.print(&title, &collection);
