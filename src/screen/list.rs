@@ -13,10 +13,10 @@ impl List  {
         List { selected_topic_index: 0 }
     }
 
-    pub fn set_index(&mut self, index: usize){
+    pub fn select_topic(&mut self, index: usize){
         self.selected_topic_index = index;
     }
-    pub fn get_index(&self) -> usize {
+    pub fn get_selected_topic(&self) -> usize {
         self.selected_topic_index
     }
     pub fn print(

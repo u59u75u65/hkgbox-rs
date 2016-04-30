@@ -42,8 +42,8 @@ fn main() {
             0
         };
 
-        if list.get_index() > body_height {
-            list.set_index(body_height);
+        if list.get_selected_topic() > body_height {
+            list.select_topic(body_height);
         }
 
         list.print(
@@ -81,16 +81,16 @@ fn main() {
 
                     Key::Up => {
                         status = format_status(status, w, "U");
-                        let tmp = list.get_index();
+                        let tmp = list.get_selected_topic();
                         if tmp > 1 {
-                            list.set_index( tmp - 1 );
+                            list.select_topic( tmp - 1 );
                         }
                     }
                     Key::Down => {
                         status = format_status(status, w, "D");
-                        let tmp = list.get_index();
+                        let tmp = list.get_selected_topic();
                         if tmp < body_height {
-                            list.set_index( tmp + 1 );
+                            list.select_topic( tmp + 1 );
                         }
                     }
 
