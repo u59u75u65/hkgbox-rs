@@ -20,3 +20,20 @@ pub struct ListTopicItem {
     pub reply_count: String,
     pub rating: String,
 }
+
+
+#[derive(RustcDecodable)]
+pub struct ShowItem {
+    pub title: String,
+    pub reply_count: String,
+    pub page: String,
+    pub replies: Vec<ShowReplyItem>
+}
+
+#[derive(RustcDecodable)]
+pub struct ShowReplyItem {
+    pub userid: String,
+    pub username: String,
+    pub content: String,
+    pub published_at: String
+}

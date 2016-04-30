@@ -6,10 +6,11 @@ use std::default::Default;
 
 use rustbox::{Color, RustBox, Key};
 use rustc_serialize::json;
+use rustc_serialize::json::Json;
 
 use hkg::utility::cache;
 use hkg::model::ListTopicItem;
-
+use hkg::model::ShowItem;
 
 fn main() {
 
@@ -23,6 +24,9 @@ fn main() {
     let s = cache::readfile(String::from("topics.json"));
     let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
+    let t = cache::readfile(String::from("view.json"));
+    let item: ShowItem = json::decode(&t).unwrap();
+
     let mut status = String::from("> ");
 
     let mut list = hkg::screen::list::List::new(&rustbox);
@@ -30,7 +34,7 @@ fn main() {
 
     loop {
 
-        show.print(&format!("{} - {}","護士係一份辛苦得來又卑微?工作", title));
+        show.print(&title, &item);
 
         // list.print(&title, &collection);
 
