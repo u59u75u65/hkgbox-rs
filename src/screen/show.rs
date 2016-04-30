@@ -71,12 +71,130 @@ fn print_body(rustbox: &rustbox::RustBox,
               rows: usize,
               item: &ShowItem) {
 
-    for (i, reply) in item.replies.iter().take(1).enumerate() {
+    let mut y = offset_y;
+    let replier_max_width = 14;
+
+    let separator_width = if rustbox.width() >= 4 {
+        rustbox.width() - 4
+    } else {
+        0
+    };
+    let separator_padding_width = if rustbox.width() > separator_width {
+        rustbox.width() - separator_width
+    } else {
+        0
+    } / 2;
+
+    let separator_padding = (0..separator_padding_width).map(|_| " ").collect::<Vec<_>>().join("");
+
+
+    let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
+
+    for (i, reply) in item.replies.iter().take(rows).enumerate() {
+        let contents: Vec<&str> = reply.content.split("\n").collect();
+
+        let mut m = 0;
+
+        for (j, content) in contents.iter().enumerate() {
+            rustbox.print(0,
+                          j + y,
+                          rustbox::RB_NORMAL,
+                          Color::White,
+                          Color::Black,
+                          &format!(" {}", content));
+            m += 1;
+        }
+        let replier_name = reply.username.clone();
+        let separator_top = make_separator_top(separator_width,
+                                               &separator_padding,
+                                               replier_max_width,
+                                               &replier_name);
+
         rustbox.print(0,
-                      i + offset_y,
+                      m + y,
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("{}", reply.content));
+                      &separator_top);
+        m += 1;
+
+        rustbox.print(0,
+                      m + y,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &separator_bottom);
+        m += 1;
+        y += m;
     }
+}
+
+
+fn make_separator_top(separator_width: usize,
+                      separator_padding: &str,
+                      replier_max_width: usize,
+                      replier_name: &str)
+                      -> String {
+    let replier_name_len = jks_len(&replier_name);
+    let replier_name_spacing_width = replier_max_width - replier_name_len;
+    let is_replier_name_spacing_width_odd = replier_name_spacing_width & 1 == 1;
+    let replier_name_right_spacing_width = replier_name_spacing_width / 2;
+    let replier_name_left_spacing_width = if is_replier_name_spacing_width_odd {
+        replier_name_right_spacing_width + 1
+    } else {
+        replier_name_right_spacing_width
+    };
+
+    let replier_name_left_spacing = (0..replier_name_left_spacing_width)
+                                        .map(|_| "─")
+                                        .collect::<Vec<_>>()
+                                        .join("");
+
+    let replier_name_right_spacing = (0..replier_name_right_spacing_width)
+                                         .map(|_| "─")
+                                         .collect::<Vec<_>>()
+                                         .join("");
+
+    let separator_replier = format!("{}{}{}{}{}",
+                                    "╭",
+                                    replier_name_left_spacing,
+                                    replier_name,
+                                    replier_name_right_spacing,
+                                    "╮");
+    let separator_replier_width = jks_len(&separator_replier);
+
+    let separator_top_middle_width = if separator_width > separator_replier_width {
+        separator_width - separator_replier_width
+    } else {
+        0
+    };
+    let separator_top_middle = (0..separator_top_middle_width)
+                                   .map(|_| " ")
+                                   .collect::<Vec<_>>()
+                                   .join("");
+
+    let separator_top = format!("{}{}{}{}",
+                                separator_padding,
+                                separator_top_middle,
+                                separator_replier,
+                                separator_padding);
+    return separator_top;
+}
+fn make_separator_bottom(separator_width: usize, separator_padding: &str) -> String {
+    let style_box_width = 1;
+    let separator_bottom_middle_width = if separator_width > style_box_width {
+        separator_width - style_box_width
+    } else {
+        0
+    };
+    let separator_bottom_middle = (0..separator_bottom_middle_width)
+                                      .map(|_| "─")
+                                      .collect::<Vec<_>>()
+                                      .join("");
+    let separator_bottom = format!("{}{}{}{}",
+                                   separator_padding,
+                                   separator_bottom_middle,
+                                   "╯",
+                                   separator_padding);
+    return separator_bottom;
 }
