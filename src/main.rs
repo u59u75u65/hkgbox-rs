@@ -15,6 +15,12 @@ use hkg::utility::cache;
 use hkg::model::ListTopicItem;
 use hkg::model::ShowItem;
 
+#[derive(PartialEq, Eq, Copy, Clone)]
+enum Status {
+    List,
+    Show,
+}
+
 fn main() {
 
     // GUI init
@@ -37,13 +43,18 @@ fn main() {
 
     loop {
 
-        show.print(&title, &item);
-
-        // list.print(&title, &collection);
+        // show UI
+        match state {
+            Status::List => {
+                list.print(&title, &collection);
+            }
+            Status::Show => {
+                show.print(&title, &item);
+            }
+        }
 
         print_status(&rustbox, &status);
 
-        // show UI
         rustbox.present();
 
         match rustbox.poll_event(false) {
@@ -67,6 +78,24 @@ fn main() {
                         let tmp = list.get_selected_topic();
                         if tmp < list.body_height() {
                             list.select_topic( tmp + 1 );
+                    Key::Enter => {
+                        let w = rustbox.width();
+                        status = format_status(status, w, "E");
+                        match state {
+                            Status::List => {
+                                state = Status::Show;
+                            }
+                            Status::Show => {}
+                        }
+                    }
+                    Key::Backspace => {
+                        let w = rustbox.width();
+                        status = format_status(status, w, "B");
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                state = Status::List;
+                            }
                         }
                     }
 
