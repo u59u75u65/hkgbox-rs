@@ -122,16 +122,44 @@ fn date_operation_example(rustbox: &rustbox::RustBox){
         Err(e) => Local::now(),
     };
 
-    let dt2 = now.checked_sub(Duration::seconds(30)).unwrap();
-    let diff =  (now - dt2).num_minutes();
+    let dt2 = now.checked_sub(Duration::seconds(46)).unwrap();
+    let dt3 = now.checked_sub(Duration::minutes(6)).unwrap();
+    let dt4 = now.checked_sub(Duration::days(17)).unwrap();
+    let dt5 = now.checked_sub(Duration::weeks(9)).unwrap();
+
     rustbox.print(0,
                   0,
                   rustbox::RB_BOLD,
                   Color::White,
                   Color::Black,
-                  &format!("{:?} {:?} {:?}", dt2, now, diff));
+                  &format!("{} {} {} {}",
+                   duration_format(&(now - dt2)),
+                   duration_format(&(now - dt3)),
+                   duration_format(&(now - dt4)),
+                   duration_format(&(now - dt5))
+              ));
 
 }
+
+fn duration_format(duration: &Duration) -> String {
+    let weeks = duration.num_weeks();
+    let days = duration.num_days();
+    let hours = duration.num_hours();
+    let minutes = duration.num_minutes();
+
+    if weeks > 0 {
+        format!("{}w", weeks)
+    } else if days > 0 {
+        format!("{}d", days)
+    } else if hours > 0 {
+        format!("{}h", hours)
+    } else if minutes > 0 {
+        format!("{}m", minutes)
+    } else {
+        String::from("1m")
+    }
+}
+
 // fn debug_load_and_print_topics() {
 //     let s = cache::readfile(String::from("topics.json"));
 //     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
