@@ -1,12 +1,15 @@
 extern crate hkg;
 extern crate rustbox;
 extern crate rustc_serialize;
+extern crate chrono;
 
 use std::default::Default;
 
 use rustbox::{Color, RustBox, Key};
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
+
+use chrono::*;
 
 use hkg::utility::cache;
 use hkg::model::ListTopicItem;
@@ -34,7 +37,9 @@ fn main() {
 
     loop {
 
-        show.print(&title, &item);
+        date_operation_example(&rustbox);
+
+        // show.print(&title, &item);
 
         // list.print(&title, &collection);
 
@@ -109,6 +114,24 @@ fn format_status(status: String, w: usize, s: &str) -> String
     }
 }
 
+fn date_operation_example(rustbox: &rustbox::RustBox){
+    let now = Local::now();
+
+    let dt1 = match Local.datetime_from_str("30/4/2016 9:22", "%d/%m/%Y %H:%M") {
+        Ok(v) => v,
+        Err(e) => Local::now(),
+    };
+
+    let dt2 = now.checked_sub(Duration::seconds(30)).unwrap();
+    let diff =  (now - dt2).num_minutes();
+    rustbox.print(0,
+                  0,
+                  rustbox::RB_BOLD,
+                  Color::White,
+                  Color::Black,
+                  &format!("{:?} {:?} {:?}", dt2, now, diff));
+
+}
 // fn debug_load_and_print_topics() {
 //     let s = cache::readfile(String::from("topics.json"));
 //     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
