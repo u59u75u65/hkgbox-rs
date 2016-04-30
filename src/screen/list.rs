@@ -2,7 +2,7 @@ extern crate rustbox;
 use rustbox::*;
 use screen::common::*;
 use utility::string::*;
-use model::TopicItem;
+use model::ListTopicItem;
 
 pub struct List<'a> {
     rustbox: &'a rustbox::RustBox,
@@ -25,7 +25,7 @@ impl<'a> List<'a> {
     }
     pub fn print(&mut self,
                  title: &str,
-                 collection: &Vec<TopicItem>) {
+                 collection: &Vec<ListTopicItem>) {
 
         if self.selected_topic_index > self.body_height() {
             self.selected_topic_index = self.body_height();
@@ -81,7 +81,7 @@ fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               offset_y: usize,
               rows: usize,
-              collection: &Vec<TopicItem>,
+              collection: &Vec<ListTopicItem>,
               selected_topic_index: usize) {
 
     let right_offset = 3;

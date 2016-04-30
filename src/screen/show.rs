@@ -2,7 +2,7 @@ extern crate rustbox;
 use rustbox::*;
 use screen::common::*;
 use utility::string::*;
-use model::TopicItem;
+// use model::TopicItem;
 
 pub struct Show<'a> {
     rustbox: &'a rustbox::RustBox,

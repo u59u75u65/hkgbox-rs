@@ -8,7 +8,7 @@ use rustbox::{Color, RustBox, Key};
 use rustc_serialize::json;
 
 use hkg::utility::cache;
-use hkg::model::TopicItem;
+use hkg::model::ListTopicItem;
 
 
 fn main() {
@@ -21,7 +21,7 @@ fn main() {
 
     let title = String::from("高登");
     let s = cache::readfile(String::from("topics.json"));
-    let collection: Vec<TopicItem> = json::decode(&s).unwrap();
+    let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
     let mut status = String::from("> ");
 
