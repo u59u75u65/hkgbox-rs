@@ -40,6 +40,7 @@ fn main() {
 
     let mut state = Status::List;
     let mut prev_state = state;
+    let mut prev_width = rustbox.width();
 
     let mut list = hkg::screen::list::List::new(&rustbox);
     let mut show = hkg::screen::show::Show::new(&rustbox);
@@ -67,6 +68,12 @@ fn main() {
 
         match rustbox.poll_event(false) {
             Ok(rustbox::Event::KeyEvent(key)) => {
+
+                if prev_width != rustbox.width() {
+                    hkg::screen::common::clear(&rustbox);
+                    prev_width = rustbox.width();
+                }
+
                 match key {
                     Key::Char('q') => {
                         break;
