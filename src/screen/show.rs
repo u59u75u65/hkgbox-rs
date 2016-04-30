@@ -87,7 +87,6 @@ fn print_body(rustbox: &rustbox::RustBox,
 
     let separator_padding = (0..separator_padding_width).map(|_| " ").collect::<Vec<_>>().join("");
 
-
     let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
 
     for (i, reply) in item.replies.iter().take(rows).enumerate() {
@@ -129,12 +128,11 @@ fn print_body(rustbox: &rustbox::RustBox,
     }
 }
 
-
-fn make_separator_top(separator_width: usize,
-                      separator_padding: &str,
-                      replier_max_width: usize,
-                      replier_name: &str)
-                      -> String {
+fn make_separator_replier_name(separator_width: usize,
+                               separator_padding: &str,
+                               replier_max_width: usize,
+                               replier_name: &str)
+                               -> String {
     let replier_name_len = jks_len(&replier_name);
     let replier_name_spacing_width = replier_max_width - replier_name_len;
     let is_replier_name_spacing_width_odd = replier_name_spacing_width & 1 == 1;
@@ -161,6 +159,20 @@ fn make_separator_top(separator_width: usize,
                                     replier_name,
                                     replier_name_right_spacing,
                                     "╮");
+    return separator_replier;
+}
+
+fn make_separator_top(separator_width: usize,
+                      separator_padding: &str,
+                      replier_max_width: usize,
+                      replier_name: &str)
+                      -> String {
+
+    let separator_replier = make_separator_replier_name(separator_width,
+                                                        &separator_padding,
+                                                        replier_max_width,
+                                                        &replier_name);
+
     let separator_replier_width = jks_len(&separator_replier);
 
     let separator_top_middle_width = if separator_width > separator_replier_width {
