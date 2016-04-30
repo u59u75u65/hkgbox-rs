@@ -4,7 +4,39 @@ use screen::common::*;
 use utility::string::*;
 use model::TopicItem;
 
-pub fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
+pub struct List {
+    pub selected_topic_index: usize
+}
+
+impl List  {
+    fn set_index(&mut self, index: usize){
+        self.selected_topic_index = index;
+    }
+    fn get_index(&self) -> usize {
+        self.selected_topic_index
+    }
+    pub fn print(
+        &self,
+        rustbox: &rustbox::RustBox,
+        title: &str,
+        screen_width: usize,
+        body_width: usize,
+        body_height: usize,
+        collection: &Vec<TopicItem>,
+        selected_topic_index: usize)
+    {
+        print_header(&rustbox, screen_width, &title);
+        print_body(&rustbox,
+                   body_width,
+                   2,
+                   body_height,
+                   &collection,
+                   selected_topic_index);
+
+    }
+}
+
+fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
     let padding = (width - text.len()) / 2;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
 
@@ -23,7 +55,7 @@ pub fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
                   &header_bottom);
 }
 
-pub fn print_body(rustbox: &rustbox::RustBox,
+fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               offset_y: usize,
               rows: usize,

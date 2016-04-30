@@ -46,14 +46,16 @@ fn main() {
             selected_topic_index = body_height;
         }
 
-        hkg::screen::list::print_header(&rustbox, w, &title);
-
-        hkg::screen::list::print_body(&rustbox,
-                   body_width,
-                   2,
-                   body_height,
-                   &collection,
-                   selected_topic_index);
+        let mut l = hkg::screen::list::List { selected_topic_index:0 };
+        l.print(
+            &rustbox,
+            &title,
+            w,
+            body_width,
+            body_height,
+            &collection,
+            selected_topic_index
+        );
 
         let status_width = if w > status.len() {
             w - status.len()
