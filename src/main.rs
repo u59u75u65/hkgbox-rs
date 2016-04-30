@@ -28,29 +28,10 @@ fn main() {
     let mut list = hkg::screen::list::List::new(&rustbox);
 
     loop {
-        
+
         list.print(&title, &collection);
 
-        // for status bar only
-        let w = rustbox.width();
-        let h = rustbox.height();
-
-        let status_width = if w > status.len() {
-            w - status.len()
-        } else {
-            0
-        };
-        let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
-
-        rustbox.print(0,
-                      h - 1,
-                      rustbox::RB_BOLD,
-                      Color::White,
-                      Color::Black,
-                      &format!("{status}{status_spacing}",
-                               status = status,
-                               status_spacing = status_spacing));
-
+        print_status(&rustbox, &status);
 
         // show UI
         rustbox.present();
@@ -63,6 +44,7 @@ fn main() {
                     }
 
                     Key::Up => {
+                        let w = rustbox.width();
                         status = format_status(status, w, "U");
                         let tmp = list.get_selected_topic();
                         if tmp > 1 {
@@ -70,6 +52,7 @@ fn main() {
                         }
                     }
                     Key::Down => {
+                        let w = rustbox.width();
                         status = format_status(status, w, "D");
                         let tmp = list.get_selected_topic();
                         if tmp < list.body_height() {
@@ -84,6 +67,30 @@ fn main() {
             _ => {}
         }
     }
+}
+
+fn print_status(rustbox : &rustbox::RustBox, status: &str)
+{
+    // for status bar only
+    let w = rustbox.width();
+    let h = rustbox.height();
+
+    let status_width = if w > status.len() {
+        w - status.len()
+    } else {
+        0
+    };
+    let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
+
+    rustbox.print(0,
+                  h - 1,
+                  rustbox::RB_BOLD,
+                  Color::White,
+                  Color::Black,
+                  &format!("{status}{status_spacing}",
+                           status = status,
+                           status_spacing = status_spacing));
+
 }
 
 fn format_status(status: String, w: usize, s: &str) -> String
