@@ -37,9 +37,7 @@ fn main() {
 
     loop {
 
-        date_operation_example(&rustbox);
-
-        // show.print(&title, &item);
+        show.print(&title, &item);
 
         // list.print(&title, &collection);
 
@@ -114,51 +112,32 @@ fn format_status(status: String, w: usize, s: &str) -> String
     }
 }
 
-fn date_operation_example(rustbox: &rustbox::RustBox){
-    let now = Local::now();
-
-    let dt1 = match Local.datetime_from_str("30/4/2016 9:22", "%d/%m/%Y %H:%M") {
-        Ok(v) => v,
-        Err(e) => Local::now(),
-    };
-
-    let dt2 = now.checked_sub(Duration::seconds(46)).unwrap();
-    let dt3 = now.checked_sub(Duration::minutes(6)).unwrap();
-    let dt4 = now.checked_sub(Duration::days(17)).unwrap();
-    let dt5 = now.checked_sub(Duration::weeks(9)).unwrap();
-
-    rustbox.print(0,
-                  0,
-                  rustbox::RB_BOLD,
-                  Color::White,
-                  Color::Black,
-                  &format!("{} {} {} {}",
-                   duration_format(&(now - dt2)),
-                   duration_format(&(now - dt3)),
-                   duration_format(&(now - dt4)),
-                   duration_format(&(now - dt5))
-              ));
-
-}
-
-fn duration_format(duration: &Duration) -> String {
-    let weeks = duration.num_weeks();
-    let days = duration.num_days();
-    let hours = duration.num_hours();
-    let minutes = duration.num_minutes();
-
-    if weeks > 0 {
-        format!("{}w", weeks)
-    } else if days > 0 {
-        format!("{}d", days)
-    } else if hours > 0 {
-        format!("{}h", hours)
-    } else if minutes > 0 {
-        format!("{}m", minutes)
-    } else {
-        String::from("1m")
-    }
-}
+// fn date_operation_example(rustbox: &rustbox::RustBox) {
+//     let now = Local::now();
+//
+//     let dt1 = match Local.datetime_from_str("30/4/2016 9:22", "%d/%m/%Y %H:%M") {
+//         Ok(v) => v,
+//         Err(e) => Local::now(),
+//     };
+//
+//     let dt2 = now.checked_sub(Duration::seconds(46)).unwrap();
+//     let dt3 = now.checked_sub(Duration::minutes(6)).unwrap();
+//     let dt4 = now.checked_sub(Duration::days(17)).unwrap();
+//     let dt5 = now.checked_sub(Duration::weeks(9)).unwrap();
+//
+//     rustbox.print(0,
+//                   0,
+//                   rustbox::RB_BOLD,
+//                   Color::White,
+//                   Color::Black,
+//                   &format!("{} {} {} {}",
+//                    duration_format(&(now - dt2)),
+//                    duration_format(&(now - dt3)),
+//                    duration_format(&(now - dt4)),
+//                    duration_format(&(now - dt5))
+//               ));
+//
+// }
 
 // fn debug_load_and_print_topics() {
 //     let s = cache::readfile(String::from("topics.json"));
