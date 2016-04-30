@@ -84,7 +84,7 @@ fn main() {
                         status = format_status(status, w, "U");
                         let tmp = list.get_selected_topic();
                         if tmp > 1 {
-                            list.select_topic( tmp - 1 );
+                            list.select_topic(tmp - 1);
                         }
                     }
                     Key::Down => {
@@ -92,7 +92,9 @@ fn main() {
                         status = format_status(status, w, "D");
                         let tmp = list.get_selected_topic();
                         if tmp < list.body_height() {
-                            list.select_topic( tmp + 1 );
+                            list.select_topic(tmp + 1);
+                        }
+                    }
                     Key::Enter => {
                         let w = rustbox.width();
                         status = format_status(status, w, "E");
@@ -123,8 +125,7 @@ fn main() {
     }
 }
 
-fn print_status(rustbox : &rustbox::RustBox, status: &str)
-{
+fn print_status(rustbox: &rustbox::RustBox, status: &str) {
     // for status bar only
     let w = rustbox.width();
     let h = rustbox.height();
@@ -147,8 +148,7 @@ fn print_status(rustbox : &rustbox::RustBox, status: &str)
 
 }
 
-fn format_status(status: String, w: usize, s: &str) -> String
-{
+fn format_status(status: String, w: usize, s: &str) -> String {
     if status.len() >= w {
         String::from(format!("{}{}", &"> ", s))
     } else {
