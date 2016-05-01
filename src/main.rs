@@ -94,9 +94,7 @@ fn main() {
                         status = format_status(status, w, " PU");
 
                         match state {
-                            Status::List => {
-
-                            }
+                            Status::List => {}
                             Status::Show => {
                                 let bh = show.body_height();
                                 if show.scrollUp(bh) {
@@ -110,9 +108,7 @@ fn main() {
                         status = format_status(status, w, " PD");
 
                         match state {
-                            Status::List => {
-
-                            }
+                            Status::List => {}
                             Status::Show => {
                                 let bh = show.body_height();
                                 if show.scrollDown(bh) {

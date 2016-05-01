@@ -59,7 +59,7 @@ impl<'a> Show<'a> {
         }
         false
     }
-    
+
     pub fn body_height(&self) -> usize {
         if self.rustbox.height() >= 3 {
             self.rustbox.height() - 3
