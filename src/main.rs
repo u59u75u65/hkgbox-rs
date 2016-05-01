@@ -33,8 +33,8 @@ fn main() {
     let s = cache::readfile(String::from("topics.json"));
     let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
-    let t = cache::readfile(String::from("view.json"));
-    let item: ShowItem = json::decode(&t).unwrap();
+    let mut show_file = cache::readfile(String::from("data/6360523/show_1.json"));
+    let mut show_item: ShowItem = json::decode(&show_file).unwrap();
 
     let mut status = String::from("> ");
 
@@ -58,7 +58,7 @@ fn main() {
                 list.print(&title, &collection);
             }
             Status::Show => {
-                show.print(&title, &item);
+                show.print(&title, &show_item);
             }
         }
 
@@ -142,6 +142,42 @@ fn main() {
                             }
                             Status::Show => {
                                 if show.scrollDown(2) {
+                                    hkg::screen::common::clear(&rustbox);
+                                }
+                            }
+                        }
+                    }
+                    Key::Left => {
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                if show_item.page > 1 {
+                                    let show_file_path = format!("data/{postid}/show_{page}.json",
+                                                                 postid = show_item.url_query
+                                                                                   .message,
+                                                                 page = show_item.page - 1);
+
+                                    show_file = cache::readfile(String::from(show_file_path));
+                                    show_item = json::decode(&show_file).unwrap();
+                                    show.resetY();
+                                    hkg::screen::common::clear(&rustbox);
+                                }
+                            }
+                        }
+                    }
+                    Key::Right => {
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                if show_item.max_page > show_item.page {
+                                    let show_file_path = format!("data/{postid}/show_{page}.json",
+                                                                 postid = show_item.url_query
+                                                                                   .message,
+                                                                 page = show_item.page + 1);
+
+                                    show_file = cache::readfile(String::from(show_file_path));
+                                    show_item = json::decode(&show_file).unwrap();
+                                    show.resetY();
                                     hkg::screen::common::clear(&rustbox);
                                 }
                             }

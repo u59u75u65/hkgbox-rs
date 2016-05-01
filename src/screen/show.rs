@@ -25,13 +25,17 @@ impl<'a> Show<'a> {
 
         print_header(&self.rustbox,
                      self.rustbox.width(),
-                     &format!("{} - {}", item.title, title));
+                     &format!("{} - {} [{}/{}]", item.title, title, item.page, item.max_page));
         print_body(&self.rustbox,
                    self.body_width(),
                    2,
                    self.body_height(),
                    &item,
                    self.scrollY);
+    }
+
+    pub fn resetY(&mut self) {
+        self.scrollY = 0;
     }
 
     pub fn scrollUp(&mut self, value: usize) -> bool {

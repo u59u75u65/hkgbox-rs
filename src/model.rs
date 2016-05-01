@@ -24,9 +24,11 @@ pub struct ListTopicItem {
 
 #[derive(RustcDecodable)]
 pub struct ShowItem {
+    pub url_query: ShowUrlQueryItem,
     pub title: String,
     pub reply_count: String,
-    pub page: String,
+    pub page: usize,
+    pub max_page: usize,
     pub replies: Vec<ShowReplyItem>
 }
 
@@ -36,4 +38,10 @@ pub struct ShowReplyItem {
     pub username: String,
     pub content: String,
     pub published_at: String
+}
+
+#[derive(RustcDecodable)]
+pub struct ShowUrlQueryItem {
+    // pub type: String,
+    pub message: String
 }
