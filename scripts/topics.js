@@ -1,4 +1,4 @@
-$(".Topic_ListPanel tr[id]")
+var result = $(".Topic_ListPanel tr[id]")
   .map(function() {
     t = $(this).find("td:not(:first)")
       .map(function(i, item) {
@@ -62,3 +62,5 @@ $(".Topic_ListPanel tr[id]")
     return t;
 
   }).toArray();
+
+  JSON.stringify(result);
