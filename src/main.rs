@@ -2,6 +2,8 @@ extern crate hkg;
 extern crate rustbox;
 extern crate rustc_serialize;
 extern crate chrono;
+extern crate kuchiki;
+use kuchiki::traits::*;
 
 use std::default::Default;
 
@@ -64,14 +66,43 @@ fn main() {
             prev_state = state;
         }
 
-        match state {
-            Status::List => {
-                list.print(&title, &collection);
-            }
-            Status::Show => {
-                show.print(&title, &show_item);
-            }
+        let url = &collection[1].title.url;
+
+        rustbox.print(1, 3, rustbox::RB_NORMAL, Color::White, Color::Black, url);
+
+        let p = "data/html/6360604/show_1.html";
+        let document = kuchiki::parse_html().from_utf8().from_file(&p).unwrap();
+
+        let replies_data = document.select(".repliers tr[userid][username]")
+                               .unwrap()
+                               .collect::<Vec<_>>();
+
+        for (index, tr) in replies_data.iter().enumerate() {
+            let tr_attrs = (&tr.attributes).borrow();
+            let userid = tr_attrs.get("userid").unwrap();
+            let username = tr_attrs.get("username").unwrap();
+
+            let content = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
+                                .next().unwrap() // first
+                                .as_node().text_contents(); // text
+
+            rustbox.print(1,
+                          index + 4,
+                          rustbox::RB_NORMAL,
+                          Color::White,
+                          Color::Black,
+                          &format!("[{:<2}]={:?}", index, content));
+
         }
+
+        // match state {
+        //     Status::List => {
+        //         list.print(&title, &collection);
+        //     }
+        //     Status::Show => {
+        //         show.print(&title, &show_item);
+        //     }
+        // }
 
         print_status(&rustbox, &status);
 
@@ -274,6 +305,41 @@ fn format_status(status: String, w: usize, s: &str) -> String {
         String::from(format!("{}{}", &status, s))
     }
 }
+
+
+// for (jndex, elm) in tr.as_node().select(".repliers_right .ContentGrid").unwrap().enumerate() {
+//     let content = elm.as_node().text_contents();
+//     let name = &elm.name;
+//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}][{:<2}]={:?}", index, jndex, content));
+// }
+
+// let content = tr.text_contents();
+// rustbox.print(1,
+//               index + 4,
+//               rustbox::RB_NORMAL,
+//               Color::White,
+//               Color::Black,
+//               &format!("[{:<2}]={:?}", index, content));
+
+// for (jndex, div) in tr.as_node().children().enumerate() {
+//     let content = div.as_text();
+//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index + jndex, content));
+// }
+
+// for (jndex, div) in tr.as_node().select(".repliers_right").unwrap().enumerate() {
+//     let content = div.as_node().as_text();
+//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index + jndex, content));
+// }
+
+// for (jndex, div) in tr.as_node().select(".repliers_right").unwrap().collect::<Vec<_>>().iter().enumerate() {
+//     let content = div.as_node().as_text();
+//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index + jndex, content));
+// }
+
+// let c = &tr.as_node().select(".repliers_right .ContentGrid").unwrap().collect::<Vec<_>>()[0];
+// let content = c.as_node().as_text();
+// rustbox.print(1, index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index, content));
+
 
 // fn date_operation_example(rustbox: &rustbox::RustBox) {
 //     let now = Local::now();
