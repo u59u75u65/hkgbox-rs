@@ -18,11 +18,14 @@ var result = $(".Topic_ListPanel tr[id]")
 
             if (links.length > 0)
             {
-                var start = href.indexOf('?');
                 var first_link = $(links).first();
+                var href = first_link.prop('href');
+                var start = href.indexOf('?');
+                var query_str = href.substring(start);
+                
                 return {
                   url: $(first_link).prop('href'),
-                  url_query: parseQueryString(href.substring(start)),
+                  url_query: parseQueryString(query_str),
                   text: $(first_link).text().trim(),
                   num_of_pages: links.length
                 }
