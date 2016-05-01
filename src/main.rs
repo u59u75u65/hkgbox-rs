@@ -3,6 +3,7 @@ extern crate rustbox;
 extern crate rustc_serialize;
 extern crate chrono;
 extern crate kuchiki;
+
 use kuchiki::traits::*;
 
 use std::default::Default;
@@ -20,6 +21,9 @@ use hkg::model::UrlQueryItem;
 
 use std::path::Path;
 
+use std::io::prelude::*;
+use std::fs::File;
+
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
     List,
@@ -33,6 +37,13 @@ fn main() {
         Result::Ok(v) => v,
         Result::Err(e) => panic!("{}", e),
     };
+
+    rustbox.print(1,
+                  1,
+                  rustbox::RB_NORMAL,
+                  Color::White,
+                  Color::Black,
+                  &format!("start => {}", Local::now()));
 
     let title = String::from("高登");
     let s = cache::readfile(String::from("data/topics.json"));
@@ -68,15 +79,24 @@ fn main() {
 
         let url = &collection[1].title.url;
 
-        rustbox.print(1, 3, rustbox::RB_NORMAL, Color::White, Color::Black, url);
+        rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
+
+        rustbox.print(1,
+                      3,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &format!("before parse => {}", Local::now()));
 
         let p = "data/html/6360604/show_1.html";
         let document = kuchiki::parse_html().from_utf8().from_file(&p).unwrap();
 
         let replies_data = document.select(".repliers tr[userid][username]")
-                               .unwrap()
-                               .collect::<Vec<_>>();
+                                   .unwrap()
+                                   .collect::<Vec<_>>();
 
+
+        let mut ss = String::new();
         for (index, tr) in replies_data.iter().enumerate() {
             let tr_attrs = (&tr.attributes).borrow();
             let userid = tr_attrs.get("userid").unwrap();
@@ -86,14 +106,27 @@ fn main() {
                                 .next().unwrap() // first
                                 .as_node().text_contents(); // text
 
+            let tmp_str = format!("[{:0<2}]={}\n", index, content.trim());
+            ss.push_str(&tmp_str);
             rustbox.print(1,
-                          index + 4,
+                          index + 5,
                           rustbox::RB_NORMAL,
                           Color::White,
                           Color::Black,
-                          &format!("[{:<2}]={:?}", index, content));
-
+                          &tmp_str);
         }
+
+        let mut f = File::create("foo.txt").unwrap();
+        // let uu :Vec<u8> = ss.chars;
+        f.write_all(ss.as_bytes());
+
+        rustbox.print(1,
+                      4,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &format!("after parse => {}", Local::now()));
+
 
         // match state {
         //     Status::List => {
