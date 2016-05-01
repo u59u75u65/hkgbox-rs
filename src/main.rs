@@ -30,7 +30,7 @@ fn main() {
     };
 
     let title = String::from("高登");
-    let s = cache::readfile(String::from("topics.json"));
+    let s = cache::readfile(String::from("data/topics.json"));
     let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
     let mut show_file = cache::readfile(String::from("data/6360523/show_1.json"));
