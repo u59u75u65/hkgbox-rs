@@ -55,15 +55,7 @@ impl<'a> Show<'a> {
         }
         false
     }
-
-    pub fn set_scrollY(&mut self, v: usize) {
-        self.scrollY = v;
-    }
-
-    pub fn get_scrollY(&self) -> usize {
-        self.scrollY
-    }
-
+    
     pub fn body_height(&self) -> usize {
         if self.rustbox.height() >= 3 {
             self.rustbox.height() - 3
@@ -116,6 +108,7 @@ fn print_body(rustbox: &rustbox::RustBox,
     let mut y = offset_y;
     let replier_max_width = 14;
     let time_max_width = 5;
+    let now = Local::now();
 
     let separator_width = if rustbox.width() >= 2 {
         rustbox.width() - 2
@@ -148,24 +141,26 @@ fn print_body(rustbox: &rustbox::RustBox,
             }
             m += 1;
         }
-        let replier_name = reply.username.clone();
-
-        let published_at = reply.published_at.clone();
-        let now = Local::now();
-        let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
-            Ok(v) => v,
-            Err(e) => Local::now(),
-        };
-        let time = published_at_format(&(now - published_at_dt));
-
-        let separator_top = make_separator_top(separator_width,
-                                               &separator_padding,
-                                               replier_max_width,
-                                               &replier_name,
-                                               time_max_width,
-                                               &time);
 
         if scrollY + 1 < y + m {
+
+            let replier_name = reply.username.clone();
+
+            let published_at = reply.published_at.clone();
+
+            let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+                Ok(v) => v,
+                Err(e) => now,
+            };
+            let time = published_at_format(&(now - published_at_dt));
+
+            let separator_top = make_separator_top(separator_width,
+                                                   &separator_padding,
+                                                   replier_max_width,
+                                                   &replier_name,
+                                                   time_max_width,
+                                                   &time);
+
             rustbox.print(0,
                           m + y - scrollY,
                           rustbox::RB_NORMAL,
