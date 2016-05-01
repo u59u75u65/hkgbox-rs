@@ -14,6 +14,9 @@ use chrono::*;
 use hkg::utility::cache;
 use hkg::model::ListTopicItem;
 use hkg::model::ShowItem;
+use hkg::model::UrlQueryItem;
+
+use std::path::Path;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -33,8 +36,16 @@ fn main() {
     let s = cache::readfile(String::from("data/topics.json"));
     let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
-    let mut show_file = cache::readfile(String::from("data/6360523/show_1.json"));
-    let mut show_item: ShowItem = json::decode(&show_file).unwrap();
+    // initialize show with empty page
+    let mut show_file;
+    let mut show_item = ShowItem {
+        url_query: UrlQueryItem { message: String::from("") },
+        replies: vec![],
+        page: 0,
+        max_page: 0,
+        reply_count: String::from(""),
+        title: String::from(""),
+    };
 
     let mut status = String::from("> ");
 
@@ -188,7 +199,31 @@ fn main() {
                         status = format_status(status, w, "E");
                         match state {
                             Status::List => {
-                                state = Status::Show;
+
+                                let index = list.get_selected_topic();
+                                if index > 0 {
+                                    let topic_item = &collection[index - 1];
+
+                                    let postid = &topic_item.title.url_query.message;
+
+                                    let show_file_path = format!("data/{postid}/show_{page}.json",
+                                                                 postid = postid,
+                                                                 page = 1);
+
+                                    if Path::new(&show_file_path).exists() {
+                                        show_file = cache::readfile(String::from(show_file_path));
+                                        show_item = json::decode(&show_file).unwrap();
+                                        show.resetY();
+                                        hkg::screen::common::clear(&rustbox);
+                                        state = Status::Show;
+                                    } else {
+                                        let w = rustbox.width();
+                                        status = format_status(status,
+                                                               w,
+                                                               &format!(" postid {} not found.",
+                                                                        postid));
+                                    }
+                                }
                             }
                             Status::Show => {}
                         }
