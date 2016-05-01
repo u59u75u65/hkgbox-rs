@@ -97,6 +97,7 @@ fn main() {
 
 
         let mut ss = String::new();
+        let mut offsetY = 0;
         for (index, tr) in replies_data.iter().enumerate() {
             let tr_attrs = (&tr.attributes).borrow();
             let userid = tr_attrs.get("userid").unwrap();
@@ -106,14 +107,24 @@ fn main() {
                                 .next().unwrap() // first
                                 .as_node().text_contents(); // text
 
-            let tmp_str = format!("[{:0<2}]={}\n", index, content.trim());
-            ss.push_str(&tmp_str);
-            rustbox.print(1,
-                          index + 5,
-                          rustbox::RB_NORMAL,
-                          Color::White,
-                          Color::Black,
-                          &tmp_str);
+            let splits = content.split("\u{000A}")
+                                .into_iter()
+                                .filter(|x| (**x).trim().len() > 0)
+                                .collect::<Vec<_>>();
+            let splits2 = splits.clone();
+            for (jndex, sentence) in splits.iter().enumerate() {
+                let tmp_str = format!("[{:0>2}][{:0>2}]={}\n", index, jndex, sentence.trim());
+                ss.push_str(&tmp_str);
+                rustbox.print(1,
+                              index + jndex + 5 + offsetY,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &tmp_str);
+            }
+
+            offsetY += splits2.len() - 1;
+
         }
 
         let mut f = File::create("foo.txt").unwrap();
