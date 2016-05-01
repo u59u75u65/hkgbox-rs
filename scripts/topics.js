@@ -1,3 +1,13 @@
+
+function parseQueryString(s) {
+    var query = (s || '?').substr(1),
+        map   = {};
+    query.replace(/([^&=]+)=?([^&]*)(?:&+|$)/g, function(match, key, value) {
+        map[key] = value;
+    });
+    return map;
+}
+
 var result = $(".Topic_ListPanel tr[id]")
   .map(function() {
     t = $(this).find("td:not(:first)")
@@ -6,8 +16,10 @@ var result = $(".Topic_ListPanel tr[id]")
           case 0:
             return {
               titles: $(this).find('a').map(function() {
+                var start = href.indexOf('?');
                 return {
                   url: $(this).prop('href'),
+                  url_query: parseQueryString(href.substring(start)),
                   text: $(this).text().trim()
                 }
               }).toArray()

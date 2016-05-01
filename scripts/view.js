@@ -1,6 +1,6 @@
 
-function parseQueryString() {
-    var query = (window.location.search || '?').substr(1),
+function parseQueryString(s) {
+    var query = (s || '?').substr(1),
         map   = {};
     query.replace(/([^&=]+)=?([^&]*)(?:&+|$)/g, function(match, key, value) {
         map[key] = value;
