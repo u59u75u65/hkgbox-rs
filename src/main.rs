@@ -78,21 +78,73 @@ fn main() {
                     Key::Char('q') => {
                         break;
                     }
+                    Key::PageUp => {
+                        let w = rustbox.width();
+                        status = format_status(status, w, " PU");
 
+                        match state {
+                            Status::List => {
+
+                            }
+                            Status::Show => {
+                                let bh = show.body_height();
+                                if show.scrollUp(bh) {
+                                    hkg::screen::common::clear(&rustbox);
+                                }
+                            }
+                        }
+                    }
+                    Key::PageDown => {
+                        let w = rustbox.width();
+                        status = format_status(status, w, " PD");
+
+                        match state {
+                            Status::List => {
+
+                            }
+                            Status::Show => {
+                                let bh = show.body_height();
+                                if show.scrollDown(bh) {
+                                    hkg::screen::common::clear(&rustbox);
+                                }
+                            }
+                        }
+                    }
                     Key::Up => {
                         let w = rustbox.width();
                         status = format_status(status, w, "U");
-                        let tmp = list.get_selected_topic();
-                        if tmp > 1 {
-                            list.select_topic(tmp - 1);
+
+                        match state {
+                            Status::List => {
+                                let tmp = list.get_selected_topic();
+                                if tmp > 1 {
+                                    list.select_topic(tmp - 1);
+                                }
+                            }
+                            Status::Show => {
+                                if show.scrollUp(2) {
+                                    hkg::screen::common::clear(&rustbox);
+                                }
+                            }
                         }
+
                     }
                     Key::Down => {
                         let w = rustbox.width();
                         status = format_status(status, w, "D");
-                        let tmp = list.get_selected_topic();
-                        if tmp < list.body_height() {
-                            list.select_topic(tmp + 1);
+
+                        match state {
+                            Status::List => {
+                                let tmp = list.get_selected_topic();
+                                if tmp < list.body_height() {
+                                    list.select_topic(tmp + 1);
+                                }
+                            }
+                            Status::Show => {
+                                if show.scrollDown(2) {
+                                    hkg::screen::common::clear(&rustbox);
+                                }
+                            }
                         }
                     }
                     Key::Enter => {

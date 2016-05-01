@@ -11,11 +11,15 @@ use model::ShowItem;
 
 pub struct Show<'a> {
     rustbox: &'a rustbox::RustBox,
+    scrollY: usize,
 }
 
 impl<'a> Show<'a> {
     pub fn new(rustbox: &'a rustbox::RustBox) -> Self {
-        Show { rustbox: &rustbox }
+        Show {
+            rustbox: &rustbox,
+            scrollY: 0,
+        }
     }
     pub fn print(&mut self, title: &str, item: &ShowItem) {
 
@@ -26,8 +30,40 @@ impl<'a> Show<'a> {
                    self.body_width(),
                    2,
                    self.body_height(),
-                   &item);
+                   &item,
+                   self.scrollY);
     }
+
+    pub fn scrollUp(&mut self, value: usize) -> bool {
+        let tmp = self.scrollY;
+        if tmp > value {
+            self.scrollY = tmp - value;
+            true
+        } else if tmp != 0 {
+            self.scrollY = 0;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn scrollDown(&mut self, value: usize) -> bool {
+        let tmp = self.scrollY;
+        if tmp < 10000 {
+            self.scrollY = tmp + value;
+            return true;
+        }
+        false
+    }
+
+    pub fn set_scrollY(&mut self, v: usize) {
+        self.scrollY = v;
+    }
+
+    pub fn get_scrollY(&self) -> usize {
+        self.scrollY
+    }
+
     pub fn body_height(&self) -> usize {
         if self.rustbox.height() >= 3 {
             self.rustbox.height() - 3
@@ -74,14 +110,15 @@ fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               offset_y: usize,
               rows: usize,
-              item: &ShowItem) {
+              item: &ShowItem,
+              scrollY: usize) {
 
     let mut y = offset_y;
     let replier_max_width = 14;
     let time_max_width = 5;
 
-    let separator_width = if rustbox.width() >= 4 {
-        rustbox.width() - 4
+    let separator_width = if rustbox.width() >= 2 {
+        rustbox.width() - 2
     } else {
         0
     };
@@ -101,12 +138,14 @@ fn print_body(rustbox: &rustbox::RustBox,
         let mut m = 0;
 
         for (j, content) in contents.iter().enumerate() {
-            rustbox.print(0,
-                          j + y,
-                          rustbox::RB_NORMAL,
-                          Color::White,
-                          Color::Black,
-                          &format!(" {}", content));
+            if scrollY + 1 < y + m {
+                rustbox.print(0,
+                              j + y - scrollY,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &format!(" {}", content));
+            }
             m += 1;
         }
         let replier_name = reply.username.clone();
@@ -126,20 +165,24 @@ fn print_body(rustbox: &rustbox::RustBox,
                                                time_max_width,
                                                &time);
 
-        rustbox.print(0,
-                      m + y,
-                      rustbox::RB_NORMAL,
-                      Color::Green,
-                      Color::Black,
-                      &separator_top);
+        if scrollY + 1 < y + m {
+            rustbox.print(0,
+                          m + y - scrollY,
+                          rustbox::RB_NORMAL,
+                          Color::Green,
+                          Color::Black,
+                          &separator_top);
+        }
         m += 1;
 
-        rustbox.print(0,
-                      m + y,
-                      rustbox::RB_NORMAL,
-                      Color::Green,
-                      Color::Black,
-                      &separator_bottom);
+        if scrollY + 1 < y + m {
+            rustbox.print(0,
+                          m + y - scrollY,
+                          rustbox::RB_NORMAL,
+                          Color::Green,
+                          Color::Black,
+                          &separator_bottom);
+        }
         m += 1;
         y += m;
     }
