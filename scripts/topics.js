@@ -14,16 +14,20 @@ var result = $(".Topic_ListPanel tr[id]")
       .map(function(i, item) {
         switch (i) {
           case 0:
-            return {
-              titles: $(this).find('a').map(function() {
+            var links = $(this).find('a');
+
+            if (links.length > 0)
+            {
                 var start = href.indexOf('?');
+                var first_link = $(links).first();
                 return {
-                  url: $(this).prop('href'),
+                  url: $(first_link).prop('href'),
                   url_query: parseQueryString(href.substring(start)),
-                  text: $(this).text().trim()
+                  text: $(first_link).text().trim(),
+                  num_of_pages: links.length
                 }
-              }).toArray()
-            };
+            }
+            return {}
 
           case 1:
             var a = $(this).find('a').first();
@@ -50,7 +54,7 @@ var result = $(".Topic_ListPanel tr[id]")
         // console.log(i);
         switch (i) {
           case 0:
-            o["titles"] = v.titles;
+            o["title"] = v;
             return o;
           case 1:
             o["author"] = v;
