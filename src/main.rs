@@ -88,8 +88,10 @@ fn main() {
                       Color::Black,
                       &format!("before parse => {}", Local::now()));
 
-        let p = "data/html/6360604/show_1.html";
-        let document = kuchiki::parse_html().from_utf8().from_file(&p).unwrap();
+        let postid = "6360604";
+        let page = 1;
+        let path1 = format!("data/html/{postid}/show_{page}.html", postid = postid, page = page);
+        let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
 
         let replies_data = document.select(".repliers tr[userid][username]")
                                    .unwrap()
@@ -97,33 +99,26 @@ fn main() {
 
 
         let mut ss = String::new();
-        let mut offsetY = 0;
         for (index, tr) in replies_data.iter().enumerate() {
             let tr_attrs = (&tr.attributes).borrow();
             let userid = tr_attrs.get("userid").unwrap();
             let username = tr_attrs.get("username").unwrap();
 
-            let content = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
+            let n1 = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
                                 .next().unwrap() // first
-                                .as_node().text_contents(); // text
 
-            let splits = content.split("\u{000A}")
-                                .into_iter()
-                                .filter(|x| (**x).trim().len() > 0)
-                                .collect::<Vec<_>>();
-            let splits2 = splits.clone();
-            for (jndex, sentence) in splits.iter().enumerate() {
-                let tmp_str = format!("[{:0>2}][{:0>2}]={}\n", index, jndex, sentence.trim());
-                ss.push_str(&tmp_str);
-                rustbox.print(1,
-                              index + jndex + 5 + offsetY,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &tmp_str);
-            }
+                                ; // text
+            let path2 = format!("data/{postid}/show_{page}_{replyindex}", postid = postid, page = page, replyindex = index);
+            let content = n1.as_node().serialize_to_file(path2);
+            let tmp_str = format!("[{:0>2}]={:?}\n", index, content);
+            ss.push_str(&tmp_str);
+            rustbox.print(1,
+                          index + 5,
+                          rustbox::RB_NORMAL,
+                          Color::White,
+                          Color::Black,
+                          &tmp_str);
 
-            offsetY += splits2.len() - 1;
 
         }
 
