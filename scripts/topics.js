@@ -1,17 +1,36 @@
-$(".Topic_ListPanel tr[id]")
+
+function parseQueryString(s) {
+    var query = (s || '?').substr(1),
+        map   = {};
+    query.replace(/([^&=]+)=?([^&]*)(?:&+|$)/g, function(match, key, value) {
+        map[key] = value;
+    });
+    return map;
+}
+
+var result = $(".Topic_ListPanel tr[id]")
   .map(function() {
     t = $(this).find("td:not(:first)")
       .map(function(i, item) {
         switch (i) {
           case 0:
-            return {
-              titles: $(this).find('a').map(function() {
+            var links = $(this).find('a');
+
+            if (links.length > 0)
+            {
+                var first_link = $(links).first();
+                var href = first_link.prop('href');
+                var start = href.indexOf('?');
+                var query_str = href.substring(start);
+                
                 return {
-                  url: $(this).prop('href'),
-                  text: $(this).text().trim()
+                  url: $(first_link).prop('href'),
+                  url_query: parseQueryString(query_str),
+                  text: $(first_link).text().trim(),
+                  num_of_pages: links.length
                 }
-              }).toArray()
-            };
+            }
+            return {}
 
           case 1:
             var a = $(this).find('a').first();
@@ -38,7 +57,7 @@ $(".Topic_ListPanel tr[id]")
         // console.log(i);
         switch (i) {
           case 0:
-            o["titles"] = v.titles;
+            o["title"] = v;
             return o;
           case 1:
             o["author"] = v;
@@ -62,3 +81,5 @@ $(".Topic_ListPanel tr[id]")
     return t;
 
   }).toArray();
+
+  JSON.stringify(result);

@@ -1,6 +1,6 @@
 
-function parseQueryString() {
-    var query = (window.location.search || '?').substr(1),
+function parseQueryString(s) {
+    var query = (s || '?').substr(1),
         map   = {};
     query.replace(/([^&=]+)=?([^&]*)(?:&+|$)/g, function(match, key, value) {
         map[key] = value;
@@ -23,7 +23,7 @@ replies_data = $(".repliers tr[userid][username]").map(function() {
   return {
     userid: $(this).attr('userid'),
     username: $(this).attr('username'),
-    content: $(this).find(".repliers_right .ContentGrid").first().text().trim(),
+    content: $(this).find(".repliers_right .ContentGrid").first().html().trim(),
     published_at: datetime
   }
 }).toArray();
@@ -38,3 +38,4 @@ var result = {
   max_page: max_page,
   replies: replies_data,
 };
+JSON.stringify(result);

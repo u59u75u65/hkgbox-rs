@@ -91,7 +91,7 @@ fn print_body(rustbox: &rustbox::RustBox,
 
     for (i, item) in collection.iter().take(rows).enumerate() {
 
-        let original_title = item.titles[0].text.clone();
+        let original_title = item.title.text.clone();
         let title: String = substring(&original_title, title_max_width);
         let title_len = jks_len(&title);
 
