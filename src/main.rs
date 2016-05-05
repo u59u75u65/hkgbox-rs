@@ -23,11 +23,64 @@ use std::path::Path;
 
 use std::io::prelude::*;
 use std::fs::File;
+use std::io::{Error, ErrorKind};
+
+use std::cmp::min;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
     List,
     Show,
+}
+
+#[derive(Debug)]
+pub struct MemoryStream {
+    buf: Vec<u8>,
+    pos: usize,
+}
+
+impl MemoryStream {
+    pub fn new() -> MemoryStream {
+        MemoryStream {
+            buf: vec![],
+            pos: 0,
+        }
+    }
+    pub fn eof(&self) -> bool { self.pos >= self.buf.len() }
+    pub fn as_slice<'a>(&'a self) -> &'a [u8] { self.buf.as_slice() }
+    pub fn unwrap(self) -> Vec<u8> { self.buf }
+}
+
+impl Write for MemoryStream {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        self.buf.extend_from_slice(buf);
+        Ok(1)
+    }
+    fn flush(&mut self) -> Result<(), Error> {
+        self.buf = vec![];
+        Ok(())
+    }
+}
+
+impl Read for MemoryStream {
+    fn read(&mut self, output: &mut [u8]) -> Result<usize, Error> {
+        if self.eof() {
+            return Err(Error::new(ErrorKind::UnexpectedEof, "EOF"));
+        }
+        let write_len = min(output.len(), self.buf.len() - self.pos);
+        let mut buf2 = self.buf.clone();
+        let input: Vec<_> = buf2.drain(self.pos..(self.pos + write_len)).collect();
+
+        if input.len() != output.len() {
+            panic!("input length and ouput length is not match")
+        }
+        output.clone_from_slice(&input);
+        self.pos += write_len;
+        if self.pos > self.buf.len() {
+            panic!("Unexpected buffer position > buffer length")
+        }
+        Ok(write_len)
+    }
 }
 
 fn main() {
@@ -77,61 +130,80 @@ fn main() {
             prev_state = state;
         }
 
-        let url = &collection[1].title.url;
+        let  mut stream = MemoryStream::new();
+        stream.write(&[0, 1, 2, 3]).unwrap();
+        stream.write(&[4, 5, 6, 7]).unwrap();
 
-        rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
+        rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("stream: {:?}", stream));
+        rustbox.print(1, 3, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("stream slices: {:?}", stream.as_slice()));
 
-        rustbox.print(1,
-                      3,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("before parse => {}", Local::now()));
+        let mut buf = vec![0u8; 8];
+        let read_result = stream.read(&mut buf[..]);
+        rustbox.print(1, 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("stream read: {:?}", read_result));
+        rustbox.print(1, 5, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("stream read buf: {:?}", buf));
 
-        let postid = "6360604";
-        let page = 1;
-        let path1 = format!("data/html/{postid}/show_{page}.html", postid = postid, page = page);
-        let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
-
-        let replies_data = document.select(".repliers tr[userid][username]")
-                                   .unwrap()
-                                   .collect::<Vec<_>>();
-
-
-        let mut ss = String::new();
-        for (index, tr) in replies_data.iter().enumerate() {
-            let tr_attrs = (&tr.attributes).borrow();
-            let userid = tr_attrs.get("userid").unwrap();
-            let username = tr_attrs.get("username").unwrap();
-
-            let n1 = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
-                                .next().unwrap() // first
-
-                                ; // text
-            let path2 = format!("data/{postid}/show_{page}_{replyindex}", postid = postid, page = page, replyindex = index);
-            let content = n1.as_node().serialize_to_file(path2);
-            let tmp_str = format!("[{:0>2}]={:?}\n", index, content);
-            ss.push_str(&tmp_str);
-            rustbox.print(1,
-                          index + 5,
-                          rustbox::RB_NORMAL,
-                          Color::White,
-                          Color::Black,
-                          &tmp_str);
-
-
-        }
-
-        let mut f = File::create("foo.txt").unwrap();
-        // let uu :Vec<u8> = ss.chars;
-        f.write_all(ss.as_bytes());
-
-        rustbox.print(1,
-                      4,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("after parse => {}", Local::now()));
+        // let url = &collection[1].title.url;
+        //
+        // rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
+        //
+        // rustbox.print(1,
+        //               3,
+        //               rustbox::RB_NORMAL,
+        //               Color::White,
+        //               Color::Black,
+        //               &format!("before parse => {}", Local::now()));
+        //
+        // let postid = "6360604";
+        // let page = 1;
+        // let path1 = format!("data/html/{postid}/show_{page}.html",
+        //                     postid = postid,
+        //                     page = page);
+        // let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
+        //
+        // let replies_data = document.select(".repliers tr[userid][username]")
+        //                            .unwrap()
+        //                            .collect::<Vec<_>>();
+        //
+        //
+        // let mut ss = String::new();
+        // for (index, tr) in replies_data.iter().enumerate() {
+        //     let tr_attrs = (&tr.attributes).borrow();
+        //     let userid = tr_attrs.get("userid").unwrap();
+        //     let username = tr_attrs.get("username").unwrap();
+        //
+        //     let n1 = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
+        //                         .next().unwrap() // first
+        //
+        //                         ; // text
+        //     let path2 = format!("data/{postid}/show_{page}_{replyindex}",
+        //                         postid = postid,
+        //                         page = page,
+        //                         replyindex = index);
+        //     let content = n1.as_node().serialize_to_file(path2);
+        //     let tmp_str = format!("[{:0>2}]={:?}\n", index, content);
+        //
+        //     ss.push_str(&tmp_str);
+        //
+        //     rustbox.print(1,
+        //                   index + 5,
+        //                   rustbox::RB_NORMAL,
+        //                   Color::White,
+        //                   Color::Black,
+        //                   &tmp_str);
+        //
+        //
+        // }
+        //
+        // // let mut f = File::create("foo.txt").unwrap();
+        // // // let uu :Vec<u8> = ss.chars;
+        // // f.write_all(ss.as_bytes());
+        //
+        // rustbox.print(1,
+        //               4,
+        //               rustbox::RB_NORMAL,
+        //               Color::White,
+        //               Color::Black,
+        //               &format!("after parse => {}", Local::now()));
 
 
         // match state {
