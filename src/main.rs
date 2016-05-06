@@ -104,35 +104,9 @@ fn main() {
                                    .unwrap()
                                    .collect::<Vec<_>>();
 
-        let replies = replies_data.iter().enumerate().map(|(index, tr)| {
+        let reply_items = parse_show_reply_items(&path1);
 
-            let tr_attrs = (&tr.attributes).borrow();
-            let userid = tr_attrs.get("userid").unwrap();
-            let username = tr_attrs.get("username").unwrap();
-
-            let n1 = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
-                                .next().unwrap() // first
-
-                                ; // text
-            // let path2 = format!("data/{postid}/show_{page}_{replyindex}",
-            //                     postid = postid,
-            //                     page = page,
-            //                     replyindex = index);
-
-            let mut buff = Cursor::new(Vec::new());
-            let serialize_result = n1.as_node().serialize(&mut buff);
-            let vec = buff.into_inner();
-            let content = String::from_utf8(vec).unwrap();
-
-            ShowReplyItem {
-                userid: String::from(userid),
-                username: String::from(username),
-                content: content,
-                published_at: String::from("")
-            }
-        });
-
-        for (index, item) in replies.enumerate() {
+        for (index, item) in reply_items.iter().enumerate() {
             rustbox.print(1,
                           index + 5,
                           rustbox::RB_NORMAL,
@@ -331,6 +305,36 @@ fn main() {
             _ => {}
         }
     }
+}
+
+fn parse_show_reply_items(path: &str) -> Vec<ShowReplyItem> {
+    let document = kuchiki::parse_html().from_utf8().from_file(path).unwrap();
+
+    let replies_data = document.select(".repliers tr[userid][username]")
+                               .unwrap()
+                               .collect::<Vec<_>>();
+
+    replies_data.iter().enumerate().map(|(index, tr)| {
+
+        let tr_attrs = (&tr.attributes).borrow();
+        let userid = tr_attrs.get("userid").unwrap();
+        let username = tr_attrs.get("username").unwrap();
+
+        let content_elm = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
+                            .next().unwrap(); // first
+
+        let mut buff = Cursor::new(Vec::new());
+        let serialize_result = content_elm.as_node().serialize(&mut buff);
+        let vec = buff.into_inner();
+        let content = String::from_utf8(vec).unwrap();
+
+        ShowReplyItem {
+            userid: String::from(userid),
+            username: String::from(username),
+            content: content,
+            published_at: String::from("")
+        }
+    }).collect::<Vec<_>>()
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
