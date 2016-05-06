@@ -34,7 +34,7 @@ pub struct ShowItem {
     pub replies: Vec<ShowReplyItem>
 }
 
-#[derive(RustcDecodable)]
+#[derive(RustcDecodable, Debug)]
 pub struct ShowReplyItem {
     pub userid: String,
     pub username: String,

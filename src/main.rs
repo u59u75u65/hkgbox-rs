@@ -17,6 +17,7 @@ use chrono::*;
 use hkg::utility::cache;
 use hkg::model::ListTopicItem;
 use hkg::model::ShowItem;
+use hkg::model::ShowReplyItem;
 use hkg::model::UrlQueryItem;
 
 use std::path::Path;
@@ -103,9 +104,8 @@ fn main() {
                                    .unwrap()
                                    .collect::<Vec<_>>();
 
+        let replies = replies_data.iter().enumerate().map(|(index, tr)| {
 
-        let mut ss = String::new();
-        for (index, tr) in replies_data.iter().enumerate() {
             let tr_attrs = (&tr.attributes).borrow();
             let userid = tr_attrs.get("userid").unwrap();
             let username = tr_attrs.get("username").unwrap();
@@ -122,20 +122,23 @@ fn main() {
             let mut buff = Cursor::new(Vec::new());
             let serialize_result = n1.as_node().serialize(&mut buff);
             let vec = buff.into_inner();
-            let s = String::from_utf8(vec).unwrap();
+            let content = String::from_utf8(vec).unwrap();
 
-            let tmp_str = format!("[{:0>2}]={}\n", index, s);
+            ShowReplyItem {
+                userid: String::from(userid),
+                username: String::from(username),
+                content: content,
+                published_at: String::from("")
+            }
+        });
 
-            ss.push_str(&tmp_str);
-
+        for (index, item) in replies.enumerate() {
             rustbox.print(1,
                           index + 5,
                           rustbox::RB_NORMAL,
                           Color::White,
                           Color::Black,
-                          &tmp_str);
-
-
+                          &format!("{:<2}={:?}", index, item));
         }
 
         // let mut f = File::create("foo.txt").unwrap();
