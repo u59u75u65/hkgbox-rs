@@ -98,11 +98,6 @@ fn main() {
         let path1 = format!("data/html/{postid}/show_{page}.html",
                             postid = postid,
                             page = page);
-        let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
-
-        let replies_data = document.select(".repliers tr[userid][username]")
-                                   .unwrap()
-                                   .collect::<Vec<_>>();
 
         let reply_items = parse_show_reply_items(&path1);
 
@@ -328,11 +323,13 @@ fn parse_show_reply_items(path: &str) -> Vec<ShowReplyItem> {
         let vec = buff.into_inner();
         let content = String::from_utf8(vec).unwrap();
 
+        let datatime = tr.as_node().select(".repliers_right span").unwrap().last().unwrap().text_contents();
+
         ShowReplyItem {
             userid: String::from(userid),
             username: String::from(username),
             content: content,
-            published_at: String::from("")
+            published_at: String::from(datatime)
         }
     }).collect::<Vec<_>>()
 }
