@@ -5,6 +5,7 @@ extern crate chrono;
 extern crate kuchiki;
 
 use kuchiki::traits::*;
+use kuchiki::NodeRef;
 
 use std::default::Default;
 
@@ -99,7 +100,9 @@ fn main() {
                             postid = postid,
                             page = page);
 
-        let reply_items = parse_show_reply_items(&path1);
+        let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
+
+        let reply_items = parse_show_reply_items(&document);
 
         for (index, item) in reply_items.iter().enumerate() {
             rustbox.print(1,
@@ -302,8 +305,7 @@ fn main() {
     }
 }
 
-fn parse_show_reply_items(path: &str) -> Vec<ShowReplyItem> {
-    let document = kuchiki::parse_html().from_utf8().from_file(path).unwrap();
+fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
 
     let replies_data = document.select(".repliers tr[userid][username]")
                                .unwrap()
