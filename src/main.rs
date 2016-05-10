@@ -307,24 +307,27 @@ fn main() {
 }
 
 fn parse_show_item(document: &NodeRef) -> ShowItem {
-    let repliers_tr = document.select(".repliers tr").unwrap().next().unwrap();
-    let repliers_header = repliers_tr.as_node().select(".repliers_header")
-                                  .unwrap()
-                                  .last().unwrap();
-    let divs = repliers_header.as_node().select("div").unwrap().collect::<Vec<_>>();
 
-    let topic_data = divs.iter().enumerate().map(|(index, div)|
-    {
-        let s_trimmed = div.text_contents().trim().to_string();
-        if index == 1 {
-            let re = Regex::new(r"^(?P<count>\d+)個回應$").unwrap();
-            let cap = re.captures(&s_trimmed).unwrap();
-            // String::from(cap.name("count").unwrap_or("0"))
-            cap.name("count").unwrap_or("0").to_string()
-        } else {
-            s_trimmed
-        }
-    }).collect::<Vec<_>>();
+    let topic_data = {
+        let repliers_tr = document.select(".repliers tr").unwrap().next().unwrap();
+        let repliers_header = repliers_tr.as_node().select(".repliers_header")
+                                      .unwrap()
+                                      .last().unwrap();
+        let divs = repliers_header.as_node().select("div").unwrap().collect::<Vec<_>>();
+
+        divs.iter().enumerate().map(|(index, div)|
+        {
+            let s_trimmed = div.text_contents().trim().to_string();
+            if index == 1 {
+                let re = Regex::new(r"^(?P<count>\d+)個回應$").unwrap();
+                let cap = re.captures(&s_trimmed).unwrap();
+                // String::from(cap.name("count").unwrap_or("0"))
+                cap.name("count").unwrap_or("0").to_string()
+            } else {
+                s_trimmed
+            }
+        }).collect::<Vec<_>>()
+    };
 
     if topic_data.len() <2 { panic!("length of topic_data is invalid.") }
 
