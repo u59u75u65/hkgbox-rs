@@ -118,6 +118,15 @@ fn main() {
                                si.page,
                                si.max_page));
 
+       for (index, item) in si.replies.iter().enumerate() {
+           rustbox.print(1,
+                         index + 6,
+                         rustbox::RB_NORMAL,
+                         Color::White,
+                         Color::Black,
+                         &format!("{:<2}={:?}", index, item));
+       }
+
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
         // f.write_all(ss.as_bytes());
@@ -364,9 +373,12 @@ fn parse_show_item(document: &NodeRef) -> ShowItem {
         (page, max_page)
     };
 
+
+    let replies = parse_show_reply_items(&document);
+
     ShowItem {
         url_query: UrlQueryItem { message: String::from("") },
-        replies: vec![],
+        replies: replies,
         page: page,
         max_page: max_page,
         reply_count: String::from(reply_count),
