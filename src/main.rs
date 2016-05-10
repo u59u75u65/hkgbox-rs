@@ -311,14 +311,14 @@ fn main() {
 
 fn parse_show_item(document: &NodeRef) -> ShowItem {
 
-    let topic_data = {
+    let (title, reply_count) = {
         let repliers_tr = document.select(".repliers tr").unwrap().next().unwrap();
         let repliers_header = repliers_tr.as_node().select(".repliers_header")
                                       .unwrap()
                                       .last().unwrap();
         let divs = repliers_header.as_node().select("div").unwrap().collect::<Vec<_>>();
 
-        divs.iter().enumerate().map(|(index, div)|
+        let topic_data = divs.iter().enumerate().map(|(index, div)|
         {
             let s_trimmed = div.text_contents().trim().to_string();
             if index == 1 {
@@ -329,25 +329,35 @@ fn parse_show_item(document: &NodeRef) -> ShowItem {
             } else {
                 s_trimmed
             }
-        }).collect::<Vec<_>>()
+        }).collect::<Vec<_>>();
+
+        if topic_data.len() <2 { panic!("length of topic_data is invalid.") }
+
+        (
+            topic_data.get(0).unwrap().to_string(), // return as title
+            topic_data.get(1).unwrap().to_string() // return as reply_count
+         )
     };
 
-    if topic_data.len() <2 { panic!("length of topic_data is invalid.") }
+    let (page, max_page) = {
 
-    let page_select = document.select("select[name='page']").unwrap().last().unwrap();
-    let page_str = page_select.as_node().select("option[selected='selected']").unwrap().next().unwrap();
-    let max_page_str = page_select.as_node().select("option").unwrap().last().unwrap();
+        let page_select = document.select("select[name='page']").unwrap().last().unwrap();
+        let page_str = page_select.as_node().select("option[selected='selected']").unwrap().next().unwrap();
+        let max_page_str = page_select.as_node().select("option").unwrap().last().unwrap();
 
-    let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
-    let max_page = max_page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
+        let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
+        let max_page = max_page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
+
+        (page, max_page)
+    };
 
     ShowItem {
         url_query: UrlQueryItem { message: String::from("") },
         replies: vec![],
         page: page,
         max_page: max_page,
-        reply_count: String::from(topic_data.get(1).unwrap().to_string()),
-        title: String::from(topic_data.get(0).unwrap().to_string())
+        reply_count: String::from(reply_count),
+        title: String::from(title)
     }
 }
 
