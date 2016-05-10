@@ -3,6 +3,7 @@ extern crate rustbox;
 extern crate rustc_serialize;
 extern crate chrono;
 extern crate kuchiki;
+extern crate regex;
 
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
@@ -29,6 +30,8 @@ use std::io::{Error, ErrorKind};
 
 use std::io::Cursor;
 use std::io::BufReader;
+
+use regex::Regex;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -102,16 +105,14 @@ fn main() {
 
         let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
 
-        let reply_items = parse_show_reply_items(&document);
+        let si = parse_show_item(&document);
 
-        for (index, item) in reply_items.iter().enumerate() {
-            rustbox.print(1,
-                          index + 5,
-                          rustbox::RB_NORMAL,
-                          Color::White,
-                          Color::Black,
-                          &format!("{:<2}={:?}", index, item));
-        }
+        rustbox.print(1,
+                      5,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &format!("title:{} reploy count: {}", si.title, si.reply_count));
 
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
@@ -302,6 +303,38 @@ fn main() {
             Err(e) => panic!("{}", e),
             _ => {}
         }
+    }
+}
+
+fn parse_show_item(document: &NodeRef) -> ShowItem {
+    let repliers_tr = document.select(".repliers tr").unwrap().next().unwrap();
+    let repliers_header = repliers_tr.as_node().select(".repliers_header")
+                                  .unwrap()
+                                  .last().unwrap();
+    let divs = repliers_header.as_node().select("div").unwrap().collect::<Vec<_>>();
+
+    let topic_data = divs.iter().enumerate().map(|(index, div)|
+    {
+        let s_trimmed = div.text_contents().trim().to_string();
+        if index == 1 {
+            let re = Regex::new(r"^(?P<count>\d+)個回應$").unwrap();
+            let cap = re.captures(&s_trimmed).unwrap();
+            // String::from(cap.name("count").unwrap_or("0"))
+            cap.name("count").unwrap_or("0").to_string()
+        } else {
+            s_trimmed
+        }
+    }).collect::<Vec<_>>();
+
+    if topic_data.len() <2 { panic!("length of topic_data is invalid.") }
+
+    ShowItem {
+        url_query: UrlQueryItem { message: String::from("") },
+        replies: vec![],
+        page: 0,
+        max_page: 0,
+        reply_count: String::from(topic_data.get(1).unwrap().to_string()),
+        title: String::from(topic_data.get(0).unwrap().to_string())
     }
 }
 
