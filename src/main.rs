@@ -113,9 +113,10 @@ fn main() {
                       Color::White,
                       Color::Black,
                       &format!("title:{} reploy count: {} page: {} max_page: {}",
-                      si.title, si.reply_count,
-                      si.page, si.max_page
-                  ));
+                               si.title,
+                               si.reply_count,
+                               si.page,
+                               si.max_page));
 
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
@@ -313,40 +314,52 @@ fn parse_show_item(document: &NodeRef) -> ShowItem {
 
     let (title, reply_count) = {
         let repliers_tr = document.select(".repliers tr").unwrap().next().unwrap();
-        let repliers_header = repliers_tr.as_node().select(".repliers_header")
-                                      .unwrap()
-                                      .last().unwrap();
+        let repliers_header = repliers_tr.as_node()
+                                         .select(".repliers_header")
+                                         .unwrap()
+                                         .last()
+                                         .unwrap();
         let divs = repliers_header.as_node().select("div").unwrap().collect::<Vec<_>>();
 
-        let topic_data = divs.iter().enumerate().map(|(index, div)|
-        {
-            let s_trimmed = div.text_contents().trim().to_string();
-            if index == 1 {
-                let re = Regex::new(r"^(?P<count>\d+)個回應$").unwrap();
-                let cap = re.captures(&s_trimmed).unwrap();
-                // String::from(cap.name("count").unwrap_or("0"))
-                cap.name("count").unwrap_or("0").to_string()
-            } else {
-                s_trimmed
-            }
-        }).collect::<Vec<_>>();
+        let topic_data = divs.iter()
+                             .enumerate()
+                             .map(|(index, div)| {
+                                 let s_trimmed = div.text_contents().trim().to_string();
+                                 if index == 1 {
+                                     let re = Regex::new(r"^(?P<count>\d+)個回應$").unwrap();
+                                     let cap = re.captures(&s_trimmed).unwrap();
+                                     // String::from(cap.name("count").unwrap_or("0"))
+                                     cap.name("count").unwrap_or("0").to_string()
+                                 } else {
+                                     s_trimmed
+                                 }
+                             })
+                             .collect::<Vec<_>>();
 
-        if topic_data.len() <2 { panic!("length of topic_data is invalid.") }
+        if topic_data.len() < 2 {
+            panic!("length of topic_data is invalid.")
+        }
 
-        (
-            topic_data.get(0).unwrap().to_string(), // return as title
-            topic_data.get(1).unwrap().to_string() // return as reply_count
-         )
+        (topic_data.get(0).unwrap().to_string(), // return as title
+         topic_data.get(1).unwrap().to_string() /* return as reply_count */)
     };
 
     let (page, max_page) = {
 
         let page_select = document.select("select[name='page']").unwrap().last().unwrap();
-        let page_str = page_select.as_node().select("option[selected='selected']").unwrap().next().unwrap();
+        let page_str = page_select.as_node()
+                                  .select("option[selected='selected']")
+                                  .unwrap()
+                                  .next()
+                                  .unwrap();
         let max_page_str = page_select.as_node().select("option").unwrap().last().unwrap();
 
         let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
-        let max_page = max_page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
+        let max_page = max_page_str.text_contents()
+                                   .trim()
+                                   .to_string()
+                                   .parse::<usize>()
+                                   .unwrap_or(0);
 
         (page, max_page)
     };
@@ -357,7 +370,7 @@ fn parse_show_item(document: &NodeRef) -> ShowItem {
         page: page,
         max_page: max_page,
         reply_count: String::from(reply_count),
-        title: String::from(title)
+        title: String::from(title),
     }
 }
 
@@ -367,29 +380,40 @@ fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
                                .unwrap()
                                .collect::<Vec<_>>();
 
-    replies_data.iter().enumerate().map(|(index, tr)| {
+    replies_data.iter()
+                .enumerate()
+                .map(|(index, tr)| {
 
-        let tr_attrs = (&tr.attributes).borrow();
-        let userid = tr_attrs.get("userid").unwrap();
-        let username = tr_attrs.get("username").unwrap();
+                    let tr_attrs = (&tr.attributes).borrow();
+                    let userid = tr_attrs.get("userid").unwrap();
+                    let username = tr_attrs.get("username").unwrap();
 
-        let content_elm = tr.as_node().select(".repliers_right .ContentGrid").unwrap()
-                            .next().unwrap(); // first
+                    let content_elm = tr.as_node()
+                                        .select(".repliers_right .ContentGrid")
+                                        .unwrap()
+                                        .next()
+                                        .unwrap(); // first
 
-        let mut buff = Cursor::new(Vec::new());
-        let serialize_result = content_elm.as_node().serialize(&mut buff);
-        let vec = buff.into_inner();
-        let content = String::from_utf8(vec).unwrap();
+                    let mut buff = Cursor::new(Vec::new());
+                    let serialize_result = content_elm.as_node().serialize(&mut buff);
+                    let vec = buff.into_inner();
+                    let content = String::from_utf8(vec).unwrap();
 
-        let datatime = tr.as_node().select(".repliers_right span").unwrap().last().unwrap().text_contents();
+                    let datatime = tr.as_node()
+                                     .select(".repliers_right span")
+                                     .unwrap()
+                                     .last()
+                                     .unwrap()
+                                     .text_contents();
 
-        ShowReplyItem {
-            userid: String::from(userid),
-            username: String::from(username),
-            content: content,
-            published_at: String::from(datatime)
-        }
-    }).collect::<Vec<_>>()
+                    ShowReplyItem {
+                        userid: String::from(userid),
+                        username: String::from(username),
+                        content: String::from(content),
+                        published_at: String::from(datatime),
+                    }
+                })
+                .collect::<Vec<_>>()
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
