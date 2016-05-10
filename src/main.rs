@@ -112,7 +112,10 @@ fn main() {
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("title:{} reploy count: {}", si.title, si.reply_count));
+                      &format!("title:{} reploy count: {} page: {} max_page: {}",
+                      si.title, si.reply_count,
+                      si.page, si.max_page
+                  ));
 
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
@@ -331,11 +334,18 @@ fn parse_show_item(document: &NodeRef) -> ShowItem {
 
     if topic_data.len() <2 { panic!("length of topic_data is invalid.") }
 
+    let page_select = document.select("select[name='page']").unwrap().last().unwrap();
+    let page_str = page_select.as_node().select("option[selected='selected']").unwrap().next().unwrap();
+    let max_page_str = page_select.as_node().select("option").unwrap().last().unwrap();
+
+    let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
+    let max_page = max_page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
+
     ShowItem {
         url_query: UrlQueryItem { message: String::from("") },
         replies: vec![],
-        page: 0,
-        max_page: 0,
+        page: page,
+        max_page: max_page,
         reply_count: String::from(topic_data.get(1).unwrap().to_string()),
         title: String::from(topic_data.get(0).unwrap().to_string())
     }
