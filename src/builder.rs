@@ -16,11 +16,11 @@ use model::UrlQueryItem;
 
 use regex::Regex;
 
-pub struct Parser { }
+pub struct Builder { }
 
-impl Parser {
+impl Builder {
     pub fn new() -> Self {
-        Parser {}
+        Builder {}
     }
 
     pub fn show_item(&mut self, document: &NodeRef) -> ShowItem {

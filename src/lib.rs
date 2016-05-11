@@ -6,5 +6,5 @@ extern crate regex;
 
 pub mod utility;
 pub mod model;
-pub mod parser;
+pub mod builder;
 pub mod screen;

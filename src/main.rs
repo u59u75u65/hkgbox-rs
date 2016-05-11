@@ -75,7 +75,7 @@ fn main() {
     let mut list = hkg::screen::list::List::new(&rustbox);
     let mut show = hkg::screen::show::Show::new(&rustbox);
 
-    let mut parser = hkg::parser::Parser::new();
+    let mut builder = hkg::builder::Builder::new();
     loop {
 
         // show UI
@@ -103,7 +103,7 @@ fn main() {
 
         let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
 
-        let si = parser.show_item(&document);
+        let si = builder.show_item(&document);
 
         rustbox.print(1,
                       5,
