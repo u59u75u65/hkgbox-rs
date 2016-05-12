@@ -75,7 +75,6 @@ fn main() {
     let mut list = hkg::screen::list::List::new(&rustbox);
     let mut show = hkg::screen::show::Show::new(&rustbox);
 
-    let mut builder = hkg::builder::Builder::new();
     loop {
 
         // show UI
@@ -84,47 +83,7 @@ fn main() {
             prev_state = state;
         }
 
-        let url = &collection[1].title.url;
-
-        rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
-
-        rustbox.print(1,
-                      3,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("before parse => {}", Local::now()));
-
-        let postid = "6360604";
-        let page = 1;
-        let path1 = format!("data/html/{postid}/show_{page}.html",
-                            postid = postid,
-                            page = page);
-
-        let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
-
-        let si = builder.show_item(&document, &url);
-
-        rustbox.print(1,
-                      5,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("url_query->message: {} title:{} reploy count: {} page: {} max_page: {}",
-                               si.url_query.message,
-                               si.title,
-                               si.reply_count,
-                               si.page,
-                               si.max_page));
-
-       for (index, item) in si.replies.iter().enumerate() {
-           rustbox.print(1,
-                         index + 7,
-                         rustbox::RB_NORMAL,
-                         Color::White,
-                         Color::Black,
-                         &format!("{:<2}={:?}", index, item));
-       }
+        show_item_build_example(&rustbox, &collection);
 
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
@@ -349,6 +308,54 @@ fn format_status(status: String, w: usize, s: &str) -> String {
     }
 }
 
+fn show_item_build_example(rustbox: &rustbox::RustBox, collection: &Vec<ListTopicItem>) {
+
+    let mut builder = hkg::builder::Builder::new();
+
+    let url = &collection[1].title.url;
+
+    rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
+
+    rustbox.print(1,
+                  3,
+                  rustbox::RB_NORMAL,
+                  Color::White,
+                  Color::Black,
+                  &format!("before parse => {}", Local::now()));
+
+    let postid = "6360604";
+    let page = 1;
+    let path1 = format!("data/html/{postid}/show_{page}.html",
+                        postid = postid,
+                        page = page);
+
+    let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
+
+    let si = builder.show_item(&document, &url);
+
+    rustbox.print(1,
+                  5,
+                  rustbox::RB_NORMAL,
+                  Color::White,
+                  Color::Black,
+                  &format!("url_query->message: {} title:{} reploy count: {} page: {} max_page: \
+                            {}",
+                           si.url_query.message,
+                           si.title,
+                           si.reply_count,
+                           si.page,
+                           si.max_page));
+
+    for (index, item) in si.replies.iter().enumerate() {
+        rustbox.print(1,
+                      index + 7,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &format!("{:<2}={:?}", index, item));
+    }
+
+}
 
 // for (jndex, elm) in tr.as_node().select(".repliers_right .ContentGrid").unwrap().enumerate() {
 //     let content = elm.as_node().text_contents();
