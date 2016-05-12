@@ -83,7 +83,6 @@ fn main() {
             prev_state = state;
         }
 
-        show_item_build_example(&rustbox, &collection);
 
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
@@ -97,14 +96,14 @@ fn main() {
                       &format!("after parse => {}", Local::now()));
 
 
-        // match state {
-        //     Status::List => {
-        //         list.print(&title, &collection);
-        //     }
-        //     Status::Show => {
-        //         show.print(&title, &show_item);
-        //     }
-        // }
+        match state {
+            Status::List => {
+                list.print(&title, &collection);
+            }
+            Status::Show => {
+                show.print(&title, &show_item);
+            }
+        }
 
         print_status(&rustbox, &status);
 
