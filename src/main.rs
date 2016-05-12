@@ -310,51 +310,64 @@ fn format_status(status: String, w: usize, s: &str) -> String {
 
 fn show_item_build_example(rustbox: &rustbox::RustBox, collection: &Vec<ListTopicItem>) {
 
+    rustbox.print(1,
+                  1,
+                  rustbox::RB_NORMAL,
+                  Color::White,
+                  Color::Black,
+                  &format!("before parse => {}", Local::now()));
+
     let mut builder = hkg::builder::Builder::new();
 
     let url = &collection[1].title.url;
-
     rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
+
+    let uqi = builder.url_query_item(&url);
+    let postid = "6360604"; //uqi.message;
+    let page = 1;
+    let path = format!("data/html/{postid}/show_{page}.html",
+                       postid = postid,
+                       page = page);
 
     rustbox.print(1,
                   3,
                   rustbox::RB_NORMAL,
                   Color::White,
                   Color::Black,
-                  &format!("before parse => {}", Local::now()));
+                  &format!("path: {}", path));
 
-    let postid = "6360604";
-    let page = 1;
-    let path1 = format!("data/html/{postid}/show_{page}.html",
-                        postid = postid,
-                        page = page);
+    let show_item = match kuchiki::parse_html().from_utf8().from_file(&path) {
+        Ok(document) => Some(builder.show_item(&document, &url)),
+        Err(e) => None,
+    };
 
-    let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
+    match show_item {
+        Some(si) => {
 
-    let si = builder.show_item(&document, &url);
+            rustbox.print(1,
+                          5,
+                          rustbox::RB_NORMAL,
+                          Color::White,
+                          Color::Black,
+                          &format!("url_query->message: {} title:{} reploy count: {} page: {} \
+                                    max_page: {}",
+                                   si.url_query.message,
+                                   si.title,
+                                   si.reply_count,
+                                   si.page,
+                                   si.max_page));
 
-    rustbox.print(1,
-                  5,
-                  rustbox::RB_NORMAL,
-                  Color::White,
-                  Color::Black,
-                  &format!("url_query->message: {} title:{} reploy count: {} page: {} max_page: \
-                            {}",
-                           si.url_query.message,
-                           si.title,
-                           si.reply_count,
-                           si.page,
-                           si.max_page));
-
-    for (index, item) in si.replies.iter().enumerate() {
-        rustbox.print(1,
-                      index + 7,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("{:<2}={:?}", index, item));
+            for (index, item) in si.replies.iter().enumerate() {
+                rustbox.print(1,
+                              index + 7,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &format!("{:<2}={:?}", index, item));
+            }
+        }
+        _ => {}
     }
-
 }
 
 // for (jndex, elm) in tr.as_node().select(".repliers_right .ContentGrid").unwrap().enumerate() {

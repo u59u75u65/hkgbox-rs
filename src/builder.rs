@@ -30,6 +30,9 @@ impl Builder {
         parse_show_item(&document, &url)
     }
 
+    pub fn url_query_item(&mut self, url: &str) -> UrlQueryItem {
+        parse_url_query_item(&url)
+    }
 }
 
 fn parse_show_item(document: &NodeRef, url: &str) -> ShowItem {
