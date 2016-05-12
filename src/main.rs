@@ -103,28 +103,29 @@ fn main() {
 
         let document = kuchiki::parse_html().from_utf8().from_file(&path1).unwrap();
 
-        let si = builder.show_item(&document);
+        let si = builder.show_item(&document, &url);
 
         rustbox.print(1,
                       5,
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("title:{} reploy count: {} page: {} max_page: {}",
+                      &format!("url_query->message: {} title:{} reploy count: {} page: {} max_page: {}",
+                               si.url_query.message,
                                si.title,
                                si.reply_count,
                                si.page,
                                si.max_page));
 
-       let uqi = builder.url_query_item(&url);
-       rustbox.print(1,
-                     6,
-                     rustbox::RB_NORMAL,
-                     Color::White,
-                     Color::Black,
-                     &format!("url->message: {}",
-                             uqi.message));
-                             
+       for (index, item) in si.replies.iter().enumerate() {
+           rustbox.print(1,
+                         index + 7,
+                         rustbox::RB_NORMAL,
+                         Color::White,
+                         Color::Black,
+                         &format!("{:<2}={:?}", index, item));
+       }
+
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
         // f.write_all(ss.as_bytes());

@@ -26,16 +26,15 @@ impl Builder {
         Builder {}
     }
 
-    pub fn show_item(&mut self, document: &NodeRef) -> ShowItem {
-        parse_show_item(&document)
+    pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> ShowItem {
+        parse_show_item(&document, &url)
     }
 
-    pub fn url_query_item(&mut self, url: &str) -> UrlQueryItem {
-        parse_url_query_item(&url)
-    }
 }
 
-fn parse_show_item(document: &NodeRef) -> ShowItem {
+fn parse_show_item(document: &NodeRef, url: &str) -> ShowItem {
+
+    let url_query = parse_url_query_item(&url);
 
     let (title, reply_count) = {
         let repliers_tr = document.select(".repliers tr").unwrap().next().unwrap();
@@ -89,11 +88,10 @@ fn parse_show_item(document: &NodeRef) -> ShowItem {
         (page, max_page)
     };
 
-
     let replies = parse_show_reply_items(&document);
 
     ShowItem {
-        url_query: UrlQueryItem { message: String::from("") },
+        url_query: url_query,
         replies: replies,
         page: page,
         max_page: max_page,
