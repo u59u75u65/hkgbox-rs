@@ -2,6 +2,7 @@ extern crate rustc_serialize;
 extern crate chrono;
 extern crate kuchiki;
 extern crate regex;
+extern crate url;
 
 use std::io::Cursor;
 use std::io::BufReader;
@@ -15,6 +16,8 @@ use model::ShowReplyItem;
 use model::UrlQueryItem;
 
 use regex::Regex;
+use url::Url;
+use std::collections::HashMap;
 
 pub struct Builder { }
 
@@ -25,6 +28,10 @@ impl Builder {
 
     pub fn show_item(&mut self, document: &NodeRef) -> ShowItem {
         parse_show_item(&document)
+    }
+
+    pub fn url_query_item(&mut self, url: &str) -> UrlQueryItem {
+        parse_url_query_item(&url)
     }
 }
 
@@ -135,4 +142,35 @@ fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
                     }
                 })
                 .collect::<Vec<_>>()
+}
+
+fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
+    let url = Url::parse(&url_str).unwrap();
+    let query = url.query().unwrap();
+    let re = Regex::new(r"(\\?|&)(?P<key>[^&=]+)=(?P<value>[^&]+)").unwrap();
+
+    let (channel, message) = {
+
+        let mut map = HashMap::new();
+
+        for cap in re.captures_iter(query) {
+            let key = cap.name("key").unwrap_or("").to_string();
+            let value = cap.name("value").unwrap_or("").to_string();
+            map.entry(key).or_insert(value);
+        }
+
+        if map.len() < 2 {
+            panic!("length of map is invalid.")
+        }
+
+        (
+            map.get("type").unwrap().to_string(),
+            map.get("message").unwrap().to_string()
+        )
+    };
+
+    UrlQueryItem {
+        message: String::from(message)
+    }
+
 }
