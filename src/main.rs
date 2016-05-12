@@ -75,6 +75,8 @@ fn main() {
     let mut list = hkg::screen::list::List::new(&rustbox);
     let mut show = hkg::screen::show::Show::new(&rustbox);
 
+    let mut builder = hkg::builder::Builder::new();
+
     loop {
 
         // show UI
@@ -232,23 +234,47 @@ fn main() {
                                 if index > 0 {
                                     let topic_item = &collection[index - 1];
 
+                                    let posturl = &topic_item.title.url;
                                     let postid = &topic_item.title.url_query.message;
 
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = postid,
-                                                                 page = 1);
+                                    let show_html_file_path = format!("data/html/{postid}/show_{page}.\
+                                                                       html",
+                                                                      postid = postid,
+                                                                      page = 1);
 
-                                    if Path::new(&show_file_path).exists() {
-                                        show_file = cache::readfile(String::from(show_file_path));
-                                        show_item = json::decode(&show_file).unwrap();
-                                        show.resetY();
-                                        hkg::screen::common::clear(&rustbox);
-                                        state = Status::Show;
+                                    if Path::new(&show_html_file_path).exists() {
+
+                                        let show_item_wrap =
+                                            match kuchiki::parse_html()
+                                                      .from_utf8()
+                                                      .from_file(&show_html_file_path) {
+                                                Ok(document) => {
+                                                    Some(builder.show_item(&document, &posturl))
+                                                }
+                                                Err(e) => None,
+                                            };
+
+                                        match show_item_wrap {
+                                            Some(si) => {
+                                                show_item = si;
+                                                show.resetY();
+                                                hkg::screen::common::clear(&rustbox);
+                                                state = Status::Show;
+                                            }
+                                            _ => {
+                                                status = format_status(status,
+                                                                       w,
+                                                                       &format!(" parse {} \
+                                                                                 failed",
+                                                                                postid));
+                                            }
+                                        }
+
                                     } else {
                                         let w = rustbox.width();
                                         status = format_status(status,
                                                                w,
-                                                               &format!(" postid {} not found.",
+                                                               &format!(" post {} not found.",
                                                                         postid));
                                     }
                                 }
