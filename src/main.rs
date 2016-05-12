@@ -116,15 +116,15 @@ fn main() {
                                si.page,
                                si.max_page));
 
-       for (index, item) in si.replies.iter().enumerate() {
-           rustbox.print(1,
-                         index + 6,
-                         rustbox::RB_NORMAL,
-                         Color::White,
-                         Color::Black,
-                         &format!("{:<2}={:?}", index, item));
-       }
-
+       let uqi = builder.url_query_item(&url);
+       rustbox.print(1,
+                     6,
+                     rustbox::RB_NORMAL,
+                     Color::White,
+                     Color::Black,
+                     &format!("url->message: {}",
+                             uqi.message));
+                             
         // let mut f = File::create("foo.txt").unwrap();
         // // let uu :Vec<u8> = ss.chars;
         // f.write_all(ss.as_bytes());
