@@ -83,33 +83,10 @@ fn main() {
     let mut builder = hkg::builder::Builder::new();
 
     let client = Client::new();
-    // let mut resp : Result<hyper::client::response::Response,  hyper::error::Error>;
 
-    // let mut resp = hyper::client::response::Response {
-    //     status: hyper::status::StatusCode::NotImplemented,
-    //     headers: hyper::header::Headers::new(),
-    //     version: hyper::version::HttpVersion::Http09,
-    //     url: hyper::Url::parse("localhost").unwrap(),
-    // };
+    let mut download_map : HashMap<String, String> = HashMap::new();
 
-    // let mut resp = hyper::client::response::Response::with_message(
-    //     hyper::Url::parse("localhost").unwrap(),
-    //     Box::new(
-    //         hyper::http::h1::Http11Message {
-    //              method: Some(hyper::method::Method::Options),
-    //               stream: hyper::http::h1::Stream {}
-    //           }
-    //     )
-    // );
-
-    // let mut download_map = HashMap::new();
-
-    let url = String::from("https://www.yahoo.com.hk/");
-
-    // let result = match download_page(&client, &url) {
-    //     Ok(s) => s,
-    //     Err(e) => format!("{:?}", e)
-    // };
+    let url = String::from("http://localhost:3000/");
 
     loop {
 
@@ -119,34 +96,33 @@ fn main() {
             prev_state = state;
         }
 
-
-        // let mut f = File::create("foo.txt").unwrap();
-        // // let uu :Vec<u8> = ss.chars;
-        // f.write_all(ss.as_bytes());
-
-        // let mut resp = client.get(&collection[3].title.url).send().unwrap();
-        // let mut resp_ss = String::new();
-        // &resp.read_to_string(&mut resp_ss).unwrap();
-
         // let url = &collection[1].title.url;
-        let url2 = String::from("https://www.google.com.hk/");
 
         rustbox.print(1,
                       3,
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("request url: {}", url2));
-        //
-        // download_map.entry(&url2).or_insert("Hello World");
-        //
-        // rustbox.print(1,
-        //               5,
-        //               rustbox::RB_NORMAL,
-        //               Color::White,
-        //               Color::Black,
-        //               &format!("request result: {}", download_map.get(&url2).unwrap().len()));
+                      &format!("request url: {}", url));
 
+        let fetch_page = |map : &mut HashMap<String, String>, url: &str| -> String {
+            map.entry(String::from(url)).or_insert_with(|| {
+                match download_page(&client, &String::from(url)) {
+                    Ok(s) => s,
+                    Err(e) => format!("{:?}", e),
+                }
+            }).clone()
+        };
+
+        let html = fetch_page(&mut download_map, &url);
+
+        rustbox.print(1,
+                      5,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &format!("request result: {}",
+                               html.len()));
 
         // match state {
         //     Status::List => {
