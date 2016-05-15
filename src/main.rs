@@ -33,6 +33,8 @@ use std::io::BufReader;
 
 use hyper::Client;
 
+use std::collections::HashMap;
+
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
     List,
@@ -81,6 +83,34 @@ fn main() {
     let mut builder = hkg::builder::Builder::new();
 
     let client = Client::new();
+    // let mut resp : Result<hyper::client::response::Response,  hyper::error::Error>;
+
+    // let mut resp = hyper::client::response::Response {
+    //     status: hyper::status::StatusCode::NotImplemented,
+    //     headers: hyper::header::Headers::new(),
+    //     version: hyper::version::HttpVersion::Http09,
+    //     url: hyper::Url::parse("localhost").unwrap(),
+    // };
+
+    // let mut resp = hyper::client::response::Response::with_message(
+    //     hyper::Url::parse("localhost").unwrap(),
+    //     Box::new(
+    //         hyper::http::h1::Http11Message {
+    //              method: Some(hyper::method::Method::Options),
+    //               stream: hyper::http::h1::Stream {}
+    //           }
+    //     )
+    // );
+
+    // let mut download_map = HashMap::new();
+
+    let url = String::from("https://www.yahoo.com.hk/");
+
+    // let result = match download_page(&client, &url) {
+    //     Ok(s) => s,
+    //     Err(e) => format!("{:?}", e)
+    // };
+
     loop {
 
         // show UI
@@ -94,34 +124,38 @@ fn main() {
         // // let uu :Vec<u8> = ss.chars;
         // f.write_all(ss.as_bytes());
 
-        let myurl = String::from("http://yahoo.com.hk/");
-        let mut resp = client.get(&myurl).send().unwrap();
-        let mut resp_ss = String::new();
-        &resp.read_to_string(&mut resp_ss).unwrap();
+        // let mut resp = client.get(&collection[3].title.url).send().unwrap();
+        // let mut resp_ss = String::new();
+        // &resp.read_to_string(&mut resp_ss).unwrap();
+
+        // let url = &collection[1].title.url;
+        let url2 = String::from("https://www.google.com.hk/");
 
         rustbox.print(1,
-                      1,
+                      3,
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("request url: {}", resp.url));
+                      &format!("request url: {}", url2));
+        //
+        // download_map.entry(&url2).or_insert("Hello World");
+        //
+        // rustbox.print(1,
+        //               5,
+        //               rustbox::RB_NORMAL,
+        //               Color::White,
+        //               Color::Black,
+        //               &format!("request result: {}", download_map.get(&url2).unwrap().len()));
 
 
-        rustbox.print(1,
-                      2,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("request result: {}", s.len()));
-
-        match state {
-            Status::List => {
-                list.print(&title, &collection);
-            }
-            Status::Show => {
-                show.print(&title, &show_item);
-            }
-        }
+        // match state {
+        //     Status::List => {
+        //         list.print(&title, &collection);
+        //     }
+        //     Status::Show => {
+        //         show.print(&title, &show_item);
+        //     }
+        // }
 
         print_status(&rustbox, &status);
 
@@ -408,6 +442,19 @@ fn show_item_build_example(rustbox: &rustbox::RustBox, collection: &Vec<ListTopi
             }
         }
         _ => {}
+    }
+}
+
+fn download_page(client: &Client, url: &String) -> Result<String, Error> {
+    match client.get(url).send() {
+        Ok(mut resp) => {
+            let mut s = String::new();
+            match resp.read_to_string(&mut s) {
+                Ok(size) => Ok(s),
+                Err(e) => Err(e),
+            }
+        }
+        Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
     }
 }
 
