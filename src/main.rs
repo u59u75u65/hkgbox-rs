@@ -94,7 +94,8 @@ fn main() {
         // // let uu :Vec<u8> = ss.chars;
         // f.write_all(ss.as_bytes());
 
-        let mut resp = client.get(&collection[3].title.url).send().unwrap();
+        let myurl = String::from("http://yahoo.com.hk/");
+        let mut resp = client.get(&myurl).send().unwrap();
         let mut resp_ss = String::new();
         &resp.read_to_string(&mut resp_ss).unwrap();
 
