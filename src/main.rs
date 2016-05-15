@@ -3,6 +3,7 @@ extern crate rustbox;
 extern crate rustc_serialize;
 extern crate chrono;
 extern crate kuchiki;
+extern crate hyper;
 
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
@@ -29,6 +30,8 @@ use std::io::{Error, ErrorKind};
 
 use std::io::Cursor;
 use std::io::BufReader;
+
+use hyper::Client;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -77,6 +80,7 @@ fn main() {
 
     let mut builder = hkg::builder::Builder::new();
 
+    let client = Client::new();
     loop {
 
         // show UI
@@ -90,13 +94,24 @@ fn main() {
         // // let uu :Vec<u8> = ss.chars;
         // f.write_all(ss.as_bytes());
 
+        let mut resp = client.get(&collection[3].title.url).send().unwrap();
+        let mut resp_ss = String::new();
+        &resp.read_to_string(&mut resp_ss).unwrap();
+
         rustbox.print(1,
-                      4,
+                      1,
                       rustbox::RB_NORMAL,
                       Color::White,
                       Color::Black,
-                      &format!("after parse => {}", Local::now()));
+                      &format!("request url: {}", resp.url));
 
+
+        rustbox.print(1,
+                      2,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &format!("request result: {}", s.len()));
 
         match state {
             Status::List => {
