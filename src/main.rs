@@ -99,18 +99,18 @@ fn main() {
         (l1, l2)
     };
 
-    let wclient = thread::spawn(move || {
+    let fetch_page = |map: &mut HashMap<String, String>, url: &str| -> String {
+        map.entry(String::from(url))
+           .or_insert_with(move || {
+               match download_page(&client, &String::from(url)) {
+                   Ok(s) => s,
+                   Err(e) => format!("{:?}", e),
+               }
+           })
+           .clone()
+    };
 
-        let fetch_page = |map: &mut HashMap<String, String>, url: &str| -> String {
-            map.entry(String::from(url))
-               .or_insert_with(|| {
-                   match download_page(&client, &String::from(url)) {
-                       Ok(s) => s,
-                       Err(e) => format!("{:?}", e),
-                   }
-               })
-               .clone()
-        };
+    let wclient = thread::spawn(move || {
         let mut html = lock1.lock().unwrap();
         html.clear();
         html.push_str(&fetch_page(&mut download_map, &url));
