@@ -2,6 +2,7 @@
 name = "hkg"
 version = "0.0.1"
 dependencies = [
+ "cancellation 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.2.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "kuchiki 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -32,6 +33,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "bitflags"
 version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "cancellation"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]

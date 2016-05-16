@@ -11,6 +11,7 @@ rustbox = "*"
 rustc-serialize = "0.3"
 chrono = "0.2"
 regex = "0.1"
+cancellation = "0.1"
 
 [dependencies.url]
 git = "https://github.com/servo/rust-url"
