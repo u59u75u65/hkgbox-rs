@@ -112,37 +112,37 @@ fn main() {
                     .clone()
     };
 
-    let cancelable_sleep = move |ct: &CancellationToken| -> Result<(), OperationCanceled> {
+    let cancelable_sleep = move |ct: &CancellationToken| -> Result<String, OperationCanceled> {
         let th = thread::current();
-            ct.run(
-                || { // the on_cancel closure runs on the canceling thread when the token is canceled
-                    th.unpark();
-                },
-                || { // this code block runs on the current thread and contains the cancelable operation
-                    // thread::park_timeout(dur) // (TO DO: handle spurious wakeups)
-                    let mut html = lock1.lock().unwrap();
-                    html.clear();
-                    html.push_str(&fetch_page(&url));
-                }
-            );
-            if ct.is_canceled() {
-                // The run() call above has a race condition: the on_cancel callback might call unpark()
-                // after park_timeout gave up after waiting dur, but before the end of the run() call
-                // deregistered the on_cancel callback.
-                // We use a park() call with 0s timeout to consume the left-over parking token, if any.
-                thread::park_timeout(std::time::Duration::new(0, 250));
-                Err(OperationCanceled)
-            } else {
-                Ok(())
-            }
+        let r = ct.run(
+             || { th.unpark(); },
+             || { fetch_page(&url) }
+        );
+
+        if ct.is_canceled() {
+            thread::park_timeout(std::time::Duration::new(0, 250));
+            Err(OperationCanceled)
+        } else {
+            Ok(r)
+        }
     };
 
     let cts = CancellationTokenSource::new();
-    cts.cancel_after(std::time::Duration::new(10, 0));
+    cts.cancel_after(std::time::Duration::new(3, 0));
 
     let wclient = thread::spawn(move || {
-        // html.push_str(&format!("result: {:?}", cancelable_sleep(std::time::Duration::new(10, 0), &cts)));
-        cancelable_sleep(&cts);
+        match cancelable_sleep(&cts) {
+            Ok(s) => {
+                let mut html = lock1.lock().unwrap();
+                // html.clear();
+                html.push_str(&s);
+            }
+            Err(e) => {
+                let mut html = lock1.lock().unwrap();
+                // html.clear();
+                html.push_str(&format!("{:?}", e));
+            }
+        }
     });
 
     loop {
@@ -166,8 +166,12 @@ fn main() {
 
         match lock2.try_lock() {
             Ok(s) => {
-
-                rustbox.print(1, 3, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
+                rustbox.print(1,
+                              3,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &format!("result: {}", *s));
             }
             Err(e) => {}
         }
