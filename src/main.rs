@@ -99,8 +99,8 @@ fn main() {
         (l1, l2)
     };
 
-    let fetch_page = |map: &mut HashMap<String, String>, url: &str| -> String {
-        map.entry(String::from(url))
+    let fetch_page = move |url: &str| -> String {
+        download_map.entry(String::from(url))
            .or_insert_with(move || {
                match download_page(&client, &String::from(url)) {
                    Ok(s) => s,
@@ -113,7 +113,7 @@ fn main() {
     let wclient = thread::spawn(move || {
         let mut html = lock1.lock().unwrap();
         html.clear();
-        html.push_str(&fetch_page(&mut download_map, &url));
+        html.push_str(&fetch_page(&url));
     });
 
     loop {
