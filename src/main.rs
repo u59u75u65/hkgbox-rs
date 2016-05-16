@@ -31,9 +31,11 @@ use std::io::{Error, ErrorKind};
 use std::io::Cursor;
 use std::io::BufReader;
 
-use hyper::Client;
-
 use std::collections::HashMap;
+
+use hyper::Client;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -84,9 +86,35 @@ fn main() {
 
     let client = Client::new();
 
-    let mut download_map : HashMap<String, String> = HashMap::new();
+    let mut download_map: HashMap<String, String> = HashMap::new();
 
-    let url = String::from("http://localhost:3000/");
+    let url = String::from("http://www.alexa.com/");
+    // let url = String::from("http://localhost:3000");
+    // let url = String::from("https://www.yahoo.com.hk/");
+
+    let (lock1, lock2) = {
+        let mut html = String::new();
+        let l1 = Arc::new(Mutex::new(html));
+        let l2 = l1.clone();
+        (l1, l2)
+    };
+
+    let wclient = thread::spawn(move || {
+
+        let fetch_page = |map: &mut HashMap<String, String>, url: &str| -> String {
+            map.entry(String::from(url))
+               .or_insert_with(|| {
+                   match download_page(&client, &String::from(url)) {
+                       Ok(s) => s,
+                       Err(e) => format!("{:?}", e),
+                   }
+               })
+               .clone()
+        };
+        let mut html = lock1.lock().unwrap();
+        html.clear();
+        html.push_str(&fetch_page(&mut download_map, &url));
+    });
 
     loop {
 
@@ -98,32 +126,6 @@ fn main() {
 
         // let url = &collection[1].title.url;
 
-        rustbox.print(1,
-                      3,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("request url: {}", url));
-
-        let fetch_page = |map : &mut HashMap<String, String>, url: &str| -> String {
-            map.entry(String::from(url)).or_insert_with(|| {
-                match download_page(&client, &String::from(url)) {
-                    Ok(s) => s,
-                    Err(e) => format!("{:?}", e),
-                }
-            }).clone()
-        };
-
-        let html = fetch_page(&mut download_map, &url);
-
-        rustbox.print(1,
-                      5,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("request result: {}",
-                               html.len()));
-
         // match state {
         //     Status::List => {
         //         list.print(&title, &collection);
@@ -132,6 +134,26 @@ fn main() {
         //         show.print(&title, &show_item);
         //     }
         // }
+
+        rustbox.print(1,
+                      2,
+                      rustbox::RB_NORMAL,
+                      Color::White,
+                      Color::Black,
+                      &"hello world");
+
+        match lock2.try_lock() {
+            Ok(s) =>
+            {
+                rustbox.print(1,
+                              3,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &format!("len: {}", s.len()));
+            }
+            Err(e) => {}
+        }
 
         print_status(&rustbox, &status);
 
@@ -433,6 +455,7 @@ fn download_page(client: &Client, url: &String) -> Result<String, Error> {
         Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
     }
 }
+
 
 // for (jndex, elm) in tr.as_node().select(".repliers_right .ContentGrid").unwrap().enumerate() {
 //     let content = elm.as_node().text_contents();
