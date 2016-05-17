@@ -22,6 +22,7 @@ use hkg::model::ListTopicItem;
 use hkg::model::ShowItem;
 use hkg::model::ShowReplyItem;
 use hkg::model::UrlQueryItem;
+use hkg::utility::client::*;
 
 use std::path::Path;
 
@@ -86,44 +87,34 @@ fn main() {
 
     let mut builder = hkg::builder::Builder::new();
 
-    let client = Client::new();
-
-    let mut download_map: HashMap<String, String> = HashMap::new();
-
     let url = String::from("http://www.alexa.com/");
+    let url2 = url.clone();
+
     // let url = String::from("http://localhost:3000");
     // let url = String::from("https://www.yahoo.com.hk/");
 
     let (lock1, lock2) = {
-        let mut html = String::new();
-        let l1 = Arc::new(Mutex::new(html));
+        let mut wr = WebResource::new();
+        let l1 = Arc::new(Mutex::new(wr));
         let l2 = l1.clone();
         (l1, l2)
     };
 
-    let fetch_page = move |url: &str| -> String {
-        download_map.entry(String::from(url))
-                    .or_insert_with(move || {
-                        match download_page(&client, &String::from(url)) {
-                            Ok(s) => s,
-                            Err(e) => format!("{:?}", e),
-                        }
-                    })
-                    .clone()
-    };
-
-    let cancelable_sleep = move |ct: &CancellationToken| -> Result<String, OperationCanceled> {
+    let cancelable_sleep = move |ct: &CancellationToken| -> Result<(), OperationCanceled> {
         let th = thread::current();
-        let r = ct.run(
+        ct.run(
              || { th.unpark(); },
-             || { fetch_page(&url) }
+             || {
+                 let mut wr = lock1.lock().unwrap();
+                 wr.save(&url);
+              }
         );
 
         if ct.is_canceled() {
             thread::park_timeout(std::time::Duration::new(0, 250));
             Err(OperationCanceled)
         } else {
-            Ok(r)
+            Ok(())
         }
     };
 
@@ -132,16 +123,8 @@ fn main() {
 
     let wclient = thread::spawn(move || {
         match cancelable_sleep(&cts) {
-            Ok(s) => {
-                let mut html = lock1.lock().unwrap();
-                // html.clear();
-                html.push_str(&s);
-            }
-            Err(e) => {
-                let mut html = lock1.lock().unwrap();
-                // html.clear();
-                html.push_str(&format!("{:?}", e));
-            }
+            Ok(()) => {}
+            Err(e) => {}
         }
     });
 
@@ -164,17 +147,17 @@ fn main() {
         //     }
         // }
 
-        match lock2.try_lock() {
-            Ok(s) => {
-                rustbox.print(1,
-                              3,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &format!("result: {}", *s));
-            }
-            Err(e) => {}
-        }
+      match lock2.try_lock() {
+          Ok(mut wr2) => {
+              rustbox.print(1,
+                            3,
+                            rustbox::RB_NORMAL,
+                            Color::White,
+                            Color::Black,
+                            &format!("result: {}", wr2.get(&url2)));
+          }
+          Err(e) => {}
+      }
 
         print_status(&rustbox, &status);
 
@@ -463,20 +446,6 @@ fn show_item_build_example(rustbox: &rustbox::RustBox, collection: &Vec<ListTopi
         _ => {}
     }
 }
-
-fn download_page(client: &Client, url: &String) -> Result<String, Error> {
-    match client.get(url).send() {
-        Ok(mut resp) => {
-            let mut s = String::new();
-            match resp.read_to_string(&mut s) {
-                Ok(size) => Ok(s),
-                Err(e) => Err(e),
-            }
-        }
-        Err(e) => Err(Error::new(ErrorKind::InvalidData, e)),
-    }
-}
-
 
 // for (jndex, elm) in tr.as_node().select(".repliers_right .ContentGrid").unwrap().enumerate() {
 //     let content = elm.as_node().text_contents();
