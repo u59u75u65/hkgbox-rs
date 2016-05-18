@@ -32,7 +32,7 @@ use std::ops::FnMut;
 
 pub struct WebResource {
      pub pages: HashMap<String, String>,
-     pub client: Client
+     client: Client,
 }
 
 impl WebResource {
@@ -40,7 +40,7 @@ impl WebResource {
     pub fn new() -> Self {
         WebResource {
             pages: HashMap::new(),
-            client: Client::new()
+            client: Client::new(),
         }
     }
 
@@ -55,8 +55,8 @@ impl WebResource {
     //                 .clone()
     // };
     //
-    
-    pub fn download_page(&mut self, url: &String) -> Result<String, Error> {
+
+    pub fn fetch(&mut self, url: &String) -> Result<String, Error> {
         match self.client.get(url).send() {
             Ok(mut resp) => {
                 let mut s = String::new();
@@ -69,25 +69,25 @@ impl WebResource {
         }
     }
 
-    pub fn save(&mut self, url: &str) {
-        if !self.pages.contains_key(url) {
-            let res = match self.download_page(&String::from(url)) {
-                Ok(s) => s,
-                Err(e) => format!("{:?}", e),
-            };
-            self.pages.insert(String::from(url), res);
+    pub fn fetch_safe(&mut self, url: &str) -> String {
+        match self.fetch(&String::from(url)) {
+            Ok(s) => s,
+            Err(e) => format!("{:?}", e),
         }
     }
 
-    pub fn get(&mut self, url: &str) -> String {
+    pub fn find(&mut self, url: &str) -> String {
         match self.pages.get(url) {
             Some(page) => page.clone(),
             None => { String::from("None") }
         }
     }
 
-    pub fn fetch(&mut self, url: &str) -> String {
-        self.save(url);
-        self.get(url)
+    pub fn get(&mut self, url: &str) -> String {
+        if !self.pages.contains_key(url) {
+            let res = self.fetch_safe(url);
+            self.pages.insert(String::from(url), res);
+        }
+        self.find(url)
     }
 }
