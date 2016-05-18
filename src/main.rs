@@ -68,7 +68,6 @@ fn main() {
     let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
     // initialize show with empty page
-    let mut show_file;
     let mut show_item = ShowItem {
         url_query: UrlQueryItem { message: String::from("") },
         replies: vec![],
@@ -141,17 +140,18 @@ fn main() {
         match rx_res.try_recv() {
             Ok(item) => {
                 let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
+
                 show_item = builder.show_item(&document, &item.url);
+                let w = rustbox.width();
+                status = format_status(status,
+                                       w,
+                                       &format!("[{}-{}:ROK]",
+                                                show_item.url_query.message,
+                                                show_item.page));
 
                 show.resetY();
                 hkg::screen::common::clear(&rustbox);
                 state = Status::Show;
-
-                let w = rustbox.width();
-                status = format_status(status,
-                                       w,
-                                       &format!(" post {} read success.",
-                                                show_item.url_query.message));
 
             }
             Err(e) => {}
@@ -252,15 +252,36 @@ fn main() {
                             Status::List => {}
                             Status::Show => {
                                 if show_item.page > 1 {
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = show_item.url_query
-                                                                                   .message,
-                                                                 page = show_item.page - 1);
+                                    let postid = &show_item.url_query.message;
+                                    let page = &show_item.page - 1;
+                                    let base_url = "http://forum1.hkgolden.com/view.aspx";
+                                    let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                                                          base_url = base_url,
+                                                          postid = postid,
+                                                          page = page);
 
-                                    show_file = cache::readfile(String::from(show_file_path));
-                                    show_item = json::decode(&show_file).unwrap();
-                                    show.resetY();
-                                    hkg::screen::common::clear(&rustbox);
+                                    let ci = ChannelItem {
+                                        url: posturl.clone(),
+                                        result: String::from(""),
+                                    };
+
+                                    match tx_req.send(ci) {
+                                        Ok(()) => {
+                                            let w = rustbox.width();
+                                            status = format_status(status,
+                                                                   w,
+                                                                   &format!("[{}-{}:SOK]", postid, page));
+                                        }
+                                        Err(e) => {
+                                            let w = rustbox.width();
+                                            status = format_status(status,
+                                                                   w,
+                                                                   &format!("[{}-{}:SFAIL:{}]",
+                                                                            postid,
+                                                                            page,
+                                                                            e));
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -270,15 +291,38 @@ fn main() {
                             Status::List => {}
                             Status::Show => {
                                 if show_item.max_page > show_item.page {
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = show_item.url_query
-                                                                                   .message,
-                                                                 page = show_item.page + 1);
 
-                                    show_file = cache::readfile(String::from(show_file_path));
-                                    show_item = json::decode(&show_file).unwrap();
-                                    show.resetY();
-                                    hkg::screen::common::clear(&rustbox);
+                                    let postid = &show_item.url_query.message;
+                                    let page = &show_item.page + 1;
+                                    let base_url = "http://forum1.hkgolden.com/view.aspx";
+                                    let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                                                          base_url = base_url,
+                                                          postid = postid,
+                                                          page = page);
+
+                                    let ci = ChannelItem {
+                                        url: posturl.clone(),
+                                        result: String::from(""),
+                                    };
+
+                                    match tx_req.send(ci) {
+                                        Ok(()) => {
+                                            let w = rustbox.width();
+                                            status = format_status(status,
+                                                                   w,
+                                                                   &format!("[{}-{}:SOK]", postid, page));
+                                        }
+                                        Err(e) => {
+                                            let w = rustbox.width();
+                                            status = format_status(status,
+                                                                   w,
+                                                                   &format!("[{}-{}:SFAIL:{}]",
+                                                                            postid,
+                                                                            page,
+                                                                            e));
+                                        }
+                                    }
+
                                 }
                             }
                         }
@@ -306,16 +350,14 @@ fn main() {
                                             let w = rustbox.width();
                                             status = format_status(status,
                                                                    w,
-                                                                   &format!(" post {} request \
-                                                                             sent success.",
-                                                                            postid));
+                                                                   &format!("[{}:SOK]", postid));
                                         }
                                         Err(e) => {
                                             let w = rustbox.width();
                                             status = format_status(status,
                                                                    w,
-                                                                   &format!(" post {} request \
-                                                                             sent fail.",
+                                                                   &format!("[{}:SFAIL:{}]",
+                                                                            postid,
                                                                             e));
                                         }
                                     }
