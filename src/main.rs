@@ -47,11 +47,6 @@ enum Status {
     Show,
 }
 
-struct ChannelItem<T> {
-    pub item: T,
-    pub status: u32,
-}
-
 fn main() {
 
     // GUI init
