@@ -39,11 +39,17 @@ use hyper::Client;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
+use std::sync::mpsc::sync_channel;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
     List,
     Show,
+}
+
+struct ChannelItem<T> {
+    pub item: T,
+    pub status: u32
 }
 
 fn main() {
@@ -88,8 +94,6 @@ fn main() {
     let mut builder = hkg::builder::Builder::new();
 
     let url = String::from("http://www.alexa.com/");
-    let url2 = url.clone();
-
     // let url = String::from("http://localhost:3000");
     // let url = String::from("https://www.yahoo.com.hk/");
 
@@ -100,31 +104,34 @@ fn main() {
         (l1, l2)
     };
 
-    let cancelable_sleep = move |ct: &CancellationToken| -> Result<(), OperationCanceled> {
-        let th = thread::current();
-        ct.run(
-             || { th.unpark(); },
-             || {
-                 let mut wr = lock1.lock().unwrap();
-                 wr.save(&url);
-              }
-        );
-
-        if ct.is_canceled() {
-            thread::park_timeout(std::time::Duration::new(0, 250));
-            Err(OperationCanceled)
-        } else {
-            Ok(())
-        }
-    };
-
-    let cts = CancellationTokenSource::new();
-    cts.cancel_after(std::time::Duration::new(3, 0));
+    let (tx, rx) = sync_channel::<ChannelItem<String>>(0);
 
     let wclient = thread::spawn(move || {
-        match cancelable_sleep(&cts) {
-            Ok(()) => {}
-            Err(e) => {}
+        let mut ct = CancellationTokenSource::new();
+        ct.cancel_after(std::time::Duration::new(3, 0));
+        loop {
+            match rx.recv() {
+                Ok(item) => {
+
+                    let th = thread::current();
+                    ct.run(
+                         || { th.unpark(); },
+                         || {
+                             let mut wr = lock1.lock().unwrap();
+                             wr.get(&item.item);
+                          }
+                    );
+
+                    if ct.is_canceled() {
+                        thread::park_timeout(std::time::Duration::new(0, 250));
+                        // Err(OperationCanceled)
+                    } else {
+                        // Ok(())
+                    }
+
+                 },
+                Err(e) => { }
+            }
         }
     });
 
@@ -147,17 +154,43 @@ fn main() {
         //     }
         // }
 
-      match lock2.try_lock() {
-          Ok(mut wr2) => {
-              rustbox.print(1,
-                            3,
-                            rustbox::RB_NORMAL,
-                            Color::White,
-                            Color::Black,
-                            &format!("result: {}", wr2.get(&url2)));
+        let url2 = url.clone();
+
+          match lock2.try_lock() {
+              Ok(mut wr2) => {
+                  rustbox.print(1,
+                                5,
+                                    rustbox::RB_NORMAL,
+                                Color::White,
+                                Color::Black,
+                                &format!("result: {}", wr2.get(&url)));
+              }
+              Err(e) => {}
           }
-          Err(e) => {}
-      }
+
+        let ci = ChannelItem {
+            item: url2,
+            status: 0
+        };
+
+        match tx.send(ci) {
+            Ok(()) => {
+                rustbox.print(1,
+                              2,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &"tx ok");
+                          },
+            Err(e) => {
+                rustbox.print(1,
+                              2,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &"tx fail");
+            }
+        }
 
         print_status(&rustbox, &status);
 
