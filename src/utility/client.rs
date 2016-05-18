@@ -12,9 +12,9 @@ use std::sync::Arc;
 use std::thread;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
-pub struct ChannelItem<T> {
-    pub item: T,
-    pub status: u32,
+pub struct ChannelItem {
+    pub url: String,
+    pub result: String
 }
 
 pub struct WebResource {

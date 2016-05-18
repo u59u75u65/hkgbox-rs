@@ -40,6 +40,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
 use std::sync::mpsc::sync_channel;
+use std::sync::mpsc::channel;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -92,20 +93,15 @@ fn main() {
     // let url = String::from("http://localhost:3000");
     // let url = String::from("https://www.yahoo.com.hk/");
 
-    let (lock1, lock2) = {
-        let mut wr = WebResource::new();
-        let l1 = Arc::new(Mutex::new(wr));
-        let l2 = l1.clone();
-        (l1, l2)
-    };
-
-    let (tx, rx) = sync_channel::<ChannelItem<String>>(0);
+    let (tx_req, rx_req) = channel::<ChannelItem>();
+    let (tx_res, rx_res) = channel::<ChannelItem>();
 
     let wclient = thread::spawn(move || {
+        let mut wr = WebResource::new();
         let mut ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(3, 0));
         loop {
-            match rx.recv() {
+            match rx_req.recv() {
                 Ok(item) => {
 
                     let th = thread::current();
@@ -113,9 +109,12 @@ fn main() {
                                th.unpark();
                            },
                            || {
-                               let mut wr = lock1.lock().unwrap();
-                               // wr.fetch_safe(&istem.item);
-                               wr.get(&item.item);
+                               let item_url2 = item.url.clone();
+                               let item2 = ChannelItem{
+                                   url: String::from(item_url2),
+                                   result: wr.get(&item.url)
+                               };
+                               tx_res.send(item2).unwrap();
                            });
 
                     if ct.is_canceled() {
@@ -150,33 +149,31 @@ fn main() {
         //     }
         // }
 
-        let url2 = url.clone();
-
-        match lock2.try_lock() {
-            Ok(mut wr2) => {
+        match rx_res.try_recv() {
+            Ok(item) => {
                 rustbox.print(1,
                               5,
                               rustbox::RB_NORMAL,
                               Color::White,
                               Color::Black,
-                              &format!("result: {}", wr2.get(&url)));
+                              &format!("result: {}", item.result));
             }
             Err(e) => {}
         }
 
         let ci = ChannelItem {
-            item: url2,
-            status: 0,
+            url: url.clone(),
+            result: String::from(""),
         };
 
-        match tx.send(ci) {
+        match tx_req.send(ci) {
             Ok(()) => {
                 rustbox.print(1,
                               2,
                               rustbox::RB_NORMAL,
                               Color::White,
                               Color::Black,
-                              &"tx ok");
+                              &"request tx ok");
             }
             Err(e) => {
                 rustbox.print(1,
@@ -184,9 +181,10 @@ fn main() {
                               rustbox::RB_NORMAL,
                               Color::White,
                               Color::Black,
-                              &"tx fail");
+                              &"request tx fail");
             }
         }
+
 
         print_status(&rustbox, &status);
 
