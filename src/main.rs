@@ -49,7 +49,7 @@ enum Status {
 
 struct ChannelItem<T> {
     pub item: T,
-    pub status: u32
+    pub status: u32,
 }
 
 fn main() {
@@ -114,13 +114,14 @@ fn main() {
                 Ok(item) => {
 
                     let th = thread::current();
-                    ct.run(
-                         || { th.unpark(); },
-                         || {
-                             let mut wr = lock1.lock().unwrap();
-                             wr.get(&item.item);
-                          }
-                    );
+                    ct.run(|| {
+                               th.unpark();
+                           },
+                           || {
+                               let mut wr = lock1.lock().unwrap();
+                               // wr.fetch_safe(&istem.item);
+                               wr.get(&item.item);
+                           });
 
                     if ct.is_canceled() {
                         thread::park_timeout(std::time::Duration::new(0, 250));
@@ -129,8 +130,8 @@ fn main() {
                         // Ok(())
                     }
 
-                 },
-                Err(e) => { }
+                }
+                Err(e) => {}
             }
         }
     });
@@ -156,21 +157,21 @@ fn main() {
 
         let url2 = url.clone();
 
-          match lock2.try_lock() {
-              Ok(mut wr2) => {
-                  rustbox.print(1,
-                                5,
-                                    rustbox::RB_NORMAL,
-                                Color::White,
-                                Color::Black,
-                                &format!("result: {}", wr2.get(&url)));
-              }
-              Err(e) => {}
-          }
+        match lock2.try_lock() {
+            Ok(mut wr2) => {
+                rustbox.print(1,
+                              5,
+                              rustbox::RB_NORMAL,
+                              Color::White,
+                              Color::Black,
+                              &format!("result: {}", wr2.get(&url)));
+            }
+            Err(e) => {}
+        }
 
         let ci = ChannelItem {
             item: url2,
-            status: 0
+            status: 0,
         };
 
         match tx.send(ci) {
@@ -181,7 +182,7 @@ fn main() {
                               Color::White,
                               Color::Black,
                               &"tx ok");
-                          },
+            }
             Err(e) => {
                 rustbox.print(1,
                               2,
