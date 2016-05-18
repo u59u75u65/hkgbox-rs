@@ -89,7 +89,7 @@ fn main() {
 
     let mut builder = hkg::builder::Builder::new();
 
-    let url = String::from("http://www.alexa.com/");
+    // let url = String::from("http://www.alexa.com/");
     // let url = String::from("http://localhost:3000");
     // let url = String::from("https://www.yahoo.com.hk/");
 
@@ -110,9 +110,9 @@ fn main() {
                            },
                            || {
                                let item_url2 = item.url.clone();
-                               let item2 = ChannelItem{
+                               let item2 = ChannelItem {
                                    url: String::from(item_url2),
-                                   result: wr.get(&item.url)
+                                   result: wr.get(&item.url),
                                };
                                tx_res.send(item2).unwrap();
                            });
@@ -138,53 +138,33 @@ fn main() {
             prev_state = state;
         }
 
-        // let url = &collection[1].title.url;
-
-        // match state {
-        //     Status::List => {
-        //         list.print(&title, &collection);
-        //     }
-        //     Status::Show => {
-        //         show.print(&title, &show_item);
-        //     }
-        // }
-
         match rx_res.try_recv() {
             Ok(item) => {
-                rustbox.print(1,
-                              5,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &format!("result: {}", item.result));
+                let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
+                show_item = builder.show_item(&document, &item.url);
+
+                show.resetY();
+                hkg::screen::common::clear(&rustbox);
+                state = Status::Show;
+
+                let w = rustbox.width();
+                status = format_status(status,
+                                       w,
+                                       &format!(" post {} read success.",
+                                                show_item.url_query.message));
+
             }
             Err(e) => {}
         }
 
-        let ci = ChannelItem {
-            url: url.clone(),
-            result: String::from(""),
-        };
-
-        match tx_req.send(ci) {
-            Ok(()) => {
-                rustbox.print(1,
-                              2,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &"request tx ok");
+        match state {
+            Status::List => {
+                list.print(&title, &collection);
             }
-            Err(e) => {
-                rustbox.print(1,
-                              2,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &"request tx fail");
+            Status::Show => {
+                show.print(&title, &show_item);
             }
         }
-
 
         print_status(&rustbox, &status);
 
@@ -316,46 +296,30 @@ fn main() {
                                     let posturl = &topic_item.title.url;
                                     let postid = &topic_item.title.url_query.message;
 
-                                    let show_html_file_path = format!("data/html/{postid}/show_{page}.\
-                                                                       html",
-                                                                      postid = postid,
-                                                                      page = 1);
+                                    let ci = ChannelItem {
+                                        url: posturl.clone(),
+                                        result: String::from(""),
+                                    };
 
-                                    if Path::new(&show_html_file_path).exists() {
-
-                                        let show_item_wrap =
-                                            match kuchiki::parse_html()
-                                                      .from_utf8()
-                                                      .from_file(&show_html_file_path) {
-                                                Ok(document) => {
-                                                    Some(builder.show_item(&document, &posturl))
-                                                }
-                                                Err(e) => None,
-                                            };
-
-                                        match show_item_wrap {
-                                            Some(si) => {
-                                                show_item = si;
-                                                show.resetY();
-                                                hkg::screen::common::clear(&rustbox);
-                                                state = Status::Show;
-                                            }
-                                            _ => {
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!(" parse {} \
-                                                                                 failed",
-                                                                                postid));
-                                            }
+                                    match tx_req.send(ci) {
+                                        Ok(()) => {
+                                            let w = rustbox.width();
+                                            status = format_status(status,
+                                                                   w,
+                                                                   &format!(" post {} request \
+                                                                             sent success.",
+                                                                            postid));
                                         }
-
-                                    } else {
-                                        let w = rustbox.width();
-                                        status = format_status(status,
-                                                               w,
-                                                               &format!(" post {} not found.",
-                                                                        postid));
+                                        Err(e) => {
+                                            let w = rustbox.width();
+                                            status = format_status(status,
+                                                                   w,
+                                                                   &format!(" post {} request \
+                                                                             sent fail.",
+                                                                            e));
+                                        }
                                     }
+
                                 }
                             }
                             Status::Show => {}
