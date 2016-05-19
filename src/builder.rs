@@ -160,9 +160,9 @@ fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
             map.entry(key).or_insert(value);
         }
 
-        if map.len() < 2 {
-            panic!("length of map is invalid.")
-        }
+        // if map.len() < 2 {
+        //     panic!("length of map is invalid.")
+        // }
 
         (
             map.get("type").unwrap().to_string(),

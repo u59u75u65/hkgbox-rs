@@ -3,6 +3,8 @@ extern crate rustbox;
 extern crate rustc_serialize;
 extern crate chrono;
 extern crate kuchiki;
+extern crate hyper;
+extern crate cancellation;
 
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
@@ -20,6 +22,7 @@ use hkg::model::ListTopicItem;
 use hkg::model::ShowItem;
 use hkg::model::ShowReplyItem;
 use hkg::model::UrlQueryItem;
+use hkg::utility::client::*;
 
 use std::path::Path;
 
@@ -29,6 +32,15 @@ use std::io::{Error, ErrorKind};
 
 use std::io::Cursor;
 use std::io::BufReader;
+
+use std::collections::HashMap;
+
+use hyper::Client;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
+use std::sync::mpsc::sync_channel;
+use std::sync::mpsc::channel;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -56,7 +68,6 @@ fn main() {
     let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
     // initialize show with empty page
-    let mut show_file;
     let mut show_item = ShowItem {
         url_query: UrlQueryItem { message: String::from("") },
         replies: vec![],
@@ -77,6 +88,49 @@ fn main() {
 
     let mut builder = hkg::builder::Builder::new();
 
+    // let url = String::from("http://www.alexa.com/");
+    // let url = String::from("http://localhost:3000");
+    // let url = String::from("https://www.yahoo.com.hk/");
+
+    let (tx_req, rx_req) = channel::<ChannelItem>();
+    let (tx_res, rx_res) = channel::<ChannelItem>();
+
+    let wclient = thread::spawn(move || {
+        let mut wr = WebResource::new();
+        let mut ct = CancellationTokenSource::new();
+        ct.cancel_after(std::time::Duration::new(3, 0));
+        loop {
+            match rx_req.recv() {
+                Ok(item) => {
+
+                    let th = thread::current();
+                    ct.run(|| {
+                               th.unpark();
+                           },
+                           || {
+                               let item_url2 = item.url.clone();
+                               let item2 = ChannelItem {
+                                   url: String::from(item_url2),
+                                   result: wr.get(&item.url),
+                               };
+                               tx_res.send(item2).unwrap();
+                           });
+
+                    if ct.is_canceled() {
+                        thread::park_timeout(std::time::Duration::new(0, 250));
+                        // Err(OperationCanceled)
+                    } else {
+                        // Ok(())
+                    }
+
+                }
+                Err(e) => {}
+            }
+        }
+    });
+
+    let mut is_web_requesting = false;
+
     loop {
 
         // show UI
@@ -85,18 +139,26 @@ fn main() {
             prev_state = state;
         }
 
+        match rx_res.try_recv() {
+            Ok(item) => {
+                let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
-        // let mut f = File::create("foo.txt").unwrap();
-        // // let uu :Vec<u8> = ss.chars;
-        // f.write_all(ss.as_bytes());
+                show_item = builder.show_item(&document, &item.url);
 
-        rustbox.print(1,
-                      4,
-                      rustbox::RB_NORMAL,
-                      Color::White,
-                      Color::Black,
-                      &format!("after parse => {}", Local::now()));
+                let w = rustbox.width();
+                status = format_status(status,
+                                       w,
+                                       &format!("[{}-{}:ROK][{}]",
+                                                show_item.url_query.message,
+                                                show_item.page, is_web_requesting));
 
+                show.resetY();
+                hkg::screen::common::clear(&rustbox);
+                state = Status::Show;
+                is_web_requesting = false;
+            }
+            Err(e) => { }
+        }
 
         match state {
             Status::List => {
@@ -111,194 +173,228 @@ fn main() {
 
         rustbox.present();
 
-        match rustbox.poll_event(false) {
-            Ok(rustbox::Event::KeyEvent(key)) => {
+        if !is_web_requesting {
 
-                if prev_width != rustbox.width() {
-                    hkg::screen::common::clear(&rustbox);
-                    prev_width = rustbox.width();
-                }
+            match rustbox.poll_event(false) {
+                Ok(rustbox::Event::KeyEvent(key)) => {
 
-                match key {
-                    Key::Char('q') => {
-                        break;
+                    if prev_width != rustbox.width() {
+                        hkg::screen::common::clear(&rustbox);
+                        prev_width = rustbox.width();
                     }
-                    Key::PageUp => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, " PU");
 
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollUp(bh) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
+                    match key {
+                        Key::Char('q') => {
+                            break;
                         }
-                    }
-                    Key::PageDown => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, " PD");
+                        Key::PageUp => {
+                            let w = rustbox.width();
+                            status = format_status(status, w, " PU");
 
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollDown(bh) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Up => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "U");
-
-                        match state {
-                            Status::List => {
-                                let tmp = list.get_selected_topic();
-                                if tmp > 1 {
-                                    list.select_topic(tmp - 1);
-                                }
-                            }
-                            Status::Show => {
-                                if show.scrollUp(2) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-
-                    }
-                    Key::Down => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "D");
-
-                        match state {
-                            Status::List => {
-                                let tmp = list.get_selected_topic();
-                                if tmp < list.body_height() {
-                                    list.select_topic(tmp + 1);
-                                }
-                            }
-                            Status::Show => {
-                                if show.scrollDown(2) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Left => {
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.page > 1 {
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = show_item.url_query
-                                                                                   .message,
-                                                                 page = show_item.page - 1);
-
-                                    show_file = cache::readfile(String::from(show_file_path));
-                                    show_item = json::decode(&show_file).unwrap();
-                                    show.resetY();
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Right => {
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.max_page > show_item.page {
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = show_item.url_query
-                                                                                   .message,
-                                                                 page = show_item.page + 1);
-
-                                    show_file = cache::readfile(String::from(show_file_path));
-                                    show_item = json::decode(&show_file).unwrap();
-                                    show.resetY();
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Enter => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "E");
-                        match state {
-                            Status::List => {
-
-                                let index = list.get_selected_topic();
-                                if index > 0 {
-                                    let topic_item = &collection[index - 1];
-
-                                    let posturl = &topic_item.title.url;
-                                    let postid = &topic_item.title.url_query.message;
-
-                                    let show_html_file_path = format!("data/html/{postid}/show_{page}.\
-                                                                       html",
-                                                                      postid = postid,
-                                                                      page = 1);
-
-                                    if Path::new(&show_html_file_path).exists() {
-
-                                        let show_item_wrap =
-                                            match kuchiki::parse_html()
-                                                      .from_utf8()
-                                                      .from_file(&show_html_file_path) {
-                                                Ok(document) => {
-                                                    Some(builder.show_item(&document, &posturl))
-                                                }
-                                                Err(e) => None,
-                                            };
-
-                                        match show_item_wrap {
-                                            Some(si) => {
-                                                show_item = si;
-                                                show.resetY();
-                                                hkg::screen::common::clear(&rustbox);
-                                                state = Status::Show;
-                                            }
-                                            _ => {
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!(" parse {} \
-                                                                                 failed",
-                                                                                postid));
-                                            }
-                                        }
-
-                                    } else {
-                                        let w = rustbox.width();
-                                        status = format_status(status,
-                                                               w,
-                                                               &format!(" post {} not found.",
-                                                                        postid));
+                            match state {
+                                Status::List => {}
+                                Status::Show => {
+                                    let bh = show.body_height();
+                                    if show.scrollUp(bh) {
+                                        hkg::screen::common::clear(&rustbox);
                                     }
                                 }
                             }
-                            Status::Show => {}
                         }
-                    }
-                    Key::Backspace => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "B");
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                state = Status::List;
+                        Key::PageDown => {
+                            let w = rustbox.width();
+                            status = format_status(status, w, " PD");
+
+                            match state {
+                                Status::List => {}
+                                Status::Show => {
+                                    let bh = show.body_height();
+                                    if show.scrollDown(bh) {
+                                        hkg::screen::common::clear(&rustbox);
+                                    }
+                                }
                             }
                         }
-                    }
+                        Key::Up => {
+                            let w = rustbox.width();
+                            status = format_status(status, w, "U");
 
-                    _ => {}
+                            match state {
+                                Status::List => {
+                                    let tmp = list.get_selected_topic();
+                                    if tmp > 1 {
+                                        list.select_topic(tmp - 1);
+                                    }
+                                }
+                                Status::Show => {
+                                    if show.scrollUp(2) {
+                                        hkg::screen::common::clear(&rustbox);
+                                    }
+                                }
+                            }
+
+                        }
+                        Key::Down => {
+                            let w = rustbox.width();
+                            status = format_status(status, w, "D");
+
+                            match state {
+                                Status::List => {
+                                    let tmp = list.get_selected_topic();
+                                    if tmp < list.body_height() {
+                                        list.select_topic(tmp + 1);
+                                    }
+                                }
+                                Status::Show => {
+                                    if show.scrollDown(2) {
+                                        hkg::screen::common::clear(&rustbox);
+                                    }
+                                }
+                            }
+                        }
+                        Key::Left => {
+                            match state {
+                                Status::List => {}
+                                Status::Show => {
+                                    if show_item.page > 1 {
+                                        let postid = &show_item.url_query.message;
+                                        let page = &show_item.page - 1;
+                                        let base_url = "http://forum1.hkgolden.com/view.aspx";
+                                        let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                                                              base_url = base_url,
+                                                              postid = postid,
+                                                              page = page);
+
+                                        let ci = ChannelItem {
+                                            url: posturl.clone(),
+                                            result: String::from(""),
+                                        };
+
+                                        match tx_req.send(ci) {
+                                            Ok(()) => {
+                                                let w = rustbox.width();
+                                                status = format_status(status,
+                                                                       w,
+                                                                       &format!("[{}-{}:SOK]", postid, page));
+                                                is_web_requesting = true;
+                                            }
+                                            Err(e) => {
+                                                let w = rustbox.width();
+                                                status = format_status(status,
+                                                                       w,
+                                                                       &format!("[{}-{}:SFAIL:{}]",
+                                                                                postid,
+                                                                                page,
+                                                                                e));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Key::Right => {
+                            match state {
+                                Status::List => {}
+                                Status::Show => {
+                                    if show_item.max_page > show_item.page {
+
+                                        let postid = &show_item.url_query.message;
+                                        let page = &show_item.page + 1;
+                                        let base_url = "http://forum1.hkgolden.com/view.aspx";
+                                        let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                                                              base_url = base_url,
+                                                              postid = postid,
+                                                              page = page);
+
+                                        let ci = ChannelItem {
+                                            url: posturl.clone(),
+                                            result: String::from(""),
+                                        };
+
+                                        match tx_req.send(ci) {
+                                            Ok(()) => {
+                                                let w = rustbox.width();
+                                                status = format_status(status,
+                                                                       w,
+                                                                       &format!("[{}-{}:SOK][{}]", postid, page, is_web_requesting));
+                                                is_web_requesting = true;
+                                            }
+                                            Err(e) => {
+                                                let w = rustbox.width();
+                                                status = format_status(status,
+                                                                       w,
+                                                                       &format!("[{}-{}:SFAIL:{}]",
+                                                                                postid,
+                                                                                page,
+                                                                                e));
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
+                        Key::Enter => {
+                            let w = rustbox.width();
+                            status = format_status(status, w, "E");
+                            match state {
+                                Status::List => {
+
+                                    let index = list.get_selected_topic();
+                                    if index > 0 {
+                                        let topic_item = &collection[index - 1];
+
+                                        let posturl = &topic_item.title.url;
+                                        let postid = &topic_item.title.url_query.message;
+
+                                        let ci = ChannelItem {
+                                            url: posturl.clone(),
+                                            result: String::from(""),
+                                        };
+
+                                        match tx_req.send(ci) {
+                                            Ok(()) => {
+                                                let w = rustbox.width();
+                                                is_web_requesting = true;
+                                                status = format_status(status,
+                                                                       w,
+                                                                       &format!("[{}:SOK][{}]", postid, is_web_requesting));
+
+                                            }
+                                            Err(e) => {
+                                                let w = rustbox.width();
+                                                status = format_status(status,
+                                                                       w,
+                                                                       &format!("[{}:SFAIL:{}]",
+                                                                                postid,
+                                                                                e));
+                                            }
+                                        }
+
+                                    }
+                                }
+                                Status::Show => {}
+                            }
+                        }
+                        Key::Backspace => {
+                            let w = rustbox.width();
+                            status = format_status(status, w, "B");
+                            match state {
+                                Status::List => {}
+                                Status::Show => {
+                                    state = Status::List;
+                                }
+                            }
+                        }
+
+                        _ => {}
+                    }
                 }
+                Err(e) => panic!("{}", e),
+                _ => {}
             }
-            Err(e) => panic!("{}", e),
-            _ => {}
         }
+
     }
 }
 
