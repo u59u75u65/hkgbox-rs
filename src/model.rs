@@ -1,3 +1,4 @@
+#[derive(Debug)]
 #[derive(RustcDecodable)]
 pub struct ListTopicTitleItem {
     pub url: String,
@@ -6,13 +7,14 @@ pub struct ListTopicTitleItem {
     pub num_of_pages: usize
 }
 
+#[derive(Debug)]
 #[derive(RustcDecodable)]
 pub struct ListTopicAuthorItem {
     pub url: String,
     pub name: String,
 }
 
-
+#[derive(Debug)]
 #[derive(RustcDecodable)]
 pub struct ListTopicItem {
     pub title: ListTopicTitleItem,
@@ -24,6 +26,7 @@ pub struct ListTopicItem {
 }
 
 
+#[derive(Debug)]
 #[derive(RustcDecodable)]
 pub struct ShowItem {
     pub url_query: UrlQueryItem,
@@ -34,7 +37,8 @@ pub struct ShowItem {
     pub replies: Vec<ShowReplyItem>
 }
 
-#[derive(RustcDecodable, Debug)]
+#[derive(Debug)]
+#[derive(RustcDecodable)]
 pub struct ShowReplyItem {
     pub userid: String,
     pub username: String,
@@ -42,6 +46,7 @@ pub struct ShowReplyItem {
     pub published_at: String
 }
 
+#[derive(Debug)]
 #[derive(RustcDecodable)]
 pub struct UrlQueryItem {
     // pub type: String,
