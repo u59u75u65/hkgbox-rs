@@ -98,7 +98,7 @@ fn main() {
     let wclient = thread::spawn(move || {
         let mut wr = WebResource::new();
         let mut ct = CancellationTokenSource::new();
-        ct.cancel_after(std::time::Duration::new(3, 0));
+        ct.cancel_after(std::time::Duration::new(10, 0));
         loop {
             match rx_req.recv() {
                 Ok(item) => {
