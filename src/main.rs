@@ -108,12 +108,11 @@ fn main() {
                                th.unpark();
                            },
                            || {
-                               let item_url2 = item.url.clone();
-                               let item2 = ChannelItem {
-                                   url: String::from(item_url2),
+                               let result_item = ChannelItem {
+                                   url: item.url.to_string(),
                                    result: wr.get(&item.url),
                                };
-                               tx_res.send(item2).unwrap();
+                               tx_res.send(result_item).unwrap();
                            });
 
                     if ct.is_canceled() {
