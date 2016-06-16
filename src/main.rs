@@ -110,34 +110,48 @@ fn main() {
                            },
                            || {
 
-                               let base_url = "http://forum1.hkgolden.com/view.aspx";
-                               let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                                     base_url = base_url,
-                                                     postid = &item.postid,
-                                                     page = &item.page);
-
-                               let result = wr.get(&posturl);
-                               let result2 = result.clone();
-
-                               let result_item = ChannelItem {
-                                //    url: item.url.to_string(),
-                                    postid: item.postid.clone(),
-                                    page: item.page,
-                                   result: result,
-                               };
-
                                let html_path = format!("data/html/{postid}",  postid = item.postid);
+                               let show_item_file_name = format!("{html_path}/show_{page}.html", html_path = &html_path, page = item.page);
 
-                               match fs::create_dir_all(&html_path) {
-                                   Ok(()) => {
-                                       let show_item_file_name = format!("{html_path}/show_{page}.html", html_path = &html_path, page = item.page);
-                                       let mut show_item_file = File::create(show_item_file_name).unwrap();
-                                       show_item_file.write_all(&result2.into_bytes());
+                               let postid = item.postid.clone();
+                               match read_cache(&show_item_file_name) {
+                                   Ok(result) => {
+                                       let result_item = ChannelItem {
+                                           postid: postid,
+                                           page: item.page,
+                                           result: result,
+                                       };
+                                       tx_res.send(result_item).unwrap();
+                                    }
+                                   Err(e) => {
+                                       let base_url = "http://forum1.hkgolden.com/view.aspx";
+                                       let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                                                             base_url = base_url,
+                                                             postid = &item.postid,
+                                                             page = &item.page);
+
+                                       let result = wr.get(&posturl);
+                                       let result2 = result.clone();
+
+                                       match fs::create_dir_all(&html_path) {
+                                           Ok(()) => {
+                                               let mut show_item_file = File::create(show_item_file_name).unwrap();
+                                               show_item_file.write_all(&result2.into_bytes());
+                                           }
+                                           Err(e) => { panic!(e) }
+                                       }
+
+                                       let result_item = ChannelItem {
+                                           postid: postid,
+                                           page: item.page,
+                                           result: result,
+                                       };
+
+                                       tx_res.send(result_item).unwrap();
+
                                    }
-                                   Err(e) => { panic!(e) }
                                }
 
-                               tx_res.send(result_item).unwrap();
                            });
 
                     if ct.is_canceled() {
@@ -432,6 +446,13 @@ fn main() {
         }
 
     }
+}
+
+fn read_cache<P: AsRef<Path>>(file_path: P) -> Result<String, String>{
+    let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
+    let mut contents = String::new();
+    try!(file.read_to_string(&mut contents).map_err(|e| e.to_string()));
+    Ok(contents)
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
