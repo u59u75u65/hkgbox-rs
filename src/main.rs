@@ -112,7 +112,7 @@ fn main() {
 
                                let html_path = format!("data/html/{postid}/",  postid = item.postid);
                                let show_file_name = format!("show_{page}.html", page = item.page);
-                               let show_file_html_path = format!("{}/{}", html_path, show_file_name);
+                               let show_file_html_path = Path::new(&html_path).join(&show_file_name);
 
                                let postid = item.postid.clone();
                                let (from_cache, result) = match read_cache(&show_file_html_path) {
@@ -427,8 +427,8 @@ fn read_cache<P: AsRef<Path>>(file_path: P) -> Result<String, String>{
     Ok(contents)
 }
 
-fn write_cache(cache_path: &String, file_name: &String, s: String) -> Result<(), String>{
-    let file_path = format!("{}/{}", cache_path, file_name);
+fn write_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S, s: String) -> Result<(), String>{
+    let file_path = cache_path.as_ref().join(file_name);
     try!(fs::create_dir_all(&cache_path).map_err(|e| e.to_string()));
     let mut file = try!(File::create(file_path).map_err(|e| e.to_string()));
     try!(file.write_all(&s.into_bytes()).map_err(|e| e.to_string()));
