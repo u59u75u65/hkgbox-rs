@@ -124,12 +124,7 @@ fn main() {
                                        tx_res.send(result_item).unwrap();
                                     }
                                    Err(e) => {
-                                       let base_url = "http://forum1.hkgolden.com/view.aspx";
-                                       let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                                             base_url = base_url,
-                                                             postid = &item.postid,
-                                                             page = &item.page);
-
+                                       let posturl = get_posturl(&item.postid, item.page);
                                        let result = wr.get(&posturl);
                                        let result2 = result.clone();
 
@@ -181,12 +176,7 @@ fn main() {
             Ok(item) => {
                 let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
-                let base_url = "http://forum1.hkgolden.com/view.aspx";
-                let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                      base_url = base_url,
-                                      postid = &item.postid,
-                                      page = &item.page);
-
+                let posturl = get_posturl(&item.postid, item.page);
                 show_item = builder.show_item(&document, &posturl);
 
                 let w = rustbox.width();
@@ -303,11 +293,7 @@ fn main() {
                                     if show_item.page > 1 {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page - 1;
-                                        let base_url = "http://forum1.hkgolden.com/view.aspx";
-                                        let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                                              base_url = base_url,
-                                                              postid = postid,
-                                                              page = page);
+                                        let posturl = get_posturl(postid, page);
 
                                         let ci = ChannelItem {
                                             // url: posturl.clone(),
@@ -346,11 +332,7 @@ fn main() {
 
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page + 1;
-                                        let base_url = "http://forum1.hkgolden.com/view.aspx";
-                                        let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                                              base_url = base_url,
-                                                              postid = postid,
-                                                              page = page);
+                                        let posturl = get_posturl(postid, page);
 
                                         let ci = ChannelItem {
                                             // url: posturl.clone(),
@@ -453,6 +435,15 @@ fn read_cache<P: AsRef<Path>>(file_path: P) -> Result<String, String>{
     let mut contents = String::new();
     try!(file.read_to_string(&mut contents).map_err(|e| e.to_string()));
     Ok(contents)
+}
+
+fn get_posturl(postid: &String, page: usize) -> String {
+    let base_url = "http://forum1.hkgolden.com/view.aspx";
+    let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                          base_url = base_url,
+                          postid = postid,
+                          page = page);
+    posturl
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
