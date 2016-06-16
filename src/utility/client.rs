@@ -13,7 +13,9 @@ use std::thread;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 pub struct ChannelItem {
-    pub url: String,
+    // pub url: String,
+    pub postid: String,
+    pub page: usize,
     pub result: String
 }
 

@@ -109,9 +109,18 @@ fn main() {
                                th.unpark();
                            },
                            || {
+
+                               let base_url = "http://forum1.hkgolden.com/view.aspx";
+                               let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                                                     base_url = base_url,
+                                                     postid = &item.postid,
+                                                     page = &item.page);
+
                                let result_item = ChannelItem {
-                                   url: item.url.to_string(),
-                                   result: wr.get(&item.url),
+                                //    url: item.url.to_string(),
+                                    postid: item.postid.clone(),
+                                    page: item.page,
+                                   result: wr.get(&posturl),
                                };
                                tx_res.send(result_item).unwrap();
                            });
@@ -143,7 +152,13 @@ fn main() {
             Ok(item) => {
                 let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
-                show_item = builder.show_item(&document, &item.url);
+                let base_url = "http://forum1.hkgolden.com/view.aspx";
+                let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                                      base_url = base_url,
+                                      postid = &item.postid,
+                                      page = &item.page);
+
+                show_item = builder.show_item(&document, &posturl);
 
                 let json_path = format!("data/json/{postid}",  postid = show_item.url_query.message);
                 match fs::create_dir_all(&json_path) {
@@ -278,7 +293,9 @@ fn main() {
                                                               page = page);
 
                                         let ci = ChannelItem {
-                                            url: posturl.clone(),
+                                            // url: posturl.clone(),
+                                            postid: postid.clone(),
+                                            page: page,
                                             result: String::from(""),
                                         };
 
@@ -319,7 +336,9 @@ fn main() {
                                                               page = page);
 
                                         let ci = ChannelItem {
-                                            url: posturl.clone(),
+                                            // url: posturl.clone(),
+                                            postid: postid.clone(),
+                                            page: page,
                                             result: String::from(""),
                                         };
 
@@ -360,7 +379,9 @@ fn main() {
                                         let postid = &topic_item.title.url_query.message;
 
                                         let ci = ChannelItem {
-                                            url: posturl.clone(),
+                                            // url: posturl.clone(),
+                                            postid: postid.clone(),
+                                            page: 1,
                                             result: String::from(""),
                                         };
 
