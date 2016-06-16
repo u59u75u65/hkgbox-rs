@@ -100,6 +100,7 @@ fn main() {
         let mut wr = WebResource::new();
         let mut ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
+
         loop {
             match rx_req.recv() {
                 Ok(item) => {
@@ -109,34 +110,7 @@ fn main() {
                                th.unpark();
                            },
                            || {
-
-                               let html_path = format!("data/html/{postid}/", postid = item.postid);
-                               let show_file_name = format!("show_{page}.html", page = item.page);
-
-                               let postid = item.postid.clone();
-                               let (from_cache, result) = match read_cache(&html_path,
-                                                                           &show_file_name) {
-                                   Ok(result) => (true, result),
-                                   Err(e) => {
-                                       let posturl = get_posturl(&item.postid, item.page);
-                                       let result = wr.get(&posturl);
-                                       (false, result)
-                                   }
-                               };
-
-                               if !from_cache {
-                                   let result2 = result.clone();
-                                   write_cache(&html_path, &show_file_name, result2);
-                               }
-
-                               let result_item = ChannelItem {
-                                   postid: postid,
-                                   page: item.page,
-                                   result: result,
-                               };
-
-                               tx_res.send(result_item).unwrap();
-
+                               tx_res.send(page_request(&item, &mut wr, &ct)).unwrap();
                            });
 
                     if ct.is_canceled() {
@@ -145,7 +119,6 @@ fn main() {
                     } else {
                         // Ok(())
                     }
-
                 }
                 Err(e) => {}
             }
@@ -458,6 +431,39 @@ fn get_posturl(postid: &String, page: usize) -> String {
                           postid = postid,
                           page = page);
     posturl
+}
+
+fn page_request(item: &ChannelItem,
+                wr: &mut WebResource,
+                ct: &CancellationTokenSource)
+                -> ChannelItem {
+
+    let html_path = format!("data/html/{postid}/", postid = item.postid);
+    let show_file_name = format!("show_{page}.html", page = item.page);
+
+    let postid = item.postid.clone();
+    let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
+        Ok(result) => (true, result),
+        Err(e) => {
+            let posturl = get_posturl(&item.postid, item.page);
+            let result = wr.get(&posturl);
+            (false, result)
+        }
+    };
+
+    if !from_cache {
+        let result2 = result.clone();
+        write_cache(&html_path, &show_file_name, result2);
+    }
+
+    let result_item = ChannelItem {
+        postid: postid,
+        page: item.page,
+        result: result,
+    };
+
+    result_item
+
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
