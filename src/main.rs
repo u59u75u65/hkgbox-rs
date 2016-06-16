@@ -112,10 +112,9 @@ fn main() {
 
                                let html_path = format!("data/html/{postid}/",  postid = item.postid);
                                let show_file_name = format!("show_{page}.html", page = item.page);
-                               let show_file_html_path = Path::new(&html_path).join(&show_file_name);
 
                                let postid = item.postid.clone();
-                               let (from_cache, result) = match read_cache(&show_file_html_path) {
+                               let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
                                    Ok(result) => (true, result),
                                    Err(e) => {
                                        let posturl = get_posturl(&item.postid, item.page);
@@ -420,7 +419,8 @@ fn main() {
     }
 }
 
-fn read_cache<P: AsRef<Path>>(file_path: P) -> Result<String, String>{
+fn read_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S) -> Result<String, String>{
+    let file_path = cache_path.as_ref().join(file_name);
     let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
     let mut contents = String::new();
     try!(file.read_to_string(&mut contents).map_err(|e| e.to_string()));
