@@ -42,6 +42,7 @@ use std::thread;
 use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -100,6 +101,7 @@ fn main() {
         let mut wr = WebResource::new();
         let mut ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
+
         loop {
             match rx_req.recv() {
                 Ok(item) => {
@@ -109,33 +111,7 @@ fn main() {
                                th.unpark();
                            },
                            || {
-
-                               let html_path = format!("data/html/{postid}/",  postid = item.postid);
-                               let show_file_name = format!("show_{page}.html", page = item.page);
-
-                               let postid = item.postid.clone();
-                               let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
-                                   Ok(result) => (true, result),
-                                   Err(e) => {
-                                       let posturl = get_posturl(&item.postid, item.page);
-                                       let result = wr.get(&posturl);
-                                       (false, result)
-                                   }
-                               };
-
-                                if !from_cache {
-                                    let result2 = result.clone();
-                                    write_cache(&html_path, &show_file_name, result2);
-                                }
-
-                               let result_item = ChannelItem {
-                                   postid: postid,
-                                   page: item.page,
-                                   result: result,
-                               };
-
-                               tx_res.send(result_item).unwrap();
-
+                               tx_res.send(page_request(&item, &mut wr, &ct)).unwrap();
                            });
 
                     if ct.is_canceled() {
@@ -144,7 +120,6 @@ fn main() {
                     } else {
                         // Ok(())
                     }
-
                 }
                 Err(e) => {}
             }
@@ -173,14 +148,15 @@ fn main() {
                                        w,
                                        &format!("[{}-{}:ROK][{}]",
                                                 show_item.url_query.message,
-                                                show_item.page, is_web_requesting));
+                                                show_item.page,
+                                                is_web_requesting));
 
                 show.resetY();
                 hkg::screen::common::clear(&rustbox);
                 state = Status::Show;
                 is_web_requesting = false;
             }
-            Err(e) => { }
+            Err(e) => {}
         }
 
         match state {
@@ -282,33 +258,10 @@ fn main() {
                                     if show_item.page > 1 {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page - 1;
-                                        let posturl = get_posturl(postid, page);
-
-                                        let ci = ChannelItem {
-                                            // url: posturl.clone(),
-                                            postid: postid.clone(),
-                                            page: page,
-                                            result: String::from(""),
-                                        };
-
-                                        match tx_req.send(ci) {
-                                            Ok(()) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SOK]", postid, page));
-                                                is_web_requesting = true;
-                                            }
-                                            Err(e) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SFAIL:{}]",
-                                                                                postid,
-                                                                                page,
-                                                                                e));
-                                            }
-                                        }
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                        status = format_status(status.clone(),
+                                                               rustbox.width(),
+                                                               &get_show_page_status_message(postid, page, &status_message));
                                     }
                                 }
                             }
@@ -318,37 +271,12 @@ fn main() {
                                 Status::List => {}
                                 Status::Show => {
                                     if show_item.max_page > show_item.page {
-
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page + 1;
-                                        let posturl = get_posturl(postid, page);
-
-                                        let ci = ChannelItem {
-                                            // url: posturl.clone(),
-                                            postid: postid.clone(),
-                                            page: page,
-                                            result: String::from(""),
-                                        };
-
-                                        match tx_req.send(ci) {
-                                            Ok(()) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SOK][{}]", postid, page, is_web_requesting));
-                                                is_web_requesting = true;
-                                            }
-                                            Err(e) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SFAIL:{}]",
-                                                                                postid,
-                                                                                page,
-                                                                                e));
-                                            }
-                                        }
-
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                        status = format_status(status.clone(),
+                                                               rustbox.width(),
+                                                               &get_show_page_status_message(postid, page, &status_message));
                                     }
                                 }
                             }
@@ -358,40 +286,15 @@ fn main() {
                             status = format_status(status, w, "E");
                             match state {
                                 Status::List => {
-
                                     let index = list.get_selected_topic();
                                     if index > 0 {
                                         let topic_item = &collection[index - 1];
-
-                                        let posturl = &topic_item.title.url;
                                         let postid = &topic_item.title.url_query.message;
-
-                                        let ci = ChannelItem {
-                                            // url: posturl.clone(),
-                                            postid: postid.clone(),
-                                            page: 1,
-                                            result: String::from(""),
-                                        };
-
-                                        match tx_req.send(ci) {
-                                            Ok(()) => {
-                                                let w = rustbox.width();
-                                                is_web_requesting = true;
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}:SOK][{}]", postid, is_web_requesting));
-
-                                            }
-                                            Err(e) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}:SFAIL:{}]",
-                                                                                postid,
-                                                                                e));
-                                            }
-                                        }
-
+                                        let page = 1;
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                        status = format_status(status.clone(),
+                                                               rustbox.width(),
+                                                               &get_show_page_status_message(postid, page, &status_message));
                                     }
                                 }
                                 Status::Show => {}
@@ -419,7 +322,9 @@ fn main() {
     }
 }
 
-fn read_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S) -> Result<String, String>{
+fn read_cache<P: AsRef<Path>, S: AsRef<Path>>(cache_path: P,
+                                              file_name: S)
+                                              -> Result<String, String> {
     let file_path = cache_path.as_ref().join(file_name);
     let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
     let mut contents = String::new();
@@ -427,7 +332,10 @@ fn read_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S) -> R
     Ok(contents)
 }
 
-fn write_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S, s: String) -> Result<(), String>{
+fn write_cache<P: AsRef<Path>, S: AsRef<Path>>(cache_path: P,
+                                               file_name: S,
+                                               s: String)
+                                               -> Result<(), String> {
     let file_path = cache_path.as_ref().join(file_name);
     try!(fs::create_dir_all(&cache_path).map_err(|e| e.to_string()));
     let mut file = try!(File::create(file_path).map_err(|e| e.to_string()));
@@ -442,6 +350,63 @@ fn get_posturl(postid: &String, page: usize) -> String {
                           postid = postid,
                           page = page);
     posturl
+}
+
+fn page_request(item: &ChannelItem,
+                wr: &mut WebResource,
+                ct: &CancellationTokenSource)
+                -> ChannelItem {
+
+    let html_path = format!("data/html/{postid}/", postid = item.postid);
+    let show_file_name = format!("show_{page}.html", page = item.page);
+
+    let postid = item.postid.clone();
+    let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
+        Ok(result) => (true, result),
+        Err(e) => {
+            let posturl = get_posturl(&item.postid, item.page);
+            let result = wr.get(&posturl);
+            (false, result)
+        }
+    };
+
+    if !from_cache {
+        let result2 = result.clone();
+        write_cache(&html_path, &show_file_name, result2);
+    }
+
+    let result_item = ChannelItem {
+        postid: postid,
+        page: item.page,
+        result: result,
+    };
+
+    result_item
+
+}
+
+fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> String {
+    let posturl = get_posturl(postid, page);
+
+    let ci = ChannelItem {
+        postid: postid.clone(),
+        page: page,
+        result: String::from(""),
+    };
+
+    let status_message = match tx_req.send(ci) {
+        Ok(()) => {
+            *is_web_requesting = true;
+            "SOK".to_string()
+        }
+        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+    };
+
+    status_message
+}
+
+fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
+    format!("[{}-{}:{}]", postid, page, status_message)
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
@@ -536,87 +501,3 @@ fn show_item_build_example(rustbox: &rustbox::RustBox, collection: &Vec<ListTopi
         _ => {}
     }
 }
-
-// for (jndex, elm) in tr.as_node().select(".repliers_right .ContentGrid").unwrap().enumerate() {
-//     let content = elm.as_node().text_contents();
-//     let name = &elm.name;
-//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}][{:<2}]={:?}", index, jndex, content));
-// }
-
-// let content = tr.text_contents();
-// rustbox.print(1,
-//               index + 4,
-//               rustbox::RB_NORMAL,
-//               Color::White,
-//               Color::Black,
-//               &format!("[{:<2}]={:?}", index, content));
-
-// for (jndex, div) in tr.as_node().children().enumerate() {
-//     let content = div.as_text();
-//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index + jndex, content));
-// }
-
-// for (jndex, div) in tr.as_node().select(".repliers_right").unwrap().enumerate() {
-//     let content = div.as_node().as_text();
-//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index + jndex, content));
-// }
-
-// for (jndex, div) in tr.as_node().select(".repliers_right").unwrap().collect::<Vec<_>>().iter().enumerate() {
-//     let content = div.as_node().as_text();
-//     rustbox.print(1, jndex + index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index + jndex, content));
-// }
-
-// let c = &tr.as_node().select(".repliers_right .ContentGrid").unwrap().collect::<Vec<_>>()[0];
-// let content = c.as_node().as_text();
-// rustbox.print(1, index + 4, rustbox::RB_NORMAL, Color::White, Color::Black, &format!("[{:<2}]={:?}", index, content));
-
-
-// fn date_operation_example(rustbox: &rustbox::RustBox) {
-//     let now = Local::now();
-//
-//     let dt1 = match Local.datetime_from_str("30/4/2016 9:22", "%d/%m/%Y %H:%M") {
-//         Ok(v) => v,
-//         Err(e) => Local::now(),
-//     };
-//
-//     let dt2 = now.checked_sub(Duration::seconds(46)).unwrap();
-//     let dt3 = now.checked_sub(Duration::minutes(6)).unwrap();
-//     let dt4 = now.checked_sub(Duration::days(17)).unwrap();
-//     let dt5 = now.checked_sub(Duration::weeks(9)).unwrap();
-//
-//     rustbox.print(0,
-//                   0,
-//                   rustbox::RB_BOLD,
-//                   Color::White,
-//                   Color::Black,
-//                   &format!("{} {} {} {}",
-//                    duration_format(&(now - dt2)),
-//                    duration_format(&(now - dt3)),
-//                    duration_format(&(now - dt4)),
-//                    duration_format(&(now - dt5))
-//               ));
-//
-// }
-
-// fn debug_load_and_print_topics() {
-//     let s = cache::readfile(String::from("topics.json"));
-//     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
-//
-//     println!("topics {:?}", collection.len());
-//     debug_print_topics(collection);
-// }
-//
-// fn debug_print_topics(collection: Vec<TopicItem>) {
-//     for (i, item) in collection.iter().enumerate() {
-//
-//         println!("item[{}]= {title} {author_name} {last_replied_date} {last_replied_time} \
-//                   {reply_count} {rating}",
-//                  i,
-//                  title = item.titles[0].text,
-//                  author_name = item.author.name,
-//                  last_replied_date = item.last_replied_date,
-//                  last_replied_time = item.last_replied_time,
-//                  reply_count = item.reply_count,
-//                  rating = item.rating);
-//     }
-// }
