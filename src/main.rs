@@ -258,28 +258,10 @@ fn main() {
                                     if show_item.page > 1 {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page - 1;
-                                        let posturl = get_posturl(postid, page);
-
-                                        let ci = ChannelItem {
-                                            // url: posturl.clone(),
-                                            postid: postid.clone(),
-                                            page: page,
-                                            result: String::from(""),
-                                        };
-
-                                        let status_message = match tx_req.send(ci) {
-                                            Ok(()) => {
-                                                is_web_requesting = true;
-                                                "SOK".to_string()
-                                            }
-                                            Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
-                                        };
-                                        status = format_status(status,
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                        status = format_status(status.clone(),
                                                                rustbox.width(),
-                                                               &format!("[{}-{}:{}]",
-                                                                        postid,
-                                                                        page,
-                                                                        status_message));
+                                                               &get_show_page_status_message(postid, page, &status_message));
                                     }
                                 }
                             }
@@ -289,41 +271,12 @@ fn main() {
                                 Status::List => {}
                                 Status::Show => {
                                     if show_item.max_page > show_item.page {
-
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page + 1;
-                                        let posturl = get_posturl(postid, page);
-
-                                        let ci = ChannelItem {
-                                            // url: posturl.clone(),
-                                            postid: postid.clone(),
-                                            page: page,
-                                            result: String::from(""),
-                                        };
-
-                                        match tx_req.send(ci) {
-                                            Ok(()) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SOK][{}]",
-                                                                                postid,
-                                                                                page,
-                                                                                is_web_requesting));
-                                                is_web_requesting = true;
-                                            }
-                                            Err(e) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SFAIL:\
-                                                                                 {}]",
-                                                                                postid,
-                                                                                page,
-                                                                                e));
-                                            }
-                                        }
-
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                        status = format_status(status.clone(),
+                                                               rustbox.width(),
+                                                               &get_show_page_status_message(postid, page, &status_message));
                                     }
                                 }
                             }
@@ -333,42 +286,15 @@ fn main() {
                             status = format_status(status, w, "E");
                             match state {
                                 Status::List => {
-
                                     let index = list.get_selected_topic();
                                     if index > 0 {
                                         let topic_item = &collection[index - 1];
-
-                                        let posturl = &topic_item.title.url;
                                         let postid = &topic_item.title.url_query.message;
-
-                                        let ci = ChannelItem {
-                                            // url: posturl.clone(),
-                                            postid: postid.clone(),
-                                            page: 1,
-                                            result: String::from(""),
-                                        };
-
-                                        match tx_req.send(ci) {
-                                            Ok(()) => {
-                                                let w = rustbox.width();
-                                                is_web_requesting = true;
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}:SOK][{}]",
-                                                                                postid,
-                                                                                is_web_requesting));
-
-                                            }
-                                            Err(e) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}:SFAIL:{}]",
-                                                                                postid,
-                                                                                e));
-                                            }
-                                        }
-
+                                        let page = 1;
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                        status = format_status(status.clone(),
+                                                               rustbox.width(),
+                                                               &get_show_page_status_message(postid, page, &status_message));
                                     }
                                 }
                                 Status::Show => {}
