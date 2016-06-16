@@ -1,5 +1,8 @@
+use reply_model::*;
+
 #[derive(Debug)]
 #[derive(RustcDecodable)]
+#[derive(RustcEncodable)]
 pub struct ListTopicTitleItem {
     pub url: String,
     pub url_query: UrlQueryItem,
@@ -9,6 +12,7 @@ pub struct ListTopicTitleItem {
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
+#[derive(RustcEncodable)]
 pub struct ListTopicAuthorItem {
     pub url: String,
     pub name: String,
@@ -16,6 +20,7 @@ pub struct ListTopicAuthorItem {
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
+#[derive(RustcEncodable)]
 pub struct ListTopicItem {
     pub title: ListTopicTitleItem,
     pub author: ListTopicAuthorItem,
@@ -28,6 +33,7 @@ pub struct ListTopicItem {
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
+#[derive(RustcEncodable)]
 pub struct ShowItem {
     pub url_query: UrlQueryItem,
     pub title: String,
@@ -39,15 +45,18 @@ pub struct ShowItem {
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
+#[derive(RustcEncodable)]
 pub struct ShowReplyItem {
     pub userid: String,
     pub username: String,
     pub content: String,
+    pub body: Vec<NodeType>,
     pub published_at: String
 }
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
+#[derive(RustcEncodable)]
 pub struct UrlQueryItem {
     // pub type: String,
     pub message: String
