@@ -42,6 +42,7 @@ use std::thread;
 use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
 use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
@@ -456,6 +457,30 @@ fn page_request(item: &ChannelItem,
 
     result_item
 
+}
+
+fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> String {
+    let posturl = get_posturl(postid, page);
+
+    let ci = ChannelItem {
+        postid: postid.clone(),
+        page: page,
+        result: String::from(""),
+    };
+
+    let status_message = match tx_req.send(ci) {
+        Ok(()) => {
+            *is_web_requesting = true;
+            "SOK".to_string()
+        }
+        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+    };
+
+    status_message
+}
+
+fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
+    format!("[{}-{}:{}]", postid, page, status_message)
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
