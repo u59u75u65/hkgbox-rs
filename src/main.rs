@@ -116,12 +116,27 @@ fn main() {
                                                      postid = &item.postid,
                                                      page = &item.page);
 
+                               let result = wr.get(&posturl);
+                               let result2 = result.clone();
+
                                let result_item = ChannelItem {
                                 //    url: item.url.to_string(),
                                     postid: item.postid.clone(),
                                     page: item.page,
-                                   result: wr.get(&posturl),
+                                   result: result,
                                };
+
+                               let html_path = format!("data/html/{postid}",  postid = item.postid);
+
+                               match fs::create_dir_all(&html_path) {
+                                   Ok(()) => {
+                                       let show_item_file_name = format!("{html_path}/show_{page}.html", html_path = &html_path, page = item.page);
+                                       let mut show_item_file = File::create(show_item_file_name).unwrap();
+                                       show_item_file.write_all(&result2.into_bytes());
+                                   }
+                                   Err(e) => { panic!(e) }
+                               }
+
                                tx_res.send(result_item).unwrap();
                            });
 
@@ -160,29 +175,17 @@ fn main() {
 
                 show_item = builder.show_item(&document, &posturl);
 
-                let json_path = format!("data/json/{postid}",  postid = show_item.url_query.message);
-                match fs::create_dir_all(&json_path) {
-                    Ok(()) => {
+                let w = rustbox.width();
+                status = format_status(status,
+                                       w,
+                                       &format!("[{}-{}:ROK][{}]",
+                                                show_item.url_query.message,
+                                                show_item.page, is_web_requesting));
 
-                        let show_item_file_name = format!("{json_path}/show_{page}.json", json_path = &json_path, page = show_item.page);
-                        let mut show_item_file = File::create(show_item_file_name).unwrap();
-                        let encoded = json::encode(&show_item).unwrap();
-                        show_item_file.write_all(&encoded.into_bytes());
-
-                        let w = rustbox.width();
-                        status = format_status(status,
-                                               w,
-                                               &format!("[{}-{}:ROK][{}]",
-                                                        show_item.url_query.message,
-                                                        show_item.page, is_web_requesting));
-
-                        show.resetY();
-                        hkg::screen::common::clear(&rustbox);
-                        state = Status::Show;
-                        is_web_requesting = false;
-                    }
-                    Err(e) => { panic!(e) }
-                }
+                show.resetY();
+                hkg::screen::common::clear(&rustbox);
+                state = Status::Show;
+                is_web_requesting = false;
             }
             Err(e) => { }
         }
