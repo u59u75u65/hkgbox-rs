@@ -110,11 +110,12 @@ fn main() {
                            },
                            || {
 
-                               let html_path = format!("data/html/{postid}/",  postid = item.postid);
+                               let html_path = format!("data/html/{postid}/", postid = item.postid);
                                let show_file_name = format!("show_{page}.html", page = item.page);
 
                                let postid = item.postid.clone();
-                               let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
+                               let (from_cache, result) = match read_cache(&html_path,
+                                                                           &show_file_name) {
                                    Ok(result) => (true, result),
                                    Err(e) => {
                                        let posturl = get_posturl(&item.postid, item.page);
@@ -123,10 +124,10 @@ fn main() {
                                    }
                                };
 
-                                if !from_cache {
-                                    let result2 = result.clone();
-                                    write_cache(&html_path, &show_file_name, result2);
-                                }
+                               if !from_cache {
+                                   let result2 = result.clone();
+                                   write_cache(&html_path, &show_file_name, result2);
+                               }
 
                                let result_item = ChannelItem {
                                    postid: postid,
@@ -173,14 +174,15 @@ fn main() {
                                        w,
                                        &format!("[{}-{}:ROK][{}]",
                                                 show_item.url_query.message,
-                                                show_item.page, is_web_requesting));
+                                                show_item.page,
+                                                is_web_requesting));
 
                 show.resetY();
                 hkg::screen::common::clear(&rustbox);
                 state = Status::Show;
                 is_web_requesting = false;
             }
-            Err(e) => { }
+            Err(e) => {}
         }
 
         match state {
@@ -296,14 +298,17 @@ fn main() {
                                                 let w = rustbox.width();
                                                 status = format_status(status,
                                                                        w,
-                                                                       &format!("[{}-{}:SOK]", postid, page));
+                                                                       &format!("[{}-{}:SOK]",
+                                                                                postid,
+                                                                                page));
                                                 is_web_requesting = true;
                                             }
                                             Err(e) => {
                                                 let w = rustbox.width();
                                                 status = format_status(status,
                                                                        w,
-                                                                       &format!("[{}-{}:SFAIL:{}]",
+                                                                       &format!("[{}-{}:SFAIL:\
+                                                                                 {}]",
                                                                                 postid,
                                                                                 page,
                                                                                 e));
@@ -335,14 +340,18 @@ fn main() {
                                                 let w = rustbox.width();
                                                 status = format_status(status,
                                                                        w,
-                                                                       &format!("[{}-{}:SOK][{}]", postid, page, is_web_requesting));
+                                                                       &format!("[{}-{}:SOK][{}]",
+                                                                                postid,
+                                                                                page,
+                                                                                is_web_requesting));
                                                 is_web_requesting = true;
                                             }
                                             Err(e) => {
                                                 let w = rustbox.width();
                                                 status = format_status(status,
                                                                        w,
-                                                                       &format!("[{}-{}:SFAIL:{}]",
+                                                                       &format!("[{}-{}:SFAIL:\
+                                                                                 {}]",
                                                                                 postid,
                                                                                 page,
                                                                                 e));
@@ -379,7 +388,9 @@ fn main() {
                                                 is_web_requesting = true;
                                                 status = format_status(status,
                                                                        w,
-                                                                       &format!("[{}:SOK][{}]", postid, is_web_requesting));
+                                                                       &format!("[{}:SOK][{}]",
+                                                                                postid,
+                                                                                is_web_requesting));
 
                                             }
                                             Err(e) => {
@@ -419,7 +430,9 @@ fn main() {
     }
 }
 
-fn read_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S) -> Result<String, String>{
+fn read_cache<P: AsRef<Path>, S: AsRef<Path>>(cache_path: P,
+                                              file_name: S)
+                                              -> Result<String, String> {
     let file_path = cache_path.as_ref().join(file_name);
     let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
     let mut contents = String::new();
@@ -427,7 +440,10 @@ fn read_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S) -> R
     Ok(contents)
 }
 
-fn write_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S, s: String) -> Result<(), String>{
+fn write_cache<P: AsRef<Path>, S: AsRef<Path>>(cache_path: P,
+                                               file_name: S,
+                                               s: String)
+                                               -> Result<(), String> {
     let file_path = cache_path.as_ref().join(file_name);
     try!(fs::create_dir_all(&cache_path).map_err(|e| e.to_string()));
     let mut file = try!(File::create(file_path).map_err(|e| e.to_string()));
