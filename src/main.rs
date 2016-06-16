@@ -266,27 +266,19 @@ fn main() {
                                             result: String::from(""),
                                         };
 
-                                        match tx_req.send(ci) {
+                                        let status_message = match tx_req.send(ci) {
                                             Ok(()) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SOK]",
-                                                                                postid,
-                                                                                page));
                                                 is_web_requesting = true;
+                                                "SOK".to_string()
                                             }
-                                            Err(e) => {
-                                                let w = rustbox.width();
-                                                status = format_status(status,
-                                                                       w,
-                                                                       &format!("[{}-{}:SFAIL:\
-                                                                                 {}]",
-                                                                                postid,
-                                                                                page,
-                                                                                e));
-                                            }
-                                        }
+                                            Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+                                        };
+                                        status = format_status(status,
+                                                               rustbox.width(),
+                                                               &format!("[{}-{}:{}]",
+                                                                        postid,
+                                                                        page,
+                                                                        status_message));
                                     }
                                 }
                             }
