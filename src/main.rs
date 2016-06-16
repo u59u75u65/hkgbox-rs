@@ -110,19 +110,32 @@ fn main() {
                            },
                            || {
 
-                               let base_url = "http://forum1.hkgolden.com/view.aspx";
-                               let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                                     base_url = base_url,
-                                                     postid = &item.postid,
-                                                     page = &item.page);
+                               let html_path = format!("data/html/{postid}/",  postid = item.postid);
+                               let show_file_name = format!("show_{page}.html", page = item.page);
+
+                               let postid = item.postid.clone();
+                               let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
+                                   Ok(result) => (true, result),
+                                   Err(e) => {
+                                       let posturl = get_posturl(&item.postid, item.page);
+                                       let result = wr.get(&posturl);
+                                       (false, result)
+                                   }
+                               };
+
+                                if !from_cache {
+                                    let result2 = result.clone();
+                                    write_cache(&html_path, &show_file_name, result2);
+                                }
 
                                let result_item = ChannelItem {
-                                //    url: item.url.to_string(),
-                                    postid: item.postid.clone(),
-                                    page: item.page,
-                                   result: wr.get(&posturl),
+                                   postid: postid,
+                                   page: item.page,
+                                   result: result,
                                };
+
                                tx_res.send(result_item).unwrap();
+
                            });
 
                     if ct.is_canceled() {
@@ -152,37 +165,20 @@ fn main() {
             Ok(item) => {
                 let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
-                let base_url = "http://forum1.hkgolden.com/view.aspx";
-                let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                      base_url = base_url,
-                                      postid = &item.postid,
-                                      page = &item.page);
-
+                let posturl = get_posturl(&item.postid, item.page);
                 show_item = builder.show_item(&document, &posturl);
 
-                let json_path = format!("data/json/{postid}",  postid = show_item.url_query.message);
-                match fs::create_dir_all(&json_path) {
-                    Ok(()) => {
+                let w = rustbox.width();
+                status = format_status(status,
+                                       w,
+                                       &format!("[{}-{}:ROK][{}]",
+                                                show_item.url_query.message,
+                                                show_item.page, is_web_requesting));
 
-                        let show_item_file_name = format!("{json_path}/show_{page}.json", json_path = &json_path, page = show_item.page);
-                        let mut show_item_file = File::create(show_item_file_name).unwrap();
-                        let encoded = json::encode(&show_item).unwrap();
-                        show_item_file.write_all(&encoded.into_bytes());
-
-                        let w = rustbox.width();
-                        status = format_status(status,
-                                               w,
-                                               &format!("[{}-{}:ROK][{}]",
-                                                        show_item.url_query.message,
-                                                        show_item.page, is_web_requesting));
-
-                        show.resetY();
-                        hkg::screen::common::clear(&rustbox);
-                        state = Status::Show;
-                        is_web_requesting = false;
-                    }
-                    Err(e) => { panic!(e) }
-                }
+                show.resetY();
+                hkg::screen::common::clear(&rustbox);
+                state = Status::Show;
+                is_web_requesting = false;
             }
             Err(e) => { }
         }
@@ -286,11 +282,7 @@ fn main() {
                                     if show_item.page > 1 {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page - 1;
-                                        let base_url = "http://forum1.hkgolden.com/view.aspx";
-                                        let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                                              base_url = base_url,
-                                                              postid = postid,
-                                                              page = page);
+                                        let posturl = get_posturl(postid, page);
 
                                         let ci = ChannelItem {
                                             // url: posturl.clone(),
@@ -329,11 +321,7 @@ fn main() {
 
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page + 1;
-                                        let base_url = "http://forum1.hkgolden.com/view.aspx";
-                                        let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                                                              base_url = base_url,
-                                                              postid = postid,
-                                                              page = page);
+                                        let posturl = get_posturl(postid, page);
 
                                         let ci = ChannelItem {
                                             // url: posturl.clone(),
@@ -429,6 +417,31 @@ fn main() {
         }
 
     }
+}
+
+fn read_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S) -> Result<String, String>{
+    let file_path = cache_path.as_ref().join(file_name);
+    let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
+    let mut contents = String::new();
+    try!(file.read_to_string(&mut contents).map_err(|e| e.to_string()));
+    Ok(contents)
+}
+
+fn write_cache<P: AsRef<Path>, S : AsRef<Path>>(cache_path: P, file_name: S, s: String) -> Result<(), String>{
+    let file_path = cache_path.as_ref().join(file_name);
+    try!(fs::create_dir_all(&cache_path).map_err(|e| e.to_string()));
+    let mut file = try!(File::create(file_path).map_err(|e| e.to_string()));
+    try!(file.write_all(&s.into_bytes()).map_err(|e| e.to_string()));
+    Ok(())
+}
+
+fn get_posturl(postid: &String, page: usize) -> String {
+    let base_url = "http://forum1.hkgolden.com/view.aspx";
+    let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                          base_url = base_url,
+                          postid = postid,
+                          page = page);
+    posturl
 }
 
 fn print_status(rustbox: &rustbox::RustBox, status: &str) {
