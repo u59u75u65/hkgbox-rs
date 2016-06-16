@@ -110,42 +110,32 @@ fn main() {
                            },
                            || {
 
-                               let html_path = format!("data/html/{postid}",  postid = item.postid);
-                               let show_item_file_name = format!("{html_path}/show_{page}.html", html_path = &html_path, page = item.page);
+                               let html_path = format!("data/html/{postid}/",  postid = item.postid);
+                               let show_file_name = format!("show_{page}.html", page = item.page);
+                               let show_file_html_path = format!("{}/{}", html_path, show_file_name);
 
                                let postid = item.postid.clone();
-                               match read_cache(&show_item_file_name) {
-                                   Ok(result) => {
-                                       let result_item = ChannelItem {
-                                           postid: postid,
-                                           page: item.page,
-                                           result: result,
-                                       };
-                                       tx_res.send(result_item).unwrap();
-                                    }
+                               let (from_cache, result) = match read_cache(&show_file_html_path) {
+                                   Ok(result) => (true, result),
                                    Err(e) => {
                                        let posturl = get_posturl(&item.postid, item.page);
                                        let result = wr.get(&posturl);
-                                       let result2 = result.clone();
-
-                                       match fs::create_dir_all(&html_path) {
-                                           Ok(()) => {
-                                               let mut show_item_file = File::create(show_item_file_name).unwrap();
-                                               show_item_file.write_all(&result2.into_bytes());
-                                           }
-                                           Err(e) => { panic!(e) }
-                                       }
-
-                                       let result_item = ChannelItem {
-                                           postid: postid,
-                                           page: item.page,
-                                           result: result,
-                                       };
-
-                                       tx_res.send(result_item).unwrap();
-
+                                       (false, result)
                                    }
-                               }
+                               };
+
+                                if !from_cache {
+                                    let result2 = result.clone();
+                                    write_cache(&html_path, &show_file_name, result2);
+                                }
+
+                               let result_item = ChannelItem {
+                                   postid: postid,
+                                   page: item.page,
+                                   result: result,
+                               };
+
+                               tx_res.send(result_item).unwrap();
 
                            });
 
@@ -435,6 +425,14 @@ fn read_cache<P: AsRef<Path>>(file_path: P) -> Result<String, String>{
     let mut contents = String::new();
     try!(file.read_to_string(&mut contents).map_err(|e| e.to_string()));
     Ok(contents)
+}
+
+fn write_cache(cache_path: &String, file_name: &String, s: String) -> Result<(), String>{
+    let file_path = format!("{}/{}", cache_path, file_name);
+    try!(fs::create_dir_all(&cache_path).map_err(|e| e.to_string()));
+    let mut file = try!(File::create(file_path).map_err(|e| e.to_string()));
+    try!(file.write_all(&s.into_bytes()).map_err(|e| e.to_string()));
+    Ok(())
 }
 
 fn get_posturl(postid: &String, page: usize) -> String {
