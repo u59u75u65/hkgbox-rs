@@ -23,19 +23,42 @@ impl<'a> Show<'a> {
     }
     pub fn print(&mut self, title: &str, item: &ShowItem) {
 
-        print_header(&self.rustbox,
-                     self.rustbox.width(),
-                     &format!("{} - {} [{}/{}]",
-                              item.title,
-                              title,
-                              item.page,
-                              item.max_page));
+        self.print_header(&format!("{} - {} [{}/{}]",
+                             item.title,
+                             title,
+                             item.page,
+                             item.max_page));
         print_body(&self.rustbox,
                    self.body_width(),
                    2,
                    self.body_height(),
                    &item,
                    self.scrollY);
+    }
+
+    fn print_header(&mut self, text: &str) {
+        let title_len = jks_len(text);
+        let padding = (if self.rustbox.width() >= title_len {
+            self.rustbox.width() - title_len
+        } else {
+            0
+        }) / 2;
+
+        let header_bottom = seq_str_gen(0, self.rustbox.width(), "─", "");
+
+        clearline(&self.rustbox, self.rustbox.width(), 0, 0);
+        self.rustbox.print(padding,
+                      0,
+                      rustbox::RB_BOLD,
+                      Color::White,
+                      Color::Black,
+                      text);
+        self.rustbox.print(0,
+                      1,
+                      rustbox::RB_BOLD,
+                      Color::Yellow,
+                      Color::Black,
+                      &header_bottom);
     }
 
     pub fn resetY(&mut self) {
@@ -79,32 +102,7 @@ impl<'a> Show<'a> {
             0
         }
     }
-}
 
-fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
-    let title_len = jks_len(text);
-    let padding = (if width >= title_len {
-        width - title_len
-    } else {
-        0
-    }) / 2;
-
-    let header_bottom = seq_str_gen(0, width, "─", "");
-
-
-    clearline(&rustbox, width, 0, 0);
-    rustbox.print(padding,
-                  0,
-                  rustbox::RB_BOLD,
-                  Color::White,
-                  Color::Black,
-                  text);
-    rustbox.print(0,
-                  1,
-                  rustbox::RB_BOLD,
-                  Color::Yellow,
-                  Color::Black,
-                  &header_bottom);
 }
 
 fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
