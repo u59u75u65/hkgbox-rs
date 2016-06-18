@@ -96,7 +96,7 @@ impl<'a> Show<'a> {
 
         for (i, reply) in item.replies.iter().take(rows).enumerate() {
 
-            self.y += self.print_reply(&reply.body, 0);
+            self.print_reply(&reply.body, 0);
 
             self.print_separator_top(&reply);
             self.y += 1;
@@ -108,22 +108,18 @@ impl<'a> Show<'a> {
 
     fn print_reply(&mut self, vec: &Vec<NodeType>,
                    depth: usize)
-                   -> usize {
+                    {
 
        let rustbox = self.rustbox;
        let scrollY = self.scrollY;
 
         let padding = seq_str_gen(0, depth, "├─", "");
-        let mut m = 0;
-        let mut recursive_offset = 0;
-        let mut total_y = 0;
         let mut line = String::new();
         let mut is_first = true;
 
         let vec_clean = clean_reply_body(vec);
         for (j, node) in vec_clean.iter().enumerate() {
-            total_y = self.y + m + recursive_offset;
-            if total_y > scrollY + 1 {
+            if  self.y > scrollY + 1 {
                 match node.clone() {
                     NodeType::Text(n) => {
                         if n.data != "" {
@@ -136,14 +132,14 @@ impl<'a> Show<'a> {
                         }
                     }
                     NodeType::BlockQuote(n) => {
-                        recursive_offset += self.print_reply(&n.data, depth + 1); // consider we pass y as total_y here previously
+                        self.print_reply(&n.data, depth + 1);
                         is_first = false;
                     }
                     NodeType::Br(n) => {
                         if !line.is_empty() {
                             print_default(rustbox,
                                           0,
-                                          total_y - scrollY,
+                                           self.y - scrollY,
                                           format!(" {}{}", padding, line));
                             line = String::new();
                             is_first = false;
@@ -151,7 +147,7 @@ impl<'a> Show<'a> {
 
                         // prevent first line empty
                         if !is_first {
-                            m += 1;
+                             self.y += 1;
                         }
 
                     }
@@ -160,18 +156,16 @@ impl<'a> Show<'a> {
         }
 
         if !line.is_empty() {
-            total_y = self.y + m + recursive_offset;
+            // total_y = self.y + m + reursive_offset;
             print_default(rustbox,
                           0,
-                          total_y - scrollY,
+                           self.y - scrollY,
                           format!(" {}{}  ", padding, line));
             line = String::new();
-            m += 1;
+             self.y += 1;
         }
 
-        m + recursive_offset
     }
-
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
         let width = self.body_width();
