@@ -24,10 +24,10 @@ impl<'a> Show<'a> {
     pub fn print(&mut self, title: &str, item: &ShowItem) {
 
         self.print_header(&format!("{} - {} [{}/{}]",
-                             item.title,
-                             title,
-                             item.page,
-                             item.max_page));
+                                   item.title,
+                                   title,
+                                   item.page,
+                                   item.max_page));
         self.print_body(2, &item);
     }
 
@@ -43,20 +43,20 @@ impl<'a> Show<'a> {
 
         clearline(&self.rustbox, self.rustbox.width(), 0, 0);
         self.rustbox.print(padding,
-                      0,
-                      rustbox::RB_BOLD,
-                      Color::White,
-                      Color::Black,
-                      text);
+                           0,
+                           rustbox::RB_BOLD,
+                           Color::White,
+                           Color::Black,
+                           text);
         self.rustbox.print(0,
-                      1,
-                      rustbox::RB_BOLD,
-                      Color::Yellow,
-                      Color::Black,
-                      &header_bottom);
+                           1,
+                           rustbox::RB_BOLD,
+                           Color::Yellow,
+                           Color::Black,
+                           &header_bottom);
     }
 
-    pub fn print_body(&mut self,offset_y: usize, item: &ShowItem) {
+    pub fn print_body(&mut self, offset_y: usize, item: &ShowItem) {
         let width = self.body_width();
         let rows = self.body_height();
         let rustbox = self.rustbox;
@@ -92,7 +92,8 @@ impl<'a> Show<'a> {
 
                 let published_at = reply.published_at.clone();
 
-                let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+                let published_at_dt = match Local.datetime_from_str(&published_at,
+                                                                    "%d/%m/%Y %H:%M") {
                     Ok(v) => v,
                     Err(e) => now,
                 };
@@ -168,13 +169,8 @@ impl<'a> Show<'a> {
             0
         }
     }
-    fn print_default(&self, x: usize, y: usize, text: &str){
-        self.rustbox.print(x,
-                      y,
-                      rustbox::RB_BOLD,
-                      Color::White,
-                      Color::Black,
-                      text);
+    fn print_default(&self, x: usize, y: usize, text: &str) {
+        self.rustbox.print(x, y, rustbox::RB_BOLD, Color::White, Color::Black, text);
     }
 }
 
@@ -232,7 +228,7 @@ fn print_reply(vec: &Vec<NodeType>,
                         result.push(node3);
                     }
                 }
-                _ => { result.push(node3) }
+                _ => result.push(node3),
             }
         }
         result.clone()
@@ -430,5 +426,5 @@ fn published_at_format(duration: &Duration) -> String {
 }
 
 fn seq_str_gen(start: usize, end: usize, sym: &str, join_sym: &str) -> String {
-    (start..end).map(|_|sym.clone()).collect::<Vec<_>>().join(&join_sym)
+    (start..end).map(|_| sym.clone()).collect::<Vec<_>>().join(&join_sym)
 }
