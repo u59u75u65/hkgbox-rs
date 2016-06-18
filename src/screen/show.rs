@@ -89,7 +89,8 @@ fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
         0
     }) / 2;
 
-    let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
+    let header_bottom = seq_str_gen(0, width, "─", "");
+
 
     clearline(&rustbox, width, 0, 0);
     rustbox.print(padding,
@@ -111,12 +112,12 @@ fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
 }
 
 fn print_reply(vec: &Vec<NodeType>,
-               depth: u8,
+               depth: usize,
                scrollY: usize,
                y: usize,
                rustbox: &rustbox::RustBox)
                -> usize {
-    let padding = (0..depth).map(|_| "├─").collect::<Vec<_>>().join("");
+    let padding = seq_str_gen(0, depth, "├─", "");
     let mut m = 0;
     let mut recursive_offset = 0;
     let mut total_y = 0;
@@ -242,7 +243,7 @@ fn print_body(rustbox: &rustbox::RustBox,
         0
     } / 2;
 
-    let separator_padding = (0..separator_padding_width).map(|_| " ").collect::<Vec<_>>().join("");
+    let separator_padding = seq_str_gen(0, separator_padding_width, " ", "");
 
     let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
 
@@ -306,15 +307,8 @@ fn make_separator_replier_name(separator_width: usize,
         replier_name_right_spacing_width
     };
 
-    let replier_name_left_spacing = (0..replier_name_left_spacing_width)
-                                        .map(|_| "─")
-                                        .collect::<Vec<_>>()
-                                        .join("");
-
-    let replier_name_right_spacing = (0..replier_name_right_spacing_width)
-                                         .map(|_| "─")
-                                         .collect::<Vec<_>>()
-                                         .join("");
+    let replier_name_left_spacing = seq_str_gen(0, replier_name_left_spacing_width, "─", "");
+    let replier_name_right_spacing = seq_str_gen(0, replier_name_right_spacing_width, "─", "");
 
     let separator_replier = format!("{}{}{}{}{}",
                                     "╭",
@@ -346,15 +340,8 @@ fn make_separator_time(separator_width: usize,
         time_right_spacing_width
     };
 
-    let time_left_spacing = (0..time_left_spacing_width)
-                                .map(|_| "─")
-                                .collect::<Vec<_>>()
-                                .join("");
-
-    let time_right_spacing = (0..time_right_spacing_width)
-                                 .map(|_| "─")
-                                 .collect::<Vec<_>>()
-                                 .join("");
+    let time_left_spacing = seq_str_gen(0, time_left_spacing_width, "─", "");
+    let time_right_spacing = seq_str_gen(0, time_right_spacing_width, "─", "");
 
     let separator_time = format!("{}{}{}{}{}",
                                  "",
@@ -396,11 +383,7 @@ fn make_separator_top(separator_width: usize,
         0
     };
 
-    let separator_top_middle = (0..separator_top_middle_width)
-                                   .map(|_| " ")
-                                   .collect::<Vec<_>>()
-                                   .join("");
-
+    let separator_top_middle = seq_str_gen(0, separator_top_middle_width, " ", "");
     let separator_top = format!("{}{}{}{}{}",
                                 separator_padding,
                                 separator_top_middle,
@@ -417,10 +400,8 @@ fn make_separator_bottom(separator_width: usize, separator_padding: &str) -> Str
     } else {
         0
     };
-    let separator_bottom_middle = (0..separator_bottom_middle_width)
-                                      .map(|_| "─")
-                                      .collect::<Vec<_>>()
-                                      .join("");
+    let separator_bottom_middle = seq_str_gen(0, separator_bottom_middle_width, "─", "");
+
     let separator_bottom = format!("{}{}{}{}",
                                    separator_padding,
                                    separator_bottom_middle,
@@ -447,4 +428,8 @@ fn published_at_format(duration: &Duration) -> String {
     } else {
         String::from("1m")
     }
+}
+
+fn seq_str_gen(start: usize, end: usize, sym: &str, join_sym: &str) -> String {
+    (start..end).map(|_|sym.clone()).collect::<Vec<_>>().join(&join_sym)
 }
