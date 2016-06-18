@@ -125,41 +125,43 @@ impl<'a> Show<'a> {
 
         let vec_clean = clean_reply_body(vec);
         for (j, node) in vec_clean.iter().enumerate() {
-            if self.can_print() {
-                match node.clone() {
-                    NodeType::Text(n) => {
-                        if n.data != "" {
-                            line = format!("{}{}", line, n.data);
-                        }
+            match node.clone() {
+                NodeType::Text(n) => {
+                    if n.data != "" {
+                        line = format!("{}{}", line, n.data);
                     }
-                    NodeType::Image(n) => {
-                        if n.data != "" {
-                            line = format!("{}[img {}]", line, n.data);
-                        }
+                }
+                NodeType::Image(n) => {
+                    if n.data != "" {
+                        line = format!("{}[img {}]", line, n.data);
                     }
-                    NodeType::BlockQuote(n) => {
-                        self.print_reply(&n.data, depth + 1);
+                }
+                NodeType::BlockQuote(n) => {
+                    self.print_reply(&n.data, depth + 1);
+                    is_first = false;
+                }
+                NodeType::Br(n) => {
+                    if !line.is_empty() {
+                        if self.can_print() {
+                            self.print_reply_line(format!(" {}{}", padding, line));
+                        }
+                        line = String::new();
                         is_first = false;
                     }
-                    NodeType::Br(n) => {
-                        if !line.is_empty() {
-                            self.print_reply_line(format!(" {}{}", padding, line));
-                            line = String::new();
-                            is_first = false;
-                        }
 
-                        // prevent first line empty
-                        if !is_first {
-                            self.y += 1;
-                        }
-
+                    // prevent first line empty
+                    if !is_first {
+                        self.y += 1;
                     }
+
                 }
             }
         }
 
         if !line.is_empty() {
-            self.print_reply_line(format!(" {}{}  ", padding, line));
+            if self.can_print() {
+                self.print_reply_line(format!(" {}{}  ", padding, line));
+            }
             line = String::new();
             self.y += 1;
         }
