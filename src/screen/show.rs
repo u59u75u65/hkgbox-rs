@@ -134,22 +134,65 @@ fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String){
 }
 
 fn print_reply(vec: &Vec<NodeType>, depth: u8, scrollY: usize, y: usize, rustbox: &rustbox::RustBox) -> usize {
-    let mut recursive_offset = 0;
-    
-    for (j, node) in vec.iter().enumerate() {
-        let total_y = y + j + recursive_offset;
+    let padding = (0..depth).map(|_| ">").collect::<Vec<_>>().join("");
+    let mut m = 0; let mut recursive_offset = 0; let mut total_y = 0;
+    let mut line = String::new();
+
+    // clean up lines
+    let vec2 = {
+        let vec_length = vec.len();
+        let vec_check_cleanup = vec.clone();
+
+        // check if last 4 elements match the EMPTY PATTERN
+        let is_last4_empty = vec_check_cleanup.iter().rev().take(4).enumerate().all(|(j, node)| match node.clone() {
+            NodeType::Br(n) => { j == 1 || j == 2 || j == 3 }
+            NodeType::Text(n) => { j == 0  && n.data.is_empty() }
+            _ => { false }
+        } );
+
+        let vec_short_length = if vec_length > 4 && is_last4_empty { vec_length - 4 } else { vec_length };
+
+        vec.iter().take(vec_short_length)
+    };
+
+    for (j, node) in vec2.enumerate() {
+        total_y = y + m + recursive_offset;
         if scrollY + 1 < total_y {
             let node2 = node.clone();
-            let padding = (0..depth).map(|_| ">").collect::<Vec<_>>().join("");
             match node2 {
-                NodeType::Text(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = Text {}", padding, j, n.data)) }
-                NodeType::Image(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = Image {}", padding, j, n.data)) }
-                NodeType::BlockQuote(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = BlockQuote", padding, j)); recursive_offset += print_reply(&n.data, depth + 1, scrollY, total_y + 1, &rustbox); }
-                NodeType::Br(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = Br", padding, j)) }
+                NodeType::Text(n) => {
+                    if n.data != "" {
+                        line = format!("{}{}", line, n.data);
+                    }
+                 }
+                NodeType::Image(n) => {
+                     print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = Image {}", padding, m, n.data));
+                     m +=1;
+                 }
+                NodeType::BlockQuote(n) => {
+                    print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = BlockQuote", padding, m));
+                    m +=1;
+                    recursive_offset += print_reply(&n.data, depth + 1, scrollY, total_y + 1, &rustbox);
+                }
+                NodeType::Br(n) => {
+                    if !line.is_empty() {
+                        print_default(rustbox, 0, total_y - scrollY, format!("{}{}", padding, line));
+                        line = String::new();
+                    }
+                    m +=1;
+                }
             }
         }
     }
-    vec.len() + recursive_offset
+
+    if !line.is_empty() {
+        total_y = y + m + recursive_offset;
+        print_default(rustbox, 0, total_y - scrollY, format!("{}{}  ", padding, line));
+        line = String::new();
+        m+=1;
+    }
+
+    m + recursive_offset
 }
 
 fn print_body(rustbox: &rustbox::RustBox,
