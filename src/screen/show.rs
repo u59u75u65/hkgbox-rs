@@ -116,7 +116,7 @@ fn print_reply(vec: &Vec<NodeType>,
                y: usize,
                rustbox: &rustbox::RustBox)
                -> usize {
-    let padding = (0..depth).map(|_| ">").collect::<Vec<_>>().join("");
+    let padding = (0..depth).map(|_| "├─").collect::<Vec<_>>().join("");
     let mut m = 0;
     let mut recursive_offset = 0;
     let mut total_y = 0;
