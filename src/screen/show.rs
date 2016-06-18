@@ -13,7 +13,9 @@ use reply_model::*;
 pub struct Show<'a> {
     rustbox: &'a rustbox::RustBox,
     scrollY: usize,
-    y: usize
+    y: usize,
+    replier_max_width: usize,
+    time_max_width: usize
 }
 
 impl<'a> Show<'a> {
@@ -21,7 +23,9 @@ impl<'a> Show<'a> {
         Show {
             rustbox: &rustbox,
             scrollY: 0,
-            y: 0
+            y: 0,
+            replier_max_width: 14,
+            time_max_width: 5
         }
     }
     pub fn print(&mut self, title: &str, item: &ShowItem) {
@@ -120,8 +124,7 @@ impl<'a> Show<'a> {
         for (j, node) in vec_clean.iter().enumerate() {
             total_y = self.y + m + recursive_offset;
             if total_y > scrollY + 1 {
-                let node2 = node.clone();
-                match node2 {
+                match node.clone() {
                     NodeType::Text(n) => {
                         if n.data != "" {
                             line = format!("{}{}", line, n.data);
@@ -191,15 +194,13 @@ impl<'a> Show<'a> {
     }
 
     fn build_separator_top(&mut self, replier_name: &str, time: &str) -> String {
-        let replier_max_width = 14;
-        let time_max_width = 5;
         let (separator_width, separator_padding_width, separator_padding) =
             self.build_separator_arguments();
         make_separator_top(separator_width,
                            &separator_padding,
-                           replier_max_width,
+                           self.replier_max_width,
                            &replier_name,
-                           time_max_width,
+                           self.time_max_width,
                            &time)
     }
 
