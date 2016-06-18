@@ -113,53 +113,10 @@ impl<'a> Show<'a> {
         let mut recursive_offset = 0;
         let mut total_y = 0;
         let mut line = String::new();
-
-        // clean up lines (end)
-        let vec2 = {
-            let vec_length = vec.len();
-            let vec_check_cleanup = vec.clone();
-
-            // check if last 4 elements match the EMPTY PATTERN
-            let is_last4_empty = vec_check_cleanup.iter()
-                                                  .rev()
-                                                  .take(4)
-                                                  .enumerate()
-                                                  .all(|(j, node)| match node.clone() {
-                                                      NodeType::Br(n) => j == 1 || j == 2 || j == 3,
-                                                      NodeType::Text(n) => j == 0 && n.data.is_empty(),
-                                                      _ => false,
-                                                  });
-
-            let vec_short_length = if vec_length > 4 && is_last4_empty {
-                vec_length - 4
-            } else {
-                vec_length
-            };
-
-            vec.iter().take(vec_short_length)
-        };
-
-        // clean up lines (start)
-        let vec3 = {
-            let vec2_cloned = vec2.clone();
-            let mut result: Vec<NodeType> = Vec::new();
-            for (j, node) in vec2_cloned.enumerate() {
-                let node2 = node.clone();
-                let node3 = node.clone();
-                match node2 {
-                    NodeType::Br(n) => {
-                        if !result.is_empty() {
-                            result.push(node3);
-                        }
-                    }
-                    _ => result.push(node3),
-                }
-            }
-            result.clone()
-        };
-
         let mut is_first = true;
-        for (j, node) in vec3.iter().enumerate() {
+
+        let vec_clean = clean_reply_body(vec);
+        for (j, node) in vec_clean.iter().enumerate() {
             total_y = y + m + recursive_offset;
             if scrollY + 1 < total_y {
                 let node2 = node.clone();
@@ -310,6 +267,54 @@ impl<'a> Show<'a> {
 
 fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
     rustbox.print(0, y, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
+}
+
+fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType>{
+    // clean up lines (end)
+    let vec2 = {
+        let vec_length = vec.len();
+        let vec_check_cleanup = vec.clone();
+
+        // check if last 4 elements match the EMPTY PATTERN
+        let is_last4_empty = vec_check_cleanup.iter()
+                                              .rev()
+                                              .take(4)
+                                              .enumerate()
+                                              .all(|(j, node)| match node.clone() {
+                                                  NodeType::Br(n) => j == 1 || j == 2 || j == 3,
+                                                  NodeType::Text(n) => j == 0 && n.data.is_empty(),
+                                                  _ => false,
+                                              });
+
+        let vec_short_length = if vec_length > 4 && is_last4_empty {
+            vec_length - 4
+        } else {
+            vec_length
+        };
+
+        vec.iter().take(vec_short_length)
+    };
+
+    // clean up lines (start)
+    let vec3 = {
+        let vec2_cloned = vec2.clone();
+        let mut result: Vec<NodeType> = Vec::new();
+        for (j, node) in vec2_cloned.enumerate() {
+            let node2 = node.clone();
+            let node3 = node.clone();
+            match node2 {
+                NodeType::Br(n) => {
+                    if !result.is_empty() {
+                        result.push(node3);
+                    }
+                }
+                _ => result.push(node3),
+            }
+        }
+        result.clone()
+    };
+
+    vec3
 }
 
 fn make_separator_replier_name(separator_width: usize,
