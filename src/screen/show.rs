@@ -43,24 +43,25 @@ impl<'a> Show<'a> {
     fn print_separator_top(&mut self, reply: &ShowReplyItem) {
         if self.can_print() {
             let (replier_name, time) = make_separator_content(&reply);
-            self.rustbox.print(0,
-                               self.scrolledY(),
-                               rustbox::RB_NORMAL,
-                               Color::Green,
-                               Color::Black,
-                               &self.build_separator_top(&replier_name, &time));
+            let s = self.build_separator_top(&replier_name, &time);
+            self.print_separator_line(&s);
         }
     }
 
     fn print_separator_bottom(&mut self) {
         if self.can_print() {
-            self.rustbox.print(0,
-                               self.scrolledY(),
-                               rustbox::RB_NORMAL,
-                               Color::Green,
-                               Color::Black,
-                               &self.build_separator_bottom());
+            let s = self.build_separator_bottom();
+            self.print_separator_line(&s);
         }
+    }
+
+    fn print_separator_line(&mut self, s: &str) {
+        self.rustbox.print(0,
+                           self.scrolledY(),
+                           rustbox::RB_NORMAL,
+                           Color::Green,
+                           Color::Black,
+                           &s);
     }
 
     fn print_header(&mut self, text: &str) {
@@ -105,6 +106,15 @@ impl<'a> Show<'a> {
         }
     }
 
+    fn print_reply_line(&mut self, s: String) {
+        self.rustbox.print(0,
+                           self.scrolledY(),
+                           rustbox::RB_NORMAL,
+                           Color::White,
+                           Color::Black,
+                           &s);
+    }
+
     fn print_reply(&mut self, vec: &Vec<NodeType>, depth: usize) {
 
         let rustbox = self.rustbox;
@@ -133,10 +143,7 @@ impl<'a> Show<'a> {
                     }
                     NodeType::Br(n) => {
                         if !line.is_empty() {
-                            print_default(rustbox,
-                                          0,
-                                          self.scrolledY(),
-                                          format!(" {}{}", padding, line));
+                            self.print_reply_line(format!(" {}{}", padding, line));
                             line = String::new();
                             is_first = false;
                         }
@@ -152,10 +159,7 @@ impl<'a> Show<'a> {
         }
 
         if !line.is_empty() {
-            print_default(rustbox,
-                          0,
-                          self.scrolledY(),
-                          format!(" {}{}  ", padding, line));
+            self.print_reply_line(format!(" {}{}  ", padding, line));
             line = String::new();
             self.y += 1;
         }
@@ -243,9 +247,7 @@ impl<'a> Show<'a> {
     }
 }
 
-fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
-    rustbox.print(0, y, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
-}
+
 
 fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
     let now = Local::now();
