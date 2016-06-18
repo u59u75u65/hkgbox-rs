@@ -6,6 +6,7 @@ extern crate regex;
 extern crate url;
 
 pub mod utility;
+pub mod reply_model;
 pub mod model;
 pub mod builder;
 pub mod screen;

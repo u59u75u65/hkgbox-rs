@@ -14,6 +14,7 @@ use model::ListTopicItem;
 use model::ShowItem;
 use model::ShowReplyItem;
 use model::UrlQueryItem;
+use reply_model::*;
 
 use regex::Regex;
 use url::Url;
@@ -135,10 +136,15 @@ fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
                                      .unwrap()
                                      .text_contents();
 
+                    let mut vec: Vec<NodeType> = Vec::new();
+
+                    vec = recursive(content_elm.as_node());
+
                     ShowReplyItem {
                         userid: String::from(userid),
                         username: String::from(username),
                         content: String::from(content),
+                        body: vec,
                         published_at: String::from(datatime),
                     }
                 })
@@ -160,9 +166,9 @@ fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
             map.entry(key).or_insert(value);
         }
 
-        // if map.len() < 2 {
-        //     panic!("length of map is invalid.")
-        // }
+        if map.len() < 2 {
+            panic!("length of map is invalid.")
+        }
 
         (
             map.get("type").unwrap().to_string(),
@@ -174,4 +180,60 @@ fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
         message: String::from(message)
     }
 
+}
+
+fn recursive(elm: &kuchiki::NodeRef) -> Vec<NodeType> {
+
+    let mut vec: Vec<NodeType> = Vec::new();
+
+    for (index, child) in elm.children().enumerate() {
+        // println!("[{}] => {:?}", index, child);
+        let node_data = child.data().clone();
+
+        match node_data {
+            kuchiki::NodeData::Element(element_data) => {
+                // println!("[{}] => [ELEMENT] => {:?}", index, element_data);
+                // println!("[{}] => [ELEMENT] => {:?}", index, child);
+
+                if element_data.name.local.trim().eq("blockquote") {
+
+                    // println!("[{}] => [ELEMENT] => {:?}", index, child.children());
+                    let subvec = recursive(&child);
+                    let node = NodeType::BlockQuote(BlockQuoteNode { data: subvec });
+                    vec.push(node);
+                } else if element_data.name.local.trim().eq("br") {
+                    let node = NodeType::Br(BrNode {});
+                    vec.push(node);
+                } else if element_data.name.local.trim().eq("img") {
+
+                    let attrs = (&element_data.attributes).borrow();
+                    let url = attrs.get("src").unwrap_or("");
+                    let node = NodeType::Image(ImageNode { data: url.to_string() });
+                    vec.push(node);
+
+                } else {
+                    // println!("[{}] => [ELEMENT] => {:?}", index, child);
+                    let mut subvec = recursive(&child);
+                    vec.append(&mut subvec);
+                }
+            }
+            kuchiki::NodeData::Text(rc) => {
+                // println!("[{}] => [TEXT] => {:?}", index, rc);
+                let d = rc.clone();
+                let b = d.borrow();
+
+                let mut s = b.trim().to_string();
+
+                if s == "\n" {
+                    // s = "\\n".to_string()
+                    continue;
+                }
+
+                let node = NodeType::Text(TextNode { data: s });
+                vec.push(node);
+            }
+            _ => {}
+        }
+    }
+    vec
 }

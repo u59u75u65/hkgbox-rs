@@ -7,7 +7,7 @@ use chrono::*;
 use screen::common::*;
 use utility::string::*;
 use model::ShowItem;
-
+use reply_model::*;
 
 pub struct Show<'a> {
     rustbox: &'a rustbox::RustBox,
@@ -25,7 +25,11 @@ impl<'a> Show<'a> {
 
         print_header(&self.rustbox,
                      self.rustbox.width(),
-                     &format!("{} - {} [{}/{}]", item.title, title, item.page, item.max_page));
+                     &format!("{} - {} [{}/{}]",
+                              item.title,
+                              title,
+                              item.page,
+                              item.max_page));
         print_body(&self.rustbox,
                    self.body_width(),
                    2,
@@ -102,6 +106,119 @@ fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
                   &header_bottom);
 }
 
+fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
+    rustbox.print(0, y, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
+}
+
+fn print_reply(vec: &Vec<NodeType>,
+               depth: u8,
+               scrollY: usize,
+               y: usize,
+               rustbox: &rustbox::RustBox)
+               -> usize {
+    let padding = (0..depth).map(|_| "├─").collect::<Vec<_>>().join("");
+    let mut m = 0;
+    let mut recursive_offset = 0;
+    let mut total_y = 0;
+    let mut line = String::new();
+
+    // clean up lines (end)
+    let vec2 = {
+        let vec_length = vec.len();
+        let vec_check_cleanup = vec.clone();
+
+        // check if last 4 elements match the EMPTY PATTERN
+        let is_last4_empty = vec_check_cleanup.iter()
+                                              .rev()
+                                              .take(4)
+                                              .enumerate()
+                                              .all(|(j, node)| match node.clone() {
+                                                  NodeType::Br(n) => j == 1 || j == 2 || j == 3,
+                                                  NodeType::Text(n) => j == 0 && n.data.is_empty(),
+                                                  _ => false,
+                                              });
+
+        let vec_short_length = if vec_length > 4 && is_last4_empty {
+            vec_length - 4
+        } else {
+            vec_length
+        };
+
+        vec.iter().take(vec_short_length)
+    };
+
+    // clean up lines (start)
+    let vec3 = {
+        let vec2_cloned = vec2.clone();
+        let mut result: Vec<NodeType> = Vec::new();
+        for (j, node) in vec2_cloned.enumerate() {
+            let node2 = node.clone();
+            let node3 = node.clone();
+            match node2 {
+                NodeType::Br(n) => {
+                    if !result.is_empty() {
+                        result.push(node3);
+                    }
+                }
+                _ => { result.push(node3) }
+            }
+        }
+        result.clone()
+    };
+
+    let mut is_first = true;
+    for (j, node) in vec3.iter().enumerate() {
+        total_y = y + m + recursive_offset;
+        if scrollY + 1 < total_y {
+            let node2 = node.clone();
+            match node2 {
+                NodeType::Text(n) => {
+                    if n.data != "" {
+                        line = format!("{}{}", line, n.data);
+                    }
+                }
+                NodeType::Image(n) => {
+                    if n.data != "" {
+                        line = format!("{}[img {}]", line, n.data);
+                    }
+                }
+                NodeType::BlockQuote(n) => {
+                    recursive_offset += print_reply(&n.data, depth + 1, scrollY, total_y, &rustbox);
+                    is_first = false;
+                }
+                NodeType::Br(n) => {
+                    if !line.is_empty() {
+                        print_default(rustbox,
+                                      0,
+                                      total_y - scrollY,
+                                      format!(" {}{}", padding, line));
+                        line = String::new();
+                        is_first = false;
+                    }
+
+                    // prevent first line empty
+                    if !is_first {
+                        m += 1;
+                    }
+
+                }
+            }
+        }
+    }
+
+    if !line.is_empty() {
+        total_y = y + m + recursive_offset;
+        print_default(rustbox,
+                      0,
+                      total_y - scrollY,
+                      format!(" {}{}  ", padding, line));
+        line = String::new();
+        m += 1;
+    }
+
+    m + recursive_offset
+}
+
 fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               offset_y: usize,
@@ -130,21 +247,8 @@ fn print_body(rustbox: &rustbox::RustBox,
     let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
 
     for (i, reply) in item.replies.iter().take(rows).enumerate() {
-        let contents: Vec<&str> = reply.content.split("\n").collect();
 
-        let mut m = 0;
-
-        for (j, content) in contents.iter().enumerate() {
-            if scrollY + 1 < y + m {
-                rustbox.print(0,
-                              j + y - scrollY,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &format!(" {}", content));
-            }
-            m += 1;
-        }
+        let mut m = print_reply(&reply.body, 0, scrollY, y, &rustbox);
 
         if scrollY + 1 < y + m {
 
