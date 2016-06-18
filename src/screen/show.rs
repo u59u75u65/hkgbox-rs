@@ -56,7 +56,7 @@ impl<'a> Show<'a> {
                            &header_bottom);
     }
 
-    fn build_separator_arguments(&mut self) -> (usize, usize, String){
+    fn build_separator_arguments(&mut self) -> (usize, usize, String) {
         let width = self.body_width();
         let rustbox = self.rustbox;
 
@@ -79,17 +79,19 @@ impl<'a> Show<'a> {
     fn build_separator_top(&mut self, replier_name: &str, time: &str) -> String {
         let replier_max_width = 14;
         let time_max_width = 5;
-        let (separator_width, separator_padding_width, separator_padding) = self.build_separator_arguments();
+        let (separator_width, separator_padding_width, separator_padding) =
+            self.build_separator_arguments();
         make_separator_top(separator_width,
-                                               &separator_padding,
-                                               replier_max_width,
-                                               &replier_name,
-                                               time_max_width,
-                                               &time)
+                           &separator_padding,
+                           replier_max_width,
+                           &replier_name,
+                           time_max_width,
+                           &time)
     }
 
     fn build_separator_bottom(&mut self) -> String {
-        let (separator_width, separator_padding_width, separator_padding) = self.build_separator_arguments();
+        let (separator_width, separator_padding_width, separator_padding) =
+            self.build_separator_arguments();
         make_separator_bottom(separator_width, &separator_padding)
     }
 
