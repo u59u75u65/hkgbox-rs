@@ -158,11 +158,9 @@ fn print_reply(vec: &Vec<NodeType>,
                     }
                 }
                 NodeType::Image(n) => {
-                    print_default(rustbox,
-                                  0,
-                                  total_y - scrollY,
-                                  format!("{}[{}] = Image {}", padding, m, n.data));
-                    m += 1;
+                    if n.data != "" {
+                        line = format!("{}[img {}]", line, n.data);
+                    }
                 }
                 NodeType::BlockQuote(n) => {
                     print_default(rustbox,
