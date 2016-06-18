@@ -7,11 +7,15 @@ use chrono::*;
 use screen::common::*;
 use utility::string::*;
 use model::ShowItem;
+use model::ShowReplyItem;
 use reply_model::*;
 
 pub struct Show<'a> {
     rustbox: &'a rustbox::RustBox,
     scrollY: usize,
+    y: usize,
+    replier_max_width: usize,
+    time_max_width: usize,
 }
 
 impl<'a> Show<'a> {
@@ -19,23 +23,177 @@ impl<'a> Show<'a> {
         Show {
             rustbox: &rustbox,
             scrollY: 0,
+            y: 0,
+            replier_max_width: 14,
+            time_max_width: 5,
         }
     }
     pub fn print(&mut self, title: &str, item: &ShowItem) {
 
-        print_header(&self.rustbox,
-                     self.rustbox.width(),
-                     &format!("{} - {} [{}/{}]",
-                              item.title,
-                              title,
-                              item.page,
-                              item.max_page));
-        print_body(&self.rustbox,
-                   self.body_width(),
-                   2,
-                   self.body_height(),
-                   &item,
-                   self.scrollY);
+        self.y = 2;
+
+        self.print_header(&format!("{} - {} [{}/{}]",
+                                   item.title,
+                                   title,
+                                   item.page,
+                                   item.max_page));
+        self.print_body(&item);
+    }
+
+    fn print_separator_top(&mut self, reply: &ShowReplyItem) {
+        if self.can_print() {
+            let (replier_name, time) = make_separator_content(&reply);
+            let s = self.build_separator_top(&replier_name, &time);
+            self.print_separator_line(&s);
+        }
+    }
+
+    fn print_separator_bottom(&mut self) {
+        if self.can_print() {
+            let s = self.build_separator_bottom();
+            self.print_separator_line(&s);
+        }
+    }
+
+    fn print_separator_line(&mut self, s: &str) {
+        self.rustbox.print(0,
+                           self.scrolledY(),
+                           rustbox::RB_NORMAL,
+                           Color::Green,
+                           Color::Black,
+                           &s);
+    }
+
+    fn print_header(&mut self, text: &str) {
+        let title_len = jks_len(text);
+        let padding = (if self.rustbox.width() >= title_len {
+            self.rustbox.width() - title_len
+        } else {
+            0
+        }) / 2;
+
+        let header_bottom = seq_str_gen(0, self.rustbox.width(), "─", "");
+
+        clearline(&self.rustbox, self.rustbox.width(), 0, 0);
+        self.rustbox.print(padding,
+                           0,
+                           rustbox::RB_BOLD,
+                           Color::White,
+                           Color::Black,
+                           text);
+        self.rustbox.print(0,
+                           1,
+                           rustbox::RB_BOLD,
+                           Color::Yellow,
+                           Color::Black,
+                           &header_bottom);
+    }
+
+    pub fn print_body(&mut self, item: &ShowItem) {
+        let width = self.body_width();
+        let rows = self.body_height();
+        let rustbox = self.rustbox;
+
+        for (i, reply) in item.replies.iter().take(rows).enumerate() {
+
+            self.print_reply(&reply.body, 0);
+
+            self.print_separator_top(&reply);
+            self.y += 1;
+
+            self.print_separator_bottom();
+            self.y += 1;
+        }
+    }
+
+    fn print_reply_line(&mut self, s: String) {
+        self.rustbox.print(0,
+                           self.scrolledY(),
+                           rustbox::RB_NORMAL,
+                           Color::White,
+                           Color::Black,
+                           &s);
+    }
+
+    fn print_reply(&mut self, vec: &Vec<NodeType>, depth: usize) {
+
+        let rustbox = self.rustbox;
+
+        let padding = seq_str_gen(0, depth, "├─", "");
+        let mut line = String::new();
+        let mut is_first = true;
+
+        let vec_clean = clean_reply_body(vec);
+        for (j, node) in vec_clean.iter().enumerate() {
+            if self.can_print() {
+                match node.clone() {
+                    NodeType::Text(n) => {
+                        if n.data != "" {
+                            line = format!("{}{}", line, n.data);
+                        }
+                    }
+                    NodeType::Image(n) => {
+                        if n.data != "" {
+                            line = format!("{}[img {}]", line, n.data);
+                        }
+                    }
+                    NodeType::BlockQuote(n) => {
+                        self.print_reply(&n.data, depth + 1);
+                        is_first = false;
+                    }
+                    NodeType::Br(n) => {
+                        if !line.is_empty() {
+                            self.print_reply_line(format!(" {}{}", padding, line));
+                            line = String::new();
+                            is_first = false;
+                        }
+
+                        // prevent first line empty
+                        if !is_first {
+                            self.y += 1;
+                        }
+
+                    }
+                }
+            }
+        }
+
+        if !line.is_empty() {
+            self.print_reply_line(format!(" {}{}  ", padding, line));
+            line = String::new();
+            self.y += 1;
+        }
+
+    }
+
+    fn build_separator_arguments(&mut self) -> (usize, usize, String) {
+        let separator_width = self.body_width();
+        let separator_padding_width = if self.rustbox.width() > separator_width {
+            self.rustbox.width() - separator_width
+        } else {
+            0
+        } / 2;
+
+        let separator_padding = seq_str_gen(0, separator_padding_width, " ", "");
+
+        (separator_width, separator_padding_width, separator_padding)
+    }
+
+    fn build_separator_top(&mut self, replier_name: &str, time: &str) -> String {
+        let (separator_width, separator_padding_width, separator_padding) =
+            self.build_separator_arguments();
+        make_separator_top(separator_width,
+                           &separator_padding,
+                           self.replier_max_width,
+                           &replier_name,
+                           self.time_max_width,
+                           &time)
+    }
+
+    fn build_separator_bottom(&mut self) -> String {
+        let (separator_width, separator_padding_width, separator_padding) =
+            self.build_separator_arguments();
+        make_separator_bottom(separator_width, &separator_padding)
     }
 
     pub fn resetY(&mut self) {
@@ -79,49 +237,34 @@ impl<'a> Show<'a> {
             0
         }
     }
+
+    fn can_print(&self) -> bool {
+        self.y > self.scrollY + 1
+    }
+
+    fn scrolledY(&self) -> usize {
+        self.y - self.scrollY
+    }
 }
 
-fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
-    let title_len = jks_len(text);
-    let padding = (if width >= title_len {
-        width - title_len
-    } else {
-        0
-    }) / 2;
 
-    let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
 
-    clearline(&rustbox, width, 0, 0);
-    rustbox.print(padding,
-                  0,
-                  rustbox::RB_BOLD,
-                  Color::White,
-                  Color::Black,
-                  text);
-    rustbox.print(0,
-                  1,
-                  rustbox::RB_BOLD,
-                  Color::Yellow,
-                  Color::Black,
-                  &header_bottom);
+fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
+    let now = Local::now();
+
+    let replier_name = reply.username.clone();
+
+    let published_at = reply.published_at.clone();
+
+    let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+        Ok(v) => v,
+        Err(e) => now,
+    };
+    let time = published_at_format(&(now - published_at_dt));
+    (replier_name, time)
 }
 
-fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
-    rustbox.print(0, y, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
-}
-
-fn print_reply(vec: &Vec<NodeType>,
-               depth: u8,
-               scrollY: usize,
-               y: usize,
-               rustbox: &rustbox::RustBox)
-               -> usize {
-    let padding = (0..depth).map(|_| "├─").collect::<Vec<_>>().join("");
-    let mut m = 0;
-    let mut recursive_offset = 0;
-    let mut total_y = 0;
-    let mut line = String::new();
-
+fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType> {
     // clean up lines (end)
     let vec2 = {
         let vec_length = vec.len();
@@ -160,135 +303,13 @@ fn print_reply(vec: &Vec<NodeType>,
                         result.push(node3);
                     }
                 }
-                _ => { result.push(node3) }
+                _ => result.push(node3),
             }
         }
         result.clone()
     };
 
-    let mut is_first = true;
-    for (j, node) in vec3.iter().enumerate() {
-        total_y = y + m + recursive_offset;
-        if scrollY + 1 < total_y {
-            let node2 = node.clone();
-            match node2 {
-                NodeType::Text(n) => {
-                    if n.data != "" {
-                        line = format!("{}{}", line, n.data);
-                    }
-                }
-                NodeType::Image(n) => {
-                    if n.data != "" {
-                        line = format!("{}[img {}]", line, n.data);
-                    }
-                }
-                NodeType::BlockQuote(n) => {
-                    recursive_offset += print_reply(&n.data, depth + 1, scrollY, total_y, &rustbox);
-                    is_first = false;
-                }
-                NodeType::Br(n) => {
-                    if !line.is_empty() {
-                        print_default(rustbox,
-                                      0,
-                                      total_y - scrollY,
-                                      format!(" {}{}", padding, line));
-                        line = String::new();
-                        is_first = false;
-                    }
-
-                    // prevent first line empty
-                    if !is_first {
-                        m += 1;
-                    }
-
-                }
-            }
-        }
-    }
-
-    if !line.is_empty() {
-        total_y = y + m + recursive_offset;
-        print_default(rustbox,
-                      0,
-                      total_y - scrollY,
-                      format!(" {}{}  ", padding, line));
-        line = String::new();
-        m += 1;
-    }
-
-    m + recursive_offset
-}
-
-fn print_body(rustbox: &rustbox::RustBox,
-              width: usize,
-              offset_y: usize,
-              rows: usize,
-              item: &ShowItem,
-              scrollY: usize) {
-
-    let mut y = offset_y;
-    let replier_max_width = 14;
-    let time_max_width = 5;
-    let now = Local::now();
-
-    let separator_width = if rustbox.width() >= 2 {
-        rustbox.width() - 2
-    } else {
-        0
-    };
-    let separator_padding_width = if rustbox.width() > separator_width {
-        rustbox.width() - separator_width
-    } else {
-        0
-    } / 2;
-
-    let separator_padding = (0..separator_padding_width).map(|_| " ").collect::<Vec<_>>().join("");
-
-    let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
-
-    for (i, reply) in item.replies.iter().take(rows).enumerate() {
-
-        let mut m = print_reply(&reply.body, 0, scrollY, y, &rustbox);
-
-        if scrollY + 1 < y + m {
-
-            let replier_name = reply.username.clone();
-
-            let published_at = reply.published_at.clone();
-
-            let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
-                Ok(v) => v,
-                Err(e) => now,
-            };
-            let time = published_at_format(&(now - published_at_dt));
-
-            let separator_top = make_separator_top(separator_width,
-                                                   &separator_padding,
-                                                   replier_max_width,
-                                                   &replier_name,
-                                                   time_max_width,
-                                                   &time);
-
-            rustbox.print(0,
-                          m + y - scrollY,
-                          rustbox::RB_NORMAL,
-                          Color::Green,
-                          Color::Black,
-                          &separator_top);
-        }
-        m += 1;
-
-        if scrollY + 1 < y + m {
-            rustbox.print(0,
-                          m + y - scrollY,
-                          rustbox::RB_NORMAL,
-                          Color::Green,
-                          Color::Black,
-                          &separator_bottom);
-        }
-        m += 1;
-        y += m;
-    }
+    vec3
 }
 
 fn make_separator_replier_name(separator_width: usize,
@@ -306,15 +327,8 @@ fn make_separator_replier_name(separator_width: usize,
         replier_name_right_spacing_width
     };
 
-    let replier_name_left_spacing = (0..replier_name_left_spacing_width)
-                                        .map(|_| "─")
-                                        .collect::<Vec<_>>()
-                                        .join("");
-
-    let replier_name_right_spacing = (0..replier_name_right_spacing_width)
-                                         .map(|_| "─")
-                                         .collect::<Vec<_>>()
-                                         .join("");
+    let replier_name_left_spacing = seq_str_gen(0, replier_name_left_spacing_width, "─", "");
+    let replier_name_right_spacing = seq_str_gen(0, replier_name_right_spacing_width, "─", "");
 
     let separator_replier = format!("{}{}{}{}{}",
                                     "╭",
@@ -346,15 +360,8 @@ fn make_separator_time(separator_width: usize,
         time_right_spacing_width
     };
 
-    let time_left_spacing = (0..time_left_spacing_width)
-                                .map(|_| "─")
-                                .collect::<Vec<_>>()
-                                .join("");
-
-    let time_right_spacing = (0..time_right_spacing_width)
-                                 .map(|_| "─")
-                                 .collect::<Vec<_>>()
-                                 .join("");
+    let time_left_spacing = seq_str_gen(0, time_left_spacing_width, "─", "");
+    let time_right_spacing = seq_str_gen(0, time_right_spacing_width, "─", "");
 
     let separator_time = format!("{}{}{}{}{}",
                                  "",
@@ -396,11 +403,7 @@ fn make_separator_top(separator_width: usize,
         0
     };
 
-    let separator_top_middle = (0..separator_top_middle_width)
-                                   .map(|_| " ")
-                                   .collect::<Vec<_>>()
-                                   .join("");
-
+    let separator_top_middle = seq_str_gen(0, separator_top_middle_width, " ", "");
     let separator_top = format!("{}{}{}{}{}",
                                 separator_padding,
                                 separator_top_middle,
@@ -417,10 +420,8 @@ fn make_separator_bottom(separator_width: usize, separator_padding: &str) -> Str
     } else {
         0
     };
-    let separator_bottom_middle = (0..separator_bottom_middle_width)
-                                      .map(|_| "─")
-                                      .collect::<Vec<_>>()
-                                      .join("");
+    let separator_bottom_middle = seq_str_gen(0, separator_bottom_middle_width, "─", "");
+
     let separator_bottom = format!("{}{}{}{}",
                                    separator_padding,
                                    separator_bottom_middle,
@@ -447,4 +448,8 @@ fn published_at_format(duration: &Duration) -> String {
     } else {
         String::from("1m")
     }
+}
+
+fn seq_str_gen(start: usize, end: usize, sym: &str, join_sym: &str) -> String {
+    (start..end).map(|_| sym.clone()).collect::<Vec<_>>().join(&join_sym)
 }
