@@ -41,10 +41,10 @@ impl<'a> Show<'a> {
     }
 
     fn print_separator_top(&mut self, reply: &ShowReplyItem) {
-        if self.y > self.scrollY + 1 {
+        if self.can_print() {
             let (replier_name, time) = make_separator_content(&reply);
             self.rustbox.print(0,
-                               self.y - self.scrollY,
+                               self.scrolledY(),
                                rustbox::RB_NORMAL,
                                Color::Green,
                                Color::Black,
@@ -53,9 +53,9 @@ impl<'a> Show<'a> {
     }
 
     fn print_separator_bottom(&mut self) {
-        if self.y > self.scrollY + 1 {
+        if self.can_print() {
             self.rustbox.print(0,
-                               self.y - self.scrollY,
+                               self.scrolledY(),
                                rustbox::RB_NORMAL,
                                Color::Green,
                                Color::Black,
@@ -92,7 +92,6 @@ impl<'a> Show<'a> {
         let width = self.body_width();
         let rows = self.body_height();
         let rustbox = self.rustbox;
-        let scrollY = self.scrollY;
 
         for (i, reply) in item.replies.iter().take(rows).enumerate() {
 
@@ -111,7 +110,6 @@ impl<'a> Show<'a> {
                     {
 
        let rustbox = self.rustbox;
-       let scrollY = self.scrollY;
 
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();
@@ -119,7 +117,7 @@ impl<'a> Show<'a> {
 
         let vec_clean = clean_reply_body(vec);
         for (j, node) in vec_clean.iter().enumerate() {
-            if  self.y > scrollY + 1 {
+            if self.can_print() {
                 match node.clone() {
                     NodeType::Text(n) => {
                         if n.data != "" {
@@ -139,7 +137,7 @@ impl<'a> Show<'a> {
                         if !line.is_empty() {
                             print_default(rustbox,
                                           0,
-                                           self.y - scrollY,
+                                           self.scrolledY(),
                                           format!(" {}{}", padding, line));
                             line = String::new();
                             is_first = false;
@@ -159,7 +157,7 @@ impl<'a> Show<'a> {
             // total_y = self.y + m + reursive_offset;
             print_default(rustbox,
                           0,
-                           self.y - scrollY,
+                           self.scrolledY(),
                           format!(" {}{}  ", padding, line));
             line = String::new();
              self.y += 1;
@@ -244,6 +242,14 @@ impl<'a> Show<'a> {
         } else {
             0
         }
+    }
+
+    fn can_print(&self) -> bool {
+        self.y > self.scrollY + 1
+    }
+
+    fn scrolledY(&self) -> usize {
+        self.y - self.scrollY
     }
 }
 
