@@ -166,6 +166,7 @@ fn print_reply(vec: &Vec<NodeType>,
         result.clone()
     };
 
+    let mut is_first = true;
     for (j, node) in vec3.iter().enumerate() {
         total_y = y + m + recursive_offset;
         if scrollY + 1 < total_y {
@@ -183,6 +184,7 @@ fn print_reply(vec: &Vec<NodeType>,
                 }
                 NodeType::BlockQuote(n) => {
                     recursive_offset += print_reply(&n.data, depth + 1, scrollY, total_y, &rustbox);
+                    is_first = false;
                 }
                 NodeType::Br(n) => {
                     if !line.is_empty() {
@@ -191,8 +193,14 @@ fn print_reply(vec: &Vec<NodeType>,
                                       total_y - scrollY,
                                       format!(" {}{}", padding, line));
                         line = String::new();
+                        is_first = false;
                     }
-                    m += 1;
+
+                    // prevent first line empty
+                    if !is_first {
+                        m += 1;
+                    }
+
                 }
             }
         }
@@ -205,9 +213,7 @@ fn print_reply(vec: &Vec<NodeType>,
                       total_y - scrollY,
                       format!(" {}{}  ", padding, line));
         line = String::new();
-        if depth == 0 {
-            m += 1;
-        }
+        m += 1;
     }
 
     m + recursive_offset
