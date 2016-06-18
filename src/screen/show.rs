@@ -7,6 +7,7 @@ use chrono::*;
 use screen::common::*;
 use utility::string::*;
 use model::ShowItem;
+use model::ShowReplyItem;
 use reply_model::*;
 
 pub struct Show<'a> {
@@ -29,6 +30,29 @@ impl<'a> Show<'a> {
                                    item.page,
                                    item.max_page));
         self.print_body(2, &item);
+    }
+
+    fn print_separator_top(&mut self, reply: &ShowReplyItem, y: usize) {
+        if y > self.scrollY + 1 {
+            let (replier_name, time) = self.build_separator_content(&reply);
+            self.rustbox.print(0,
+                               y - self.scrollY,
+                               rustbox::RB_NORMAL,
+                               Color::Green,
+                               Color::Black,
+                               &self.build_separator_top(&replier_name, &time));
+        }
+    }
+
+    fn print_separator_bottom(&mut self, y: usize) {
+        if y > self.scrollY + 1 {
+            self.rustbox.print(0,
+                               y - self.scrollY,
+                               rustbox::RB_NORMAL,
+                               Color::Green,
+                               Color::Black,
+                               &self.build_separator_bottom());
+        }
     }
 
     fn print_header(&mut self, text: &str) {
@@ -54,6 +78,41 @@ impl<'a> Show<'a> {
                            Color::Yellow,
                            Color::Black,
                            &header_bottom);
+    }
+
+    pub fn print_body(&mut self, offset_y: usize, item: &ShowItem) {
+        let width = self.body_width();
+        let rows = self.body_height();
+        let rustbox = self.rustbox;
+        let scrollY = self.scrollY;
+
+        let mut y = offset_y;
+
+        for (i, reply) in item.replies.iter().take(rows).enumerate() {
+
+            y += print_reply(&reply.body, 0, scrollY, y, &rustbox);
+
+            self.print_separator_top(&reply, y);
+            y += 1;
+
+            self.print_separator_bottom(y);
+            y += 1;
+        }
+    }
+
+    fn build_separator_content(&mut self, reply: &ShowReplyItem) -> (String, String) {
+        let now = Local::now();
+
+        let replier_name = reply.username.clone();
+
+        let published_at = reply.published_at.clone();
+
+        let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+            Ok(v) => v,
+            Err(e) => now,
+        };
+        let time = published_at_format(&(now - published_at_dt));
+        (replier_name, time)
     }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
@@ -93,54 +152,6 @@ impl<'a> Show<'a> {
         let (separator_width, separator_padding_width, separator_padding) =
             self.build_separator_arguments();
         make_separator_bottom(separator_width, &separator_padding)
-    }
-
-    pub fn print_body(&mut self, offset_y: usize, item: &ShowItem) {
-        let width = self.body_width();
-        let rows = self.body_height();
-        let rustbox = self.rustbox;
-        let scrollY = self.scrollY;
-
-        let mut y = offset_y;
-        let now = Local::now();
-
-        for (i, reply) in item.replies.iter().take(rows).enumerate() {
-
-            let mut m = print_reply(&reply.body, 0, scrollY, y, &rustbox);
-
-            if scrollY + 1 < y + m {
-
-                let replier_name = reply.username.clone();
-
-                let published_at = reply.published_at.clone();
-
-                let published_at_dt = match Local.datetime_from_str(&published_at,
-                                                                    "%d/%m/%Y %H:%M") {
-                    Ok(v) => v,
-                    Err(e) => now,
-                };
-                let time = published_at_format(&(now - published_at_dt));
-
-                rustbox.print(0,
-                              m + y - scrollY,
-                              rustbox::RB_NORMAL,
-                              Color::Green,
-                              Color::Black,
-                              &self.build_separator_top(&replier_name, &time));
-            }
-            m += 1;
-
-            if scrollY + 1 < y + m {
-                rustbox.print(0,
-                              m + y - scrollY,
-                              rustbox::RB_NORMAL,
-                              Color::Green,
-                              Color::Black,
-                              &self.build_separator_bottom());
-            }
-            m += 1;
-            y += m;
-        }
     }
 
     pub fn resetY(&mut self) {
