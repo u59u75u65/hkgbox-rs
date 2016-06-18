@@ -16,6 +16,7 @@ pub struct Show<'a> {
     y: usize,
     replier_max_width: usize,
     time_max_width: usize,
+    is_scroll_to_end: bool
 }
 
 impl<'a> Show<'a> {
@@ -26,6 +27,7 @@ impl<'a> Show<'a> {
             y: 0,
             replier_max_width: 14,
             time_max_width: 5,
+            is_scroll_to_end: false
         }
     }
     pub fn print(&mut self, title: &str, item: &ShowItem) {
@@ -104,6 +106,8 @@ impl<'a> Show<'a> {
             self.print_separator_bottom();
             self.y += 1;
         }
+
+        self.is_scroll_to_end = self.scrolledY() < self.body_height();
     }
 
     fn print_reply_line(&mut self, s: String) {
@@ -216,11 +220,18 @@ impl<'a> Show<'a> {
     }
 
     pub fn scrollDown(&mut self, value: usize) -> bool {
-        let tmp = self.scrollY;
-        if tmp < 10000 {
-            self.scrollY = tmp + value;
-            return true;
+
+        if !self.is_scroll_to_end {
+            let min_to_scroll = self.scrollY + self.body_height();
+            if self.y >= min_to_scroll + value {
+                self.scrollY += value;
+                return true;
+            } else if self.y >= min_to_scroll {
+                self.scrollY += self.y - min_to_scroll;
+                return true;
+            }
         }
+
         false
     }
 
