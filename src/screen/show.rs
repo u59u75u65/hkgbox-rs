@@ -163,15 +163,10 @@ fn print_reply(vec: &Vec<NodeType>,
                     }
                 }
                 NodeType::BlockQuote(n) => {
-                    print_default(rustbox,
-                                  0,
-                                  total_y - scrollY,
-                                  format!("{}[{}] = BlockQuote", padding, m));
-                    m += 1;
                     recursive_offset += print_reply(&n.data,
                                                     depth + 1,
                                                     scrollY,
-                                                    total_y + 1,
+                                                    total_y,
                                                     &rustbox);
                 }
                 NodeType::Br(n) => {
@@ -195,7 +190,9 @@ fn print_reply(vec: &Vec<NodeType>,
                       total_y - scrollY,
                       format!(" {}{}  ", padding, line));
         line = String::new();
-        m += 1;
+        if depth == 0 {
+            m += 1;
+        }
     }
 
     m + recursive_offset
