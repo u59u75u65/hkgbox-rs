@@ -38,7 +38,7 @@ impl<'a> Show<'a> {
 
     fn print_separator_top(&mut self, reply: &ShowReplyItem) {
         if self.y > self.scrollY + 1 {
-            let (replier_name, time) = self.build_separator_content(&reply);
+            let (replier_name, time) = make_separator_content(&reply);
             self.rustbox.print(0,
                                self.y - self.scrollY,
                                rustbox::RB_NORMAL,
@@ -169,20 +169,6 @@ impl<'a> Show<'a> {
         m + recursive_offset
     }
 
-    fn build_separator_content(&mut self, reply: &ShowReplyItem) -> (String, String) {
-        let now = Local::now();
-
-        let replier_name = reply.username.clone();
-
-        let published_at = reply.published_at.clone();
-
-        let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
-            Ok(v) => v,
-            Err(e) => now,
-        };
-        let time = published_at_format(&(now - published_at_dt));
-        (replier_name, time)
-    }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
         let width = self.body_width();
@@ -264,11 +250,25 @@ impl<'a> Show<'a> {
             0
         }
     }
-
 }
 
 fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
     rustbox.print(0, y, rustbox::RB_NORMAL, Color::White, Color::Black, &s);
+}
+
+fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
+    let now = Local::now();
+
+    let replier_name = reply.username.clone();
+
+    let published_at = reply.published_at.clone();
+
+    let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+        Ok(v) => v,
+        Err(e) => now,
+    };
+    let time = published_at_format(&(now - published_at_dt));
+    (replier_name, time)
 }
 
 fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType>{
