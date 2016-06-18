@@ -195,9 +195,6 @@ impl<'a> Show<'a> {
             0
         }
     }
-    fn print_default(&self, x: usize, y: usize, text: &str) {
-        self.rustbox.print(x, y, rustbox::RB_BOLD, Color::White, Color::Black, text);
-    }
 }
 
 fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
