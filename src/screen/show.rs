@@ -15,7 +15,7 @@ pub struct Show<'a> {
     scrollY: usize,
     y: usize,
     replier_max_width: usize,
-    time_max_width: usize
+    time_max_width: usize,
 }
 
 impl<'a> Show<'a> {
@@ -25,7 +25,7 @@ impl<'a> Show<'a> {
             scrollY: 0,
             y: 0,
             replier_max_width: 14,
-            time_max_width: 5
+            time_max_width: 5,
         }
     }
     pub fn print(&mut self, title: &str, item: &ShowItem) {
@@ -105,11 +105,9 @@ impl<'a> Show<'a> {
         }
     }
 
-    fn print_reply(&mut self, vec: &Vec<NodeType>,
-                   depth: usize)
-                    {
+    fn print_reply(&mut self, vec: &Vec<NodeType>, depth: usize) {
 
-       let rustbox = self.rustbox;
+        let rustbox = self.rustbox;
 
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();
@@ -137,7 +135,7 @@ impl<'a> Show<'a> {
                         if !line.is_empty() {
                             print_default(rustbox,
                                           0,
-                                           self.scrolledY(),
+                                          self.scrolledY(),
                                           format!(" {}{}", padding, line));
                             line = String::new();
                             is_first = false;
@@ -145,7 +143,7 @@ impl<'a> Show<'a> {
 
                         // prevent first line empty
                         if !is_first {
-                             self.y += 1;
+                            self.y += 1;
                         }
 
                     }
@@ -154,21 +152,20 @@ impl<'a> Show<'a> {
         }
 
         if !line.is_empty() {
-            // total_y = self.y + m + reursive_offset;
             print_default(rustbox,
                           0,
-                           self.scrolledY(),
+                          self.scrolledY(),
                           format!(" {}{}  ", padding, line));
             line = String::new();
-             self.y += 1;
+            self.y += 1;
         }
 
     }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
         let separator_width = self.body_width();
-        let separator_padding_width = if  self.rustbox.width() > separator_width {
-             self.rustbox.width() - separator_width
+        let separator_padding_width = if self.rustbox.width() > separator_width {
+            self.rustbox.width() - separator_width
         } else {
             0
         } / 2;
@@ -265,7 +262,7 @@ fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
     (replier_name, time)
 }
 
-fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType>{
+fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType> {
     // clean up lines (end)
     let vec2 = {
         let vec_length = vec.len();
