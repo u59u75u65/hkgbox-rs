@@ -13,6 +13,7 @@ use reply_model::*;
 pub struct Show<'a> {
     rustbox: &'a rustbox::RustBox,
     scrollY: usize,
+    y: usize
 }
 
 impl<'a> Show<'a> {
@@ -20,23 +21,26 @@ impl<'a> Show<'a> {
         Show {
             rustbox: &rustbox,
             scrollY: 0,
+            y: 0
         }
     }
     pub fn print(&mut self, title: &str, item: &ShowItem) {
+
+        self.y = 2;
 
         self.print_header(&format!("{} - {} [{}/{}]",
                                    item.title,
                                    title,
                                    item.page,
                                    item.max_page));
-        self.print_body(2, &item);
+        self.print_body(&item);
     }
 
-    fn print_separator_top(&mut self, reply: &ShowReplyItem, y: usize) {
-        if y > self.scrollY + 1 {
+    fn print_separator_top(&mut self, reply: &ShowReplyItem) {
+        if self.y > self.scrollY + 1 {
             let (replier_name, time) = self.build_separator_content(&reply);
             self.rustbox.print(0,
-                               y - self.scrollY,
+                               self.y - self.scrollY,
                                rustbox::RB_NORMAL,
                                Color::Green,
                                Color::Black,
@@ -44,10 +48,10 @@ impl<'a> Show<'a> {
         }
     }
 
-    fn print_separator_bottom(&mut self, y: usize) {
-        if y > self.scrollY + 1 {
+    fn print_separator_bottom(&mut self) {
+        if self.y > self.scrollY + 1 {
             self.rustbox.print(0,
-                               y - self.scrollY,
+                               self.y - self.scrollY,
                                rustbox::RB_NORMAL,
                                Color::Green,
                                Color::Black,
@@ -80,29 +84,26 @@ impl<'a> Show<'a> {
                            &header_bottom);
     }
 
-    pub fn print_body(&mut self, offset_y: usize, item: &ShowItem) {
+    pub fn print_body(&mut self, item: &ShowItem) {
         let width = self.body_width();
         let rows = self.body_height();
         let rustbox = self.rustbox;
         let scrollY = self.scrollY;
 
-        let mut y = offset_y;
-
         for (i, reply) in item.replies.iter().take(rows).enumerate() {
 
-            y += self.print_reply(&reply.body, 0, y);
+            self.y += self.print_reply(&reply.body, 0);
 
-            self.print_separator_top(&reply, y);
-            y += 1;
+            self.print_separator_top(&reply);
+            self.y += 1;
 
-            self.print_separator_bottom(y);
-            y += 1;
+            self.print_separator_bottom();
+            self.y += 1;
         }
     }
 
     fn print_reply(&mut self, vec: &Vec<NodeType>,
-                   depth: usize,
-                   y: usize)
+                   depth: usize)
                    -> usize {
 
        let rustbox = self.rustbox;
@@ -117,8 +118,8 @@ impl<'a> Show<'a> {
 
         let vec_clean = clean_reply_body(vec);
         for (j, node) in vec_clean.iter().enumerate() {
-            total_y = y + m + recursive_offset;
-            if scrollY + 1 < total_y {
+            total_y = self.y + m + recursive_offset;
+            if total_y > scrollY + 1 {
                 let node2 = node.clone();
                 match node2 {
                     NodeType::Text(n) => {
@@ -132,7 +133,7 @@ impl<'a> Show<'a> {
                         }
                     }
                     NodeType::BlockQuote(n) => {
-                        recursive_offset += self.print_reply(&n.data, depth + 1, total_y);
+                        recursive_offset += self.print_reply(&n.data, depth + 1); // consider we pass y as total_y here previously
                         is_first = false;
                     }
                     NodeType::Br(n) => {
@@ -156,7 +157,7 @@ impl<'a> Show<'a> {
         }
 
         if !line.is_empty() {
-            total_y = y + m + recursive_offset;
+            total_y = self.y + m + recursive_offset;
             print_default(rustbox,
                           0,
                           total_y - scrollY,
@@ -263,6 +264,7 @@ impl<'a> Show<'a> {
             0
         }
     }
+
 }
 
 fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
