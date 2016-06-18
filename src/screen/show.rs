@@ -166,16 +166,9 @@ impl<'a> Show<'a> {
     }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
-        let width = self.body_width();
-        let rustbox = self.rustbox;
-
-        let separator_width = if rustbox.width() >= 2 {
-            rustbox.width() - 2
-        } else {
-            0
-        };
-        let separator_padding_width = if rustbox.width() > separator_width {
-            rustbox.width() - separator_width
+        let separator_width = self.body_width();
+        let separator_padding_width = if  self.rustbox.width() > separator_width {
+             self.rustbox.width() - separator_width
         } else {
             0
         } / 2;
