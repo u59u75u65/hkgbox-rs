@@ -122,7 +122,7 @@ fn print_reply(vec: &Vec<NodeType>,
     let mut total_y = 0;
     let mut line = String::new();
 
-    // clean up lines
+    // clean up lines (end)
     let vec2 = {
         let vec_length = vec.len();
         let vec_check_cleanup = vec.clone();
@@ -147,7 +147,26 @@ fn print_reply(vec: &Vec<NodeType>,
         vec.iter().take(vec_short_length)
     };
 
-    for (j, node) in vec2.enumerate() {
+    // clean up lines (start)
+    let vec3 = {
+        let vec2_cloned = vec2.clone();
+        let mut result: Vec<NodeType> = Vec::new();
+        for (j, node) in vec2_cloned.enumerate() {
+            let node2 = node.clone();
+            let node3 = node.clone();
+            match node2 {
+                NodeType::Br(n) => {
+                    if !result.is_empty() {
+                        result.push(node3);
+                    }
+                }
+                _ => { result.push(node3) }
+            }
+        }
+        result.clone()
+    };
+
+    for (j, node) in vec3.iter().enumerate() {
         total_y = y + m + recursive_offset;
         if scrollY + 1 < total_y {
             let node2 = node.clone();
@@ -163,11 +182,7 @@ fn print_reply(vec: &Vec<NodeType>,
                     }
                 }
                 NodeType::BlockQuote(n) => {
-                    recursive_offset += print_reply(&n.data,
-                                                    depth + 1,
-                                                    scrollY,
-                                                    total_y,
-                                                    &rustbox);
+                    recursive_offset += print_reply(&n.data, depth + 1, scrollY, total_y, &rustbox);
                 }
                 NodeType::Br(n) => {
                     if !line.is_empty() {
