@@ -28,12 +28,7 @@ impl<'a> Show<'a> {
                              title,
                              item.page,
                              item.max_page));
-        print_body(&self.rustbox,
-                   self.body_width(),
-                   2,
-                   self.body_height(),
-                   &item,
-                   self.scrollY);
+        self.print_body(2, &item);
     }
 
     fn print_header(&mut self, text: &str) {
@@ -59,6 +54,77 @@ impl<'a> Show<'a> {
                       Color::Yellow,
                       Color::Black,
                       &header_bottom);
+    }
+
+    pub fn print_body(&mut self,offset_y: usize, item: &ShowItem) {
+        let width = self.body_width();
+        let rows = self.body_height();
+        let rustbox = self.rustbox;
+        let scrollY = self.scrollY;
+
+        let mut y = offset_y;
+        let replier_max_width = 14;
+        let time_max_width = 5;
+        let now = Local::now();
+
+        let separator_width = if rustbox.width() >= 2 {
+            rustbox.width() - 2
+        } else {
+            0
+        };
+        let separator_padding_width = if rustbox.width() > separator_width {
+            rustbox.width() - separator_width
+        } else {
+            0
+        } / 2;
+
+        let separator_padding = seq_str_gen(0, separator_padding_width, " ", "");
+
+        let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
+
+        for (i, reply) in item.replies.iter().take(rows).enumerate() {
+
+            let mut m = print_reply(&reply.body, 0, scrollY, y, &rustbox);
+
+            if scrollY + 1 < y + m {
+
+                let replier_name = reply.username.clone();
+
+                let published_at = reply.published_at.clone();
+
+                let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+                    Ok(v) => v,
+                    Err(e) => now,
+                };
+                let time = published_at_format(&(now - published_at_dt));
+
+                let separator_top = make_separator_top(separator_width,
+                                                       &separator_padding,
+                                                       replier_max_width,
+                                                       &replier_name,
+                                                       time_max_width,
+                                                       &time);
+
+                rustbox.print(0,
+                              m + y - scrollY,
+                              rustbox::RB_NORMAL,
+                              Color::Green,
+                              Color::Black,
+                              &separator_top);
+            }
+            m += 1;
+
+            if scrollY + 1 < y + m {
+                rustbox.print(0,
+                              m + y - scrollY,
+                              rustbox::RB_NORMAL,
+                              Color::Green,
+                              Color::Black,
+                              &separator_bottom);
+            }
+            m += 1;
+            y += m;
+        }
     }
 
     pub fn resetY(&mut self) {
@@ -102,7 +168,14 @@ impl<'a> Show<'a> {
             0
         }
     }
-
+    fn print_default(&self, x: usize, y: usize, text: &str){
+        self.rustbox.print(x,
+                      y,
+                      rustbox::RB_BOLD,
+                      Color::White,
+                      Color::Black,
+                      text);
+    }
 }
 
 fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String) {
@@ -216,78 +289,6 @@ fn print_reply(vec: &Vec<NodeType>,
     }
 
     m + recursive_offset
-}
-
-fn print_body(rustbox: &rustbox::RustBox,
-              width: usize,
-              offset_y: usize,
-              rows: usize,
-              item: &ShowItem,
-              scrollY: usize) {
-
-    let mut y = offset_y;
-    let replier_max_width = 14;
-    let time_max_width = 5;
-    let now = Local::now();
-
-    let separator_width = if rustbox.width() >= 2 {
-        rustbox.width() - 2
-    } else {
-        0
-    };
-    let separator_padding_width = if rustbox.width() > separator_width {
-        rustbox.width() - separator_width
-    } else {
-        0
-    } / 2;
-
-    let separator_padding = seq_str_gen(0, separator_padding_width, " ", "");
-
-    let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
-
-    for (i, reply) in item.replies.iter().take(rows).enumerate() {
-
-        let mut m = print_reply(&reply.body, 0, scrollY, y, &rustbox);
-
-        if scrollY + 1 < y + m {
-
-            let replier_name = reply.username.clone();
-
-            let published_at = reply.published_at.clone();
-
-            let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
-                Ok(v) => v,
-                Err(e) => now,
-            };
-            let time = published_at_format(&(now - published_at_dt));
-
-            let separator_top = make_separator_top(separator_width,
-                                                   &separator_padding,
-                                                   replier_max_width,
-                                                   &replier_name,
-                                                   time_max_width,
-                                                   &time);
-
-            rustbox.print(0,
-                          m + y - scrollY,
-                          rustbox::RB_NORMAL,
-                          Color::Green,
-                          Color::Black,
-                          &separator_top);
-        }
-        m += 1;
-
-        if scrollY + 1 < y + m {
-            rustbox.print(0,
-                          m + y - scrollY,
-                          rustbox::RB_NORMAL,
-                          Color::Green,
-                          Color::Black,
-                          &separator_bottom);
-        }
-        m += 1;
-        y += m;
-    }
 }
 
 fn make_separator_replier_name(separator_width: usize,
