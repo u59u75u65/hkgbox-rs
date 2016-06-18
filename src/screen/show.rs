@@ -134,23 +134,22 @@ fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String){
 }
 
 fn print_reply(vec: &Vec<NodeType>, depth: u8, scrollY: usize, y: usize, rustbox: &rustbox::RustBox) -> usize {
-    let mut m = 0; let mut o = 0;
+    let mut recursive_offset = 0;
+    
     for (j, node) in vec.iter().enumerate() {
-        if scrollY + 1 < y + m + o {
-
+        let total_y = y + j + recursive_offset;
+        if scrollY + 1 < total_y {
             let node2 = node.clone();
-            let spaces = (0..depth).map(|_| ">").collect::<Vec<_>>().join("");
+            let padding = (0..depth).map(|_| ">").collect::<Vec<_>>().join("");
             match node2 {
-                NodeType::Text(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = Text {}", spaces, j, n.data)) }
-                NodeType::Image(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = Image {}", spaces, j, n.data)) }
-                NodeType::BlockQuote(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = BlockQuote", spaces, j)); o+= print_reply(&n.data, depth + 1, scrollY, y + m + o + 1, &rustbox); }
-                NodeType::Br(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = Br", spaces, j)) }
+                NodeType::Text(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = Text {}", padding, j, n.data)) }
+                NodeType::Image(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = Image {}", padding, j, n.data)) }
+                NodeType::BlockQuote(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = BlockQuote", padding, j)); recursive_offset += print_reply(&n.data, depth + 1, scrollY, total_y + 1, &rustbox); }
+                NodeType::Br(n) => { print_default(rustbox, 0, total_y - scrollY, format!("{}[{}] = Br", padding, j)) }
             }
         }
-
-        m +=1;
     }
-    m + o
+    vec.len() + recursive_offset
 }
 
 fn print_body(rustbox: &rustbox::RustBox,
