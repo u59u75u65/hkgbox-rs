@@ -181,7 +181,7 @@ fn print_reply(vec: &Vec<NodeType>,
                         print_default(rustbox,
                                       0,
                                       total_y - scrollY,
-                                      format!("{}{}", padding, line));
+                                      format!(" {}{}", padding, line));
                         line = String::new();
                     }
                     m += 1;
@@ -195,7 +195,7 @@ fn print_reply(vec: &Vec<NodeType>,
         print_default(rustbox,
                       0,
                       total_y - scrollY,
-                      format!("{}{}  ", padding, line));
+                      format!(" {}{}  ", padding, line));
         line = String::new();
         m += 1;
     }
