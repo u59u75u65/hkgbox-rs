@@ -56,16 +56,9 @@ impl<'a> Show<'a> {
                            &header_bottom);
     }
 
-    pub fn print_body(&mut self, offset_y: usize, item: &ShowItem) {
+    fn build_separator_arguments(&mut self) -> (usize, usize, String){
         let width = self.body_width();
-        let rows = self.body_height();
         let rustbox = self.rustbox;
-        let scrollY = self.scrollY;
-
-        let mut y = offset_y;
-        let replier_max_width = 14;
-        let time_max_width = 5;
-        let now = Local::now();
 
         let separator_width = if rustbox.width() >= 2 {
             rustbox.width() - 2
@@ -80,7 +73,34 @@ impl<'a> Show<'a> {
 
         let separator_padding = seq_str_gen(0, separator_padding_width, " ", "");
 
-        let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
+        (separator_width, separator_padding_width, separator_padding)
+    }
+
+    fn build_separator_top(&mut self, replier_name: &str, time: &str) -> String {
+        let replier_max_width = 14;
+        let time_max_width = 5;
+        let (separator_width, separator_padding_width, separator_padding) = self.build_separator_arguments();
+        make_separator_top(separator_width,
+                                               &separator_padding,
+                                               replier_max_width,
+                                               &replier_name,
+                                               time_max_width,
+                                               &time)
+    }
+
+    fn build_separator_bottom(&mut self) -> String {
+        let (separator_width, separator_padding_width, separator_padding) = self.build_separator_arguments();
+        make_separator_bottom(separator_width, &separator_padding)
+    }
+
+    pub fn print_body(&mut self, offset_y: usize, item: &ShowItem) {
+        let width = self.body_width();
+        let rows = self.body_height();
+        let rustbox = self.rustbox;
+        let scrollY = self.scrollY;
+
+        let mut y = offset_y;
+        let now = Local::now();
 
         for (i, reply) in item.replies.iter().take(rows).enumerate() {
 
@@ -99,19 +119,12 @@ impl<'a> Show<'a> {
                 };
                 let time = published_at_format(&(now - published_at_dt));
 
-                let separator_top = make_separator_top(separator_width,
-                                                       &separator_padding,
-                                                       replier_max_width,
-                                                       &replier_name,
-                                                       time_max_width,
-                                                       &time);
-
                 rustbox.print(0,
                               m + y - scrollY,
                               rustbox::RB_NORMAL,
                               Color::Green,
                               Color::Black,
-                              &separator_top);
+                              &self.build_separator_top(&replier_name, &time));
             }
             m += 1;
 
@@ -121,7 +134,7 @@ impl<'a> Show<'a> {
                               rustbox::RB_NORMAL,
                               Color::Green,
                               Color::Black,
-                              &separator_bottom);
+                              &self.build_separator_bottom());
             }
             m += 1;
             y += m;
