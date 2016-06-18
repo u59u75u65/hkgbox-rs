@@ -124,6 +124,35 @@ fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
 //     }
 // }
 
+fn print_default(rustbox: &rustbox::RustBox, x: usize, y: usize, s: String){
+    rustbox.print(0,
+                  y,
+                  rustbox::RB_NORMAL,
+                  Color::White,
+                  Color::Black,
+                  &s);
+}
+
+fn print_reply(vec: &Vec<NodeType>, depth: u8, scrollY: usize, y: usize, rustbox: &rustbox::RustBox) -> usize {
+    let mut m = 0; let mut o = 0;
+    for (j, node) in vec.iter().enumerate() {
+        if scrollY + 1 < y + m + o {
+
+            let node2 = node.clone();
+            let spaces = (0..depth).map(|_| ">").collect::<Vec<_>>().join("");
+            match node2 {
+                NodeType::Text(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = Text {}", spaces, j, n.data)) }
+                NodeType::Image(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = Image {}", spaces, j, n.data)) }
+                NodeType::BlockQuote(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = BlockQuote", spaces, j)); o+= print_reply(&n.data, depth + 1, scrollY, y + m + o + 1, &rustbox); }
+                NodeType::Br(n) => { print_default(rustbox, 0, j + y + o - scrollY, format!("{}[{}] = Br", spaces, j)) }
+            }
+        }
+
+        m +=1;
+    }
+    m + o
+}
+
 fn print_body(rustbox: &rustbox::RustBox,
               width: usize,
               offset_y: usize,
@@ -153,42 +182,7 @@ fn print_body(rustbox: &rustbox::RustBox,
 
     for (i, reply) in item.replies.iter().take(rows).enumerate() {
 
-        let mut m = 0;
-
-        for (j, node) in reply.body.iter().enumerate() {
-            if scrollY + 1 < y + m {
-                let node2 = node.clone();
-                let spaces = (0..1).map(|_| ">").collect::<Vec<_>>().join("");
-                let (node2_type, text) = match node2 {
-                    NodeType::Text(n) => { ("Text", n.data) }
-                    NodeType::Image(n) => { ("Image", n.data) }
-                    NodeType::BlockQuote(n) => { ("BlockQuote", "".to_string()) }  // display(n.data, depth + 1);
-                    NodeType::Br(n) => { ("Br", "".to_string()) }
-                };
-                rustbox.print(0,
-                              j + y - scrollY,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &format!("{}[{}] = {} {}", spaces, j, node2_type, text));
-            }
-            m +=1;
-
-        }
-        // let contents: Vec<&str> = reply.content.split("\n").collect();
-        //
-        // for (j, content) in contents.iter().enumerate() {
-        //     if scrollY + 1 < y + m {
-        //
-        //         rustbox.print(0,
-        //                       j + y - scrollY,
-        //                       rustbox::RB_NORMAL,
-        //                       Color::White,
-        //                       Color::Black,
-        //                       &format!(" {}", content));
-        //     }
-        //     m += 1;
-        // }
+        let mut m = print_reply(&reply.body, 0, scrollY, y, &rustbox);
 
         if scrollY + 1 < y + m {
 
