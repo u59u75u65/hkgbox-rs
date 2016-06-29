@@ -13,5 +13,12 @@ chrono = "0.2"
 regex = "0.1"
 cancellation = "0.1"
 
+[dependencies.termion]
+git = "https://github.com/ticki/termion"
+features = ["nightly"]
+
 [dependencies.url]
 git = "https://github.com/servo/rust-url"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.8"
