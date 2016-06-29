@@ -189,18 +189,6 @@ fn main() {
 
         if !is_web_requesting {
 
-            // let mut line = String::new();
-            // let stdin = stdin();
-            // stdin.read_line(&mut line).unwrap();
-            //
-            // match line.as_str() {
-            //     "q" => return,
-            //     a => { stdout.write(String::from(a).as_bytes()).unwrap(); () },
-            //     // None => { stdout.write(format!("[NONE]").as_bytes()).unwrap(); ()  }
-            // }
-            //
-            // stdout.flush().unwrap();         // rustbox.present();
-
             stdout.goto(1,3).unwrap();
 
             let stdin = stdin();
@@ -222,59 +210,6 @@ fn main() {
                     _ => {},
                 }
             }
-
-            // let stdin = stdin();
-            // let stdin = stdin.lock();
-            // let mut bytes = stdin.bytes();
-
-            // for byte in bytes {
-            //     let b = byte.unwrap();
-            //
-            //     match b {
-            //         // Quit
-            //         b'q' => return,
-            //         // b'\n' | b'\r' => break,
-            //         // b"\x1B\x5B\x41" => stdout.write("↑".as_bytes()),
-            //         // b"\x1B\x5B\x42" => stdout.write("↓".as_bytes()),
-            //         // b"\x1B\x5B\x43" => stdout.write("→".as_bytes()),
-            //         // b"\x1B\x5B\x44" => stdout.write("←".as_bytes()),
-            //          // Write it to stdout.
-            //         a => { stdout.write(format!(" {:?} ", a).as_bytes()); },
-            //     }
-            //
-            //     stdout.flush().unwrap();         // rustbox.present();
-            //
-            // }
-
-
-            // stdout.goto(1,3).unwrap();
-
-            // stdout.write(format!("|").as_bytes());
-            //
-            // let stdin = stdin();
-            // let stdin = stdin.lock();
-            //
-            // let mut bytes = stdin.bytes();
-            //
-            // for byte in bytes {
-            //     let b = byte.unwrap();
-            //
-            //     match b {
-            //         // Quit
-            //         b'q' => return,
-            //         // b'\n' | b'\r' => break,
-            //         // b"\x1B\x5B\x41" => stdout.write("↑".as_bytes()),
-            //         // b"\x1B\x5B\x42" => stdout.write("↓".as_bytes()),
-            //         // b"\x1B\x5B\x43" => stdout.write("→".as_bytes()),
-            //         // b"\x1B\x5B\x44" => stdout.write("←".as_bytes()),
-            //          // Write it to stdout.
-            //         a => { stdout.write(format!(" {:?} ", a).as_bytes()); },
-            //     }
-            //
-            //     // stdout.flush().unwrap();         // rustbox.present();
-            //
-            // }
-
 
             // match rustbox.poll_event(false) {
             //     Ok(rustbox::Event::KeyEvent(key)) => {
