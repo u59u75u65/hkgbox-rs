@@ -15,7 +15,8 @@ use std::default::Default;
 // use rustbox::{Color, RustBox, Key};
 use termion::{TermRead, TermWrite, IntoRawMode, Color, Style, Key};
 use termion::terminal_size;
-use std::io::{Read, Write, stdout, stdin};
+use std::io::{Read, Write, Stdout, Stdin};
+use std::io::{stdout, stdin};
 
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
@@ -183,7 +184,7 @@ fn main() {
             }
         }
 
-        // print_status(&rustbox, &status);
+        print_status(&mut stdout, &status); // print_status(&rustbox, &status);
 
         stdout.flush().unwrap();         // rustbox.present();
 
@@ -196,9 +197,10 @@ fn main() {
             for c in stdin.keys() {
                 stdout.goto(2, 3).unwrap();
                 stdout.clear_line().unwrap();
+                let w = terminal_size().unwrap().0;
                 match c.unwrap() {
                     Key::Char('q') => return,
-                    Key::Char(c) => println!("{}", c),
+                    Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
                     Key::Alt(c) => println!("^{}", c),
                     Key::Ctrl(c) => println!("*{}", c),
                     Key::Left => println!("←"),
@@ -444,6 +446,29 @@ fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req:
 
 fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
+}
+
+fn print_status(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, status: &str) {
+    // // for status bar only
+    let w = terminal_size().unwrap().0; // let w = rustbox.width();
+    let h = terminal_size().unwrap().1; // let h = rustbox.height();
+
+    let status_width = if w > status.len() as u16 {
+        w - status.len() as u16
+    } else {
+        0
+    };
+    let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
+
+    stdout.goto(0, h - 1).unwrap();
+    stdout.color(Color::White).unwrap();
+    stdout.bg_color(Color::Black).unwrap();
+    stdout.style(Style::Bold).unwrap();
+    stdout.write(format!("{status}{status_spacing}",
+                           status = status,
+                           status_spacing = status_spacing).as_bytes()).unwrap();
+    stdout.hide_cursor().unwrap();
+    stdout.reset().unwrap();
 }
 
 // fn print_status(rustbox: &rustbox::RustBox, status: &str) {
