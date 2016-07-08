@@ -1,5 +1,6 @@
 extern crate rustc_serialize;
 extern crate rustbox;
+extern crate termion;
 extern crate chrono;
 extern crate kuchiki;
 extern crate regex;

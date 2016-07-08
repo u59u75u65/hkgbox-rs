@@ -97,6 +97,11 @@ fn main() {
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
     // let mut list = hkg::screen::list::List::new(&rustbox);
+    {
+        let mut index = hkg::screen::index::Index::new(&mut stdout);
+        index.print();
+    }
+
     // let mut show = hkg::screen::show::Show::new(&rustbox);
 
     let mut builder = hkg::builder::Builder::new();
