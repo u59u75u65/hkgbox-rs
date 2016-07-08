@@ -59,11 +59,9 @@ enum Status {
 fn main() {
 
     // Initialize 'em all.
-    let stdout = stdout();
-    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    let mut stdout = stdout();
 
-    // Clear the screen.
-    stdout.clear().unwrap();
+    screen_clear(&stdout);
 
     // GUI init
     // let rustbox = match RustBox::init(Default::default()) {
@@ -143,8 +141,10 @@ fn main() {
 
     loop {
 
-        stdout.goto(1,1).unwrap();
-        stdout.write(format!("start => {}", Local::now()).as_bytes()).unwrap();
+        // stdout.goto(1,1).unwrap();
+        // stdout.write(format!("start => {}", Local::now()).as_bytes()).unwrap();
+
+        print_s(&stdout, 1, 1, &format!("start => {}", Local::now()) );
 
         // show UI
         if prev_state != state {
@@ -184,19 +184,20 @@ fn main() {
             }
         }
 
-        print_status(&mut stdout, &status); // print_status(&rustbox, &status);
+        print_status(&stdout,&status); // print_status(&rustbox, &status);
 
-        stdout.flush().unwrap();         // rustbox.present();
+        screen_flush(&stdout);
 
         if !is_web_requesting {
 
-            stdout.goto(1,3).unwrap();
+            screen_goto(&stdout, 1,3); // stdout.goto(1,3).unwrap();
 
             let stdin = stdin();
 
             for c in stdin.keys() {
-                stdout.goto(2, 3).unwrap();
-                stdout.clear_line().unwrap();
+                // stdout.goto(2, 3).unwrap();
+                // stdout.clear_line().unwrap();
+                screen_clearline(&stdout, 2, 3);
                 let w = terminal_size().unwrap().0;
                 match c.unwrap() {
                     Key::Char('q') => return,
@@ -448,7 +449,42 @@ fn get_show_page_status_message(postid: &String, page: usize, status_message: &S
     format!("[{}-{}:{}]", postid, page, status_message)
 }
 
-fn print_status(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, status: &str) {
+fn print_s(stdout: &Stdout, x: usize, y: usize, s: &str) {
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+
+    stdout.goto(x as u16,y as u16).unwrap();
+    stdout.write(s.as_bytes()).unwrap();
+}
+
+fn screen_goto(stdout: &Stdout, x: usize, y: usize) {
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+
+    stdout.goto(x as u16,y as u16).unwrap();
+}
+
+fn screen_clearline(stdout: &Stdout, x: usize, y: usize) {
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+
+    stdout.goto(x as u16,y as u16).unwrap();
+    stdout.clear_line().unwrap();
+}
+
+fn screen_clear(stdout: &Stdout) {
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+
+    // Clear the screen.
+    stdout.clear().unwrap();
+}
+
+fn screen_flush(stdout: &Stdout) {
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+
+    stdout.flush().unwrap();         // rustbox.present();
+}
+
+fn print_status(stdout: &Stdout, status: &str) {
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+
     // // for status bar only
     let w = terminal_size().unwrap().0; // let w = rustbox.width();
     let h = terminal_size().unwrap().1; // let h = rustbox.height();
