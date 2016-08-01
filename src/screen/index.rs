@@ -5,6 +5,8 @@ use termion::terminal_size;
 use std::io::{Read, Write, Stdout, Stdin};
 use std::io::{stdout, stdin};
 use std;
+
+use utility::string::*;
 use model::ListTopicItem;
 
 
@@ -38,6 +40,12 @@ impl Index {
         let width = terminal_size().unwrap().0 as usize;
 
         print_header(stdout, width as usize, &self.title);
+        print_body(stdout,
+                   self.body_width(),
+                   2,
+                   self.body_height(),
+                   &collection,
+                   self.selected_topic_index);
     }
 
     pub fn body_height(&self) -> usize {
@@ -83,4 +91,88 @@ fn print_header(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, width: u
 
     stdout.hide_cursor().unwrap();
     stdout.reset().unwrap();
+}
+
+fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
+    width: usize,
+    offset_y: usize,
+    rows: usize,
+    collection: &Vec<ListTopicItem>,
+    selected_topic_index: usize){
+
+    let right_offset = 3;
+    let author_max_width = 12;
+    let no_max_width = 5;
+    let title_max_width = width - no_max_width - author_max_width - right_offset;
+
+    for (i, item) in collection.iter().take(rows).enumerate() {
+
+        let original_title = item.title.text.clone();
+        let title: String = substring(&original_title, title_max_width);
+        let title_len = jks_len(&title);
+
+        let title_spacin_minus = no_max_width + title_len + author_max_width + right_offset;
+        let title_spacing_width = if width > title_spacin_minus {
+            width - title_spacin_minus
+        } else {
+            0
+        };
+        let title_spacing = (0..title_spacing_width).map(|_| " ").collect::<Vec<_>>().join("");
+
+        let author = item.author.name.clone();
+        let author_spacing_width = author_max_width - jks_len(&author) + right_offset;
+        let author_spacing = (0..author_spacing_width).map(|_| " ").collect::<Vec<_>>().join("");
+
+        if selected_topic_index == i + 1 {
+            stdout.goto(0, (i + offset_y) as u16).unwrap();
+            stdout.color(Color::Black).unwrap();
+            stdout.bg_color(Color::Yellow).unwrap();
+            stdout.style(Style::Reset).unwrap();
+            stdout.write(&format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+                     no = i + 1,
+                     title = title,
+                     title_spacing = title_spacing,
+                     author = &author,
+                     author_spacing = author_spacing).as_bytes()).unwrap();
+
+            // rustbox.print(0,
+            //               i + offset_y,
+            //               rustbox::RB_NORMAL,
+            //               Color::Black,
+            //               Color::Yellow,
+            //               &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+            //                        no = i + 1,
+            //                        title = title,
+            //                        title_spacing = title_spacing,
+            //                        author = &author,
+            //                        author_spacing = author_spacing));
+        } else {
+
+            stdout.goto(0, (i + offset_y) as u16).unwrap();
+            stdout.color(Color::White).unwrap();
+            stdout.bg_color(Color::Black).unwrap();
+            stdout.style(Style::Reset).unwrap();
+            stdout.write(&format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+                     no = i + 1,
+                     title = title,
+                     title_spacing = title_spacing,
+                     author = &author,
+                     author_spacing = author_spacing).as_bytes()).unwrap();
+
+            // rustbox.print(0,
+            //               i + offset_y,
+            //               rustbox::RB_NORMAL,
+            //               Color::White,
+            //               Color::Black,
+            //               &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+            //                        no = i + 1,
+            //                        title = title,
+            //                        title_spacing = title_spacing,
+            //                        author = &author,
+            //                        author_spacing = author_spacing));
+            stdout.hide_cursor().unwrap();
+            stdout.reset().unwrap();
+        }
+
+    }
 }
