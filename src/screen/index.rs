@@ -5,26 +5,78 @@ use termion::terminal_size;
 use std::io::{Read, Write, Stdout, Stdin};
 use std::io::{stdout, stdin};
 use std;
+use model::ListTopicItem;
 
-pub struct Index<'a, W: 'a> {
-    stdout: &'a mut W
+
+pub struct Index {
+    title: String,
+    selected_topic_index: usize,
 }
 
-impl<'a, W: Write> Index<'a, W> {
-    pub fn new(stdout: &'a mut W) -> Self {
+impl Index {
+    pub fn new() -> Self {
         Index {
-            stdout: stdout
+            title: String::from("高登"),
+            selected_topic_index: 0,
         }
     }
 
-    pub fn print(&mut self) {
-        self.stdout.goto(10 as u16, 3 as u16).unwrap();
-        self.stdout.write("hello world".as_bytes()).unwrap();
+    pub fn select_topic(&mut self, index: usize) {
+        self.selected_topic_index = index;
     }
-}
 
-fn screen_goto(stdout: &Stdout, x: usize, y: usize) {
-    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    pub fn get_selected_topic(&self) -> usize {
+        self.selected_topic_index
+    }
 
-    stdout.goto(x as u16,y as u16).unwrap();
+    pub fn print(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, collection: &Vec<ListTopicItem>) {
+
+        if self.selected_topic_index > self.body_height() {
+            self.selected_topic_index = self.body_height();
+        }
+
+        let width = terminal_size().unwrap().0 as usize;
+
+        // print header
+        let padding = ((width as usize - self.title.len()) / 2) as u16;
+        let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
+
+        stdout.goto(padding, 0).unwrap();
+        stdout.color(Color::White).unwrap();
+        stdout.bg_color(Color::Black).unwrap();
+        stdout.style(Style::Bold).unwrap();
+        stdout.write(self.title.as_bytes()).unwrap();
+
+        stdout.goto(0, 1).unwrap();
+        stdout.color(Color::Yellow).unwrap();
+        stdout.bg_color(Color::Black).unwrap();
+        stdout.style(Style::Bold).unwrap();
+        stdout.write(header_bottom.as_bytes()).unwrap();
+
+        stdout.hide_cursor().unwrap();
+        stdout.reset().unwrap();
+    }
+
+    pub fn body_height(&self) -> usize {
+
+        let h = terminal_size().unwrap().1;
+
+        if h >= 3 {
+            h as usize - 3
+        } else {
+            0
+        }
+    }
+
+    pub fn body_width(&self) -> usize {
+
+        let w = terminal_size().unwrap().0;
+
+        if w >= 2 {
+            w as usize - 2
+        } else {
+            0
+        }
+    }
+
 }

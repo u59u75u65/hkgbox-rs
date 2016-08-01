@@ -99,10 +99,7 @@ fn main() {
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
     // let mut list = hkg::screen::list::List::new(&rustbox);
-    {
-        let mut index = hkg::screen::index::Index::new(&mut stdout);
-        index.print();
-    }
+    let mut index = hkg::screen::index::Index::new();
 
     // let mut show = hkg::screen::show::Show::new(&rustbox);
 
@@ -150,6 +147,7 @@ fn main() {
 
         stdout.goto(1,1).unwrap();
         stdout.write(format!("start => {}", Local::now()).as_bytes()).unwrap();
+        stdout.clear().unwrap();
 
         // show UI
         if prev_state != state {
@@ -183,6 +181,7 @@ fn main() {
         match state {
             Status::List => {
                 // list.print(&title, &collection);
+                index.print(&mut stdout, &collection);
             }
             Status::Show => {
                 // show.print(&title, &show_item);
@@ -202,6 +201,7 @@ fn main() {
             for c in stdin.keys() {
                 stdout.goto(2, 3).unwrap();
                 stdout.clear_line().unwrap();
+
                 let w = terminal_size().unwrap().0;
                 match c.unwrap() {
                     Key::Char('q') => return,
