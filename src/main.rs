@@ -204,17 +204,80 @@ fn main() {
 
                 let w = terminal_size().unwrap().0;
                 match c.unwrap() {
-                    Key::Char('q') => return,
-                    Key::Char('\n') => println!("Enter"),
-                    Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
-                    Key::Alt(c) => println!("^{}", c),
-                    Key::Ctrl(c) => println!("*{}", c),
-                    Key::Left => println!("←"),
-                    Key::Right => println!("→"),
-                    Key::Up => println!("↑"),
-                    Key::Down => println!("↓"),
-                    Key::Backspace => println!("×"),
-                    Key::Invalid => println!("???"),
+                    Key::Char('q') => {
+                        stdout.clear().unwrap();
+                        return
+                    },
+                    Key::Char('\n') => {
+                        status = format_status(status, w as usize, &format!("ENTER"));
+                        break
+                    },
+                    // Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
+                    Key::Alt(c) => {
+                        status = format_status(status, w as usize, &format!("^{}", c));
+                        break
+                    },
+                    Key::Ctrl(c) => {
+                        status = format_status(status, w as usize, &format!("*{}", c));
+                        break
+                    },
+                    Key::Left => {
+                        status = format_status(status, w as usize, &format!("←"));
+                        break
+                    },
+                    Key::Right => {
+                        status = format_status(status, w as usize, &format!("→"));
+                        break
+                    },
+                    Key::Up => {
+                        status = format_status(status, w as usize, "↑");
+
+                        match state {
+                            Status::List => {
+                                let tmp = index.get_selected_topic();
+                                status = format_status(status, w as usize, &format!("{}", tmp));
+
+                                if tmp > 1 {
+                                    index.select_topic(tmp - 1);
+                                }
+                            }
+                            Status::Show => {
+                                // if show.scrollUp(2) {
+                                //     hkg::screen::common::clear(&rustbox);
+                                // }
+                            }
+                        }
+
+                        break
+                    },
+                    Key::Down => {
+                        status = format_status(status, w as usize, "↓");
+
+                        match state {
+                            Status::List => {
+                                let tmp = index.get_selected_topic();
+                                status = format_status(status, w as usize, &format!("{}", tmp));
+
+                                if tmp < index.body_height() {
+                                    index.select_topic(tmp + 1);
+                                }
+                            }
+                            Status::Show => {
+                                // if show.scrollDown(2) {
+                                //     hkg::screen::common::clear(&rustbox);
+                                // }
+                            }
+                        }
+                        break
+                    },
+                    Key::Backspace => {
+                        status = format_status(status, w as usize, &format!("×"));
+                        break
+                    },
+                    Key::Invalid => {
+                        status = format_status(status, w as usize, &format!("???"));
+                        break
+                    },
                     _ => {},
                 }
             }
