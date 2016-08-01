@@ -37,24 +37,7 @@ impl Index {
 
         let width = terminal_size().unwrap().0 as usize;
 
-        // print header
-        let padding = ((width as usize - self.title.len()) / 2) as u16;
-        let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
-
-        stdout.goto(padding, 0).unwrap();
-        stdout.color(Color::White).unwrap();
-        stdout.bg_color(Color::Black).unwrap();
-        stdout.style(Style::Bold).unwrap();
-        stdout.write(self.title.as_bytes()).unwrap();
-
-        stdout.goto(0, 1).unwrap();
-        stdout.color(Color::Yellow).unwrap();
-        stdout.bg_color(Color::Black).unwrap();
-        stdout.style(Style::Bold).unwrap();
-        stdout.write(header_bottom.as_bytes()).unwrap();
-
-        stdout.hide_cursor().unwrap();
-        stdout.reset().unwrap();
+        print_header(stdout, width as usize, &self.title);
     }
 
     pub fn body_height(&self) -> usize {
@@ -79,4 +62,25 @@ impl Index {
         }
     }
 
+}
+
+fn print_header(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, width: usize, text: &str) {
+    // print header
+    let padding = ((width - text.len()) / 2) as u16;
+    let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
+
+    stdout.goto(padding, 0).unwrap();
+    stdout.color(Color::White).unwrap();
+    stdout.bg_color(Color::Black).unwrap();
+    stdout.style(Style::Bold).unwrap();
+    stdout.write(text.as_bytes()).unwrap();
+
+    stdout.goto(0, 1).unwrap();
+    stdout.color(Color::Yellow).unwrap();
+    stdout.bg_color(Color::Black).unwrap();
+    stdout.style(Style::Bold).unwrap();
+    stdout.write(header_bottom.as_bytes()).unwrap();
+
+    stdout.hide_cursor().unwrap();
+    stdout.reset().unwrap();
 }
