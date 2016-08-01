@@ -125,9 +125,9 @@ fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
 
         if selected_topic_index == i + 1 {
             stdout.goto(0, (i + offset_y) as u16).unwrap();
+            stdout.style(Style::Reset).unwrap();
             stdout.color(Color::Black).unwrap();
             stdout.bg_color(Color::Yellow).unwrap();
-            stdout.style(Style::Reset).unwrap();
             stdout.write(&format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
                      no = i + 1,
                      title = title,
@@ -149,9 +149,9 @@ fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
         } else {
 
             stdout.goto(0, (i + offset_y) as u16).unwrap();
+            stdout.style(Style::Reset).unwrap();
             stdout.color(Color::White).unwrap();
             stdout.bg_color(Color::Black).unwrap();
-            stdout.style(Style::Reset).unwrap();
             stdout.write(&format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
                      no = i + 1,
                      title = title,
