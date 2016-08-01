@@ -145,10 +145,6 @@ fn main() {
 
     loop {
 
-        stdout.goto(1,1).unwrap();
-        stdout.write(format!("start => {}", Local::now()).as_bytes()).unwrap();
-        stdout.clear().unwrap();
-
         // show UI
         if prev_state != state {
             // hkg::screen::common::clear(&rustbox); // clear screen when switching state
@@ -194,13 +190,14 @@ fn main() {
 
         if !is_web_requesting {
 
-            stdout.goto(1,3).unwrap();
-
             let stdin = stdin();
 
             for c in stdin.keys() {
-                stdout.goto(2, 3).unwrap();
-                stdout.clear_line().unwrap();
+
+                if prev_width != terminal_size().unwrap().0 {
+                   stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
+                   prev_width = terminal_size().unwrap().0;
+                }
 
                 let w = terminal_size().unwrap().0;
                 match c.unwrap() {
