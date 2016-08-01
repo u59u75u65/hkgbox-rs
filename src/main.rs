@@ -205,6 +205,7 @@ fn main() {
                 let w = terminal_size().unwrap().0;
                 match c.unwrap() {
                     Key::Char('q') => return,
+                    Key::Char('\n') => println!("Enter"),
                     Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
                     Key::Alt(c) => println!("^{}", c),
                     Key::Ctrl(c) => println!("*{}", c),
