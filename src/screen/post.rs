@@ -291,7 +291,7 @@ impl Post {
     }
 
     fn can_print(&self) -> bool {
-        self.y > self.scrollY + 1
+        self.y > self.scrollY + 1 && self.y < self.scrollY + 1 + self.body_height()
     }
 
     fn scrolledY(&self) -> usize {
