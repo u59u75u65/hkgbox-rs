@@ -100,8 +100,8 @@ fn main() {
 
     // let mut list = hkg::screen::list::List::new(&rustbox);
     let mut index = hkg::screen::index::Index::new();
-
     // let mut show = hkg::screen::show::Show::new(&rustbox);
+    let mut post = hkg::screen::post::Post::new();
 
     let mut builder = hkg::builder::Builder::new();
 
@@ -166,7 +166,7 @@ fn main() {
                                                 show_item.page,
                                                 is_web_requesting));
 
-                // show.resetY();
+                post.resetY(); // show.resetY();
                 // hkg::screen::common::clear(&rustbox);
                 state = Status::Show;
                 is_web_requesting = false;
@@ -181,6 +181,7 @@ fn main() {
             }
             Status::Show => {
                 // show.print(&title, &show_item);
+                post.print(&mut stdout, &title, &show_item);
             }
         }
 
@@ -206,7 +207,23 @@ fn main() {
                         return
                     },
                     Key::Char('\n') => {
-                        status = format_status(status, w as usize, &format!("ENTER"));
+                        // status = format_status(status, w as usize, &format!("ENTER"));
+                        status = format_status(status, w as usize, "ENTER");
+                        match state {
+                            Status::List => {
+                                let i = index.get_selected_topic();
+                                if i > 0 {
+                                    let topic_item = &collection[i - 1];
+                                    let postid = &topic_item.title.url_query.message;
+                                    let page = 1;
+                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                    status = format_status(status.clone(),
+                                                           w as usize,
+                                                           &get_show_page_status_message(postid, page, &status_message));
+                                }
+                            }
+                            Status::Show => {}
+                        }
                         break
                     },
                     // Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
@@ -239,9 +256,9 @@ fn main() {
                                 }
                             }
                             Status::Show => {
-                                // if show.scrollUp(2) {
-                                //     hkg::screen::common::clear(&rustbox);
-                                // }
+                                if post.scrollUp(2) {
+                                    stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
+                                }
                             }
                         }
 
@@ -260,15 +277,22 @@ fn main() {
                                 }
                             }
                             Status::Show => {
-                                // if show.scrollDown(2) {
-                                //     hkg::screen::common::clear(&rustbox);
-                                // }
+                                if post.scrollDown(2) {
+                                    stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
+                                }
                             }
                         }
                         break
                     },
                     Key::Backspace => {
-                        status = format_status(status, w as usize, &format!("×"));
+                        // status = format_status(status, w as usize, &format!("×"));
+                        status = format_status(status, w as usize, "B");
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                state = Status::List;
+                            }
+                        }
                         break
                     },
                     Key::Invalid => {
