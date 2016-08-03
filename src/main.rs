@@ -147,7 +147,7 @@ fn main() {
 
         // show UI
         if prev_state != state {
-            // hkg::screen::common::clear(&rustbox); // clear screen when switching state
+            stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox); // clear screen when switching state
             prev_state = state;
         }
 
@@ -167,7 +167,7 @@ fn main() {
                                                 is_web_requesting));
 
                 post.resetY(); // show.resetY();
-                // hkg::screen::common::clear(&rustbox);
+                stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
                 state = Status::Show;
                 is_web_requesting = false;
             }
