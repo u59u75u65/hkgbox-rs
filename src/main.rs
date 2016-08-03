@@ -237,10 +237,36 @@ fn main() {
                     },
                     Key::Left => {
                         status = format_status(status, w as usize, &format!("←"));
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                if show_item.page > 1 {
+                                    let postid = &show_item.url_query.message;
+                                    let page = &show_item.page - 1;
+                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                    status = format_status(status.clone(),
+                                                           w as usize,
+                                                           &get_show_page_status_message(postid, page, &status_message));
+                                }
+                            }
+                        }
                         break
-                    },
+                    }
                     Key::Right => {
                         status = format_status(status, w as usize, &format!("→"));
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                if show_item.max_page > show_item.page {
+                                    let postid = &show_item.url_query.message;
+                                    let page = &show_item.page + 1;
+                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+                                    status = format_status(status.clone(),
+                                                           w as usize,
+                                                           &get_show_page_status_message(postid, page, &status_message));
+                                }
+                            }
+                        }
                         break
                     },
                     Key::Up => {
