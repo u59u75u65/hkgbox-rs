@@ -76,6 +76,13 @@ fn print_header(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, width: u
     // print header
     let padding = ((width - text.len()) / 2) as u16;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
+    let header_top_padding = seq_str_gen(0, width, " ", "");
+
+    stdout.goto(0, 0).unwrap();
+    stdout.color(Color::White).unwrap();
+    stdout.bg_color(Color::Black).unwrap();
+    stdout.style(Style::Bold).unwrap();
+    stdout.write(header_top_padding.as_bytes()).unwrap();
 
     stdout.goto(padding, 0).unwrap();
     stdout.color(Color::White).unwrap();
@@ -175,4 +182,8 @@ fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
         }
 
     }
+}
+
+fn seq_str_gen(start: usize, end: usize, sym: &str, join_sym: &str) -> String {
+    (start..end).map(|_| sym.clone()).collect::<Vec<_>>().join(&join_sym)
 }
