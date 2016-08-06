@@ -68,11 +68,13 @@ impl Post {
         //                    Color::Green,
         //                    Color::Black,
         //                    &s);
-        write!(stdout, "{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}{}{}",
                 termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
                 color::Fg(color::Green),
                 color::Bg(color::Black),
-                s, style::Reset);
+                s,
+                style::Reset,
+                termion::cursor::Hide);
     }
 
     fn print_header(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, text: &str) {
@@ -100,19 +102,22 @@ impl Post {
         //                    Color::Black,
         //                    &header_bottom);
 
-        write!(stdout, "{}{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}{}{}{}",
                 termion::cursor::Goto(padding + 1, 1),
                 color::Fg(color::White),
                 color::Bg(color::Black),
                 style::Bold,
-                text, style::Reset);
+                text, style::Reset,
+                termion::cursor::Hide);
 
-        write!(stdout, "{}{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}{}{}{}",
                 termion::cursor::Goto(1, 2),
                 color::Fg(color::Yellow),
                 color::Bg(color::Black),
                 style::Bold,
-                header_bottom, style::Reset);
+                header_bottom,
+                style::Reset,
+                termion::cursor::Hide);
     }
 
     pub fn print_body(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
@@ -141,11 +146,13 @@ impl Post {
         //                    Color::Black,
         //                    &s);
 
-       write!(stdout, "{}{}{}{}{}",
+       write!(stdout, "{}{}{}{}{}{}",
                termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
                color::Fg(color::White),
                color::Bg(color::Black),
-               s, style::Reset);
+               s,
+               style::Reset,
+               termion::cursor::Hide);
     }
 
     fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {

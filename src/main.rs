@@ -581,14 +581,16 @@ fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, sta
     };
     let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
 
-    write!(stdout, "{}{}{}{}{}{}",
+    write!(stdout, "{}{}{}{}{}{}{}",
             termion::cursor::Goto(1, h),
             color::Fg(color::White),
             color::Bg(color::Black),
             style::Bold,
             format!("{status}{status_spacing}",
                                    status = status,
-                                   status_spacing = status_spacing), style::Reset);
+                                   status_spacing = status_spacing),
+            style::Reset,
+            termion::cursor::Hide);
 }
 
 // fn print_status(rustbox: &rustbox::RustBox, status: &str) {
