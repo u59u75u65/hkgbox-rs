@@ -62,12 +62,7 @@ impl Post {
     }
 
     fn print_separator_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
-        // self.rustbox.print(0,
-        //                    self.scrolledY(),
-        //                    rustbox::RB_NORMAL,
-        //                    Color::Green,
-        //                    Color::Black,
-        //                    &s);
+
         write!(stdout, "{}{}{}{}{}{}",
                 termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
                 color::Fg(color::Green),
@@ -87,20 +82,6 @@ impl Post {
         }) / 2) as u16;
 
         let header_bottom = seq_str_gen(0, w, "─", "");
-
-        // clearline(&self.rustbox, self.rustbox.width(), 0, 0);
-        // self.rustbox.print(padding,
-        //                    0,
-        //                    rustbox::RB_BOLD,
-        //                    Color::White,
-        //                    Color::Black,
-        //                    text);
-        // self.rustbox.print(0,
-        //                    1,
-        //                    rustbox::RB_BOLD,
-        //                    Color::Yellow,
-        //                    Color::Black,
-        //                    &header_bottom);
 
         write!(stdout, "{}{}{}{}{}{}{}",
                 termion::cursor::Goto(padding + 1, 1),
@@ -139,12 +120,6 @@ impl Post {
     }
 
     fn print_reply_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: String) {
-        // self.rustbox.print(0,
-        //                    self.scrolledY(),
-        //                    rustbox::RB_NORMAL,
-        //                    Color::White,
-        //                    Color::Black,
-        //                    &s);
 
        write!(stdout, "{}{}{}{}{}{}",
                termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),

@@ -1,5 +1,4 @@
 extern crate hkg;
-// extern crate rustbox;
 extern crate termion;
 extern crate rustc_serialize;
 extern crate chrono;
@@ -12,7 +11,6 @@ use kuchiki::NodeRef;
 
 use std::default::Default;
 
-// use rustbox::{Color, RustBox, Key};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::{color, style};
@@ -67,19 +65,6 @@ fn main() {
 
     // Clear the screen.
     print!("{}", termion::clear::All); // stdout.clear().unwrap();
-
-    // GUI init
-    // let rustbox = match RustBox::init(Default::default()) {
-    //     Result::Ok(v) => v,
-    //     Result::Err(e) => panic!("{}", e),
-    // };
-
-    // rustbox.print(1,
-    //               1,
-    //               rustbox::RB_NORMAL,
-    //               Color::White,
-    //               Color::Black,
-    //               &format!("start => {}", Local::now()));
 
     let title = String::from("高登");
     let s = cache::readfile(String::from("data/topics.json"));
@@ -367,150 +352,6 @@ fn main() {
                     _ => {},
                 }
             }
-
-            // match rustbox.poll_event(false) {
-            //     Ok(rustbox::Event::KeyEvent(key)) => {
-            //
-            //         if prev_width != rustbox.width() {
-            //             hkg::screen::common::clear(&rustbox);
-            //             prev_width = rustbox.width();
-            //         }
-            //
-            //         match key {
-            //             Key::Char('q') => {
-            //                 break;
-            //             }
-            //             Key::PageUp => {
-            //                 let w = rustbox.width();
-            //                 status = format_status(status, w, " PU");
-            //
-            //                 match state {
-            //                     Status::List => {}
-            //                     Status::Show => {
-            //                         let bh = show.body_height();
-            //                         if show.scrollUp(bh) {
-            //                             hkg::screen::common::clear(&rustbox);
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //             Key::PageDown => {
-            //                 let w = rustbox.width();
-            //                 status = format_status(status, w, " PD");
-            //
-            //                 match state {
-            //                     Status::List => {}
-            //                     Status::Show => {
-            //                         let bh = show.body_height();
-            //                         if show.scrollDown(bh) {
-            //                             hkg::screen::common::clear(&rustbox);
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //             Key::Up => {
-            //                 let w = rustbox.width();
-            //                 status = format_status(status, w, "U");
-            //
-            //                 match state {
-            //                     Status::List => {
-            //                         let tmp = list.get_selected_topic();
-            //                         if tmp > 1 {
-            //                             list.select_topic(tmp - 1);
-            //                         }
-            //                     }
-            //                     Status::Show => {
-            //                         if show.scrollUp(2) {
-            //                             hkg::screen::common::clear(&rustbox);
-            //                         }
-            //                     }
-            //                 }
-            //
-            //             }
-            //             Key::Down => {
-            //                 let w = rustbox.width();
-            //                 status = format_status(status, w, "D");
-            //
-            //                 match state {
-            //                     Status::List => {
-            //                         let tmp = list.get_selected_topic();
-            //                         if tmp < list.body_height() {
-            //                             list.select_topic(tmp + 1);
-            //                         }
-            //                     }
-            //                     Status::Show => {
-            //                         if show.scrollDown(2) {
-            //                             hkg::screen::common::clear(&rustbox);
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //             Key::Left => {
-            //                 match state {
-            //                     Status::List => {}
-            //                     Status::Show => {
-            //                         if show_item.page > 1 {
-            //                             let postid = &show_item.url_query.message;
-            //                             let page = &show_item.page - 1;
-            //                             let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-            //                             status = format_status(status.clone(),
-            //                                                    rustbox.width(),
-            //                                                    &get_show_page_status_message(postid, page, &status_message));
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //             Key::Right => {
-            //                 match state {
-            //                     Status::List => {}
-            //                     Status::Show => {
-            //                         if show_item.max_page > show_item.page {
-            //                             let postid = &show_item.url_query.message;
-            //                             let page = &show_item.page + 1;
-            //                             let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-            //                             status = format_status(status.clone(),
-            //                                                    rustbox.width(),
-            //                                                    &get_show_page_status_message(postid, page, &status_message));
-            //                         }
-            //                     }
-            //                 }
-            //             }
-            //             Key::Enter => {
-            //                 let w = rustbox.width();
-            //                 status = format_status(status, w, "E");
-            //                 match state {
-            //                     Status::List => {
-            //                         let index = list.get_selected_topic();
-            //                         if index > 0 {
-            //                             let topic_item = &collection[index - 1];
-            //                             let postid = &topic_item.title.url_query.message;
-            //                             let page = 1;
-            //                             let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-            //                             status = format_status(status.clone(),
-            //                                                    rustbox.width(),
-            //                                                    &get_show_page_status_message(postid, page, &status_message));
-            //                         }
-            //                     }
-            //                     Status::Show => {}
-            //                 }
-            //             }
-            //             Key::Backspace => {
-            //                 let w = rustbox.width();
-            //                 status = format_status(status, w, "B");
-            //                 match state {
-            //                     Status::List => {}
-            //                     Status::Show => {
-            //                         state = Status::List;
-            //                     }
-            //                 }
-            //             }
-            //
-            //             _ => {}
-            //         }
-            //     }
-            //     Err(e) => panic!("{}", e),
-            //     _ => {}
-            // }
         }
 
     }
@@ -626,29 +467,6 @@ fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, sta
             style::Reset,
             termion::cursor::Hide);
 }
-
-// fn print_status(rustbox: &rustbox::RustBox, status: &str) {
-//     // for status bar only
-//     let w = rustbox.width();
-//     let h = rustbox.height();
-//
-//     let status_width = if w > status.len() {
-//         w - status.len()
-//     } else {
-//         0
-//     };
-//     let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
-//
-//     rustbox.print(0,
-//                   h - 1,
-//                   rustbox::RB_BOLD,
-//                   Color::White,
-//                   Color::Black,
-//                   &format!("{status}{status_spacing}",
-//                            status = status,
-//                            status_spacing = status_spacing));
-//
-// }
 
 fn format_status(status: String, w: usize, s: &str) -> String {
     if status.len() >= w {

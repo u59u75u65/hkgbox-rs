@@ -152,17 +152,6 @@ fn print_body(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>,
                       style::Reset,
                       termion::cursor::Hide);
 
-            // rustbox.print(0,
-            //               i + offset_y,
-            //               rustbox::RB_NORMAL,
-            //               Color::Black,
-            //               Color::Yellow,
-            //               &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
-            //                        no = i + 1,
-            //                        title = title,
-            //                        title_spacing = title_spacing,
-            //                        author = &author,
-            //                        author_spacing = author_spacing));
         } else {
              write!(stdout, "{}{}{}{}{}{}",
                      termion::cursor::Goto(1, (i + offset_y + 1) as u16),
@@ -176,18 +165,6 @@ fn print_body(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>,
                               author_spacing = author_spacing),
                      style::Reset,
                      termion::cursor::Hide);
-
-            // rustbox.print(0,
-            //               i + offset_y,
-            //               rustbox::RB_NORMAL,
-            //               Color::White,
-            //               Color::Black,
-            //               &format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
-            //                        no = i + 1,
-            //                        title = title,
-            //                        title_spacing = title_spacing,
-            //                        author = &author,
-            //                        author_spacing = author_spacing));
 
         }
 
