@@ -1,7 +1,10 @@
 extern crate termion;
 extern crate chrono;
 
-use termion::{TermRead, TermWrite, IntoRawMode, Color, Style, Key};
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::{color, style};
+use termion::event::Key;
 use termion::terminal_size;
 use std::io::{Read, Write, Stdout, Stdin};
 use std::io::{stdout, stdin};
@@ -31,7 +34,7 @@ impl Post {
             is_scroll_to_end: false
         }
     }
-    pub fn print(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, title: &str, item: &ShowItem) {
+    pub fn print(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, title: &str, item: &ShowItem) {
 
         self.y = 2;
 
@@ -43,7 +46,7 @@ impl Post {
         self.print_body(stdout, &item);
     }
 
-    fn print_separator_top(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, reply: &ShowReplyItem) {
+    fn print_separator_top(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, reply: &ShowReplyItem) {
         if self.can_print() {
             let (replier_name, time) = make_separator_content(&reply);
             let s = self.build_separator_top(&replier_name, &time);
@@ -51,31 +54,28 @@ impl Post {
         }
     }
 
-    fn print_separator_bottom(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>) {
+    fn print_separator_bottom(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>) {
         if self.can_print() {
             let s = self.build_separator_bottom();
             self.print_separator_line(stdout, &s);
         }
     }
 
-    fn print_separator_line(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, s: &str) {
+    fn print_separator_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
         // self.rustbox.print(0,
         //                    self.scrolledY(),
         //                    rustbox::RB_NORMAL,
         //                    Color::Green,
         //                    Color::Black,
         //                    &s);
-        stdout.style(Style::Reset).unwrap();
-        stdout.goto(0, self.scrolledY() as u16).unwrap();
-        stdout.color(Color::Green).unwrap();
-        stdout.bg_color(Color::Black).unwrap();
-        stdout.write(s.as_bytes()).unwrap();
-
-        stdout.hide_cursor().unwrap();
-        stdout.reset().unwrap();
+        write!(stdout, "{}{}{}{}{}",
+                termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
+                color::Fg(color::Green),
+                color::Bg(color::Black),
+                s, style::Reset);
     }
 
-    fn print_header(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, text: &str) {
+    fn print_header(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, text: &str) {
         let title_len = jks_len(text);
         let w = terminal_size().unwrap().0 as usize;
         let padding = ((if w >= title_len {
@@ -100,23 +100,22 @@ impl Post {
         //                    Color::Black,
         //                    &header_bottom);
 
-        stdout.goto(padding, 0).unwrap();
-        stdout.color(Color::White).unwrap();
-        stdout.bg_color(Color::Black).unwrap();
-        stdout.style(Style::Bold).unwrap();
-        stdout.write(text.as_bytes()).unwrap();
+        write!(stdout, "{}{}{}{}{}{}",
+                termion::cursor::Goto(padding + 1, 1),
+                color::Fg(color::White),
+                color::Bg(color::Black),
+                style::Bold,
+                text, style::Reset);
 
-        stdout.goto(0, 1).unwrap();
-        stdout.color(Color::Yellow).unwrap();
-        stdout.bg_color(Color::Black).unwrap();
-        stdout.style(Style::Bold).unwrap();
-        stdout.write(header_bottom.as_bytes()).unwrap();
-
-        stdout.hide_cursor().unwrap();
-        stdout.reset().unwrap();
+        write!(stdout, "{}{}{}{}{}{}",
+                termion::cursor::Goto(1, 2),
+                color::Fg(color::Yellow),
+                color::Bg(color::Black),
+                style::Bold,
+                header_bottom, style::Reset);
     }
 
-    pub fn print_body(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
+    pub fn print_body(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
         let width = self.body_width();
         let rows = self.body_height();
 
@@ -134,7 +133,7 @@ impl Post {
         self.is_scroll_to_end = self.scrolledY() < self.body_height();
     }
 
-    fn print_reply_line(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, s: String) {
+    fn print_reply_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: String) {
         // self.rustbox.print(0,
         //                    self.scrolledY(),
         //                    rustbox::RB_NORMAL,
@@ -142,17 +141,14 @@ impl Post {
         //                    Color::Black,
         //                    &s);
 
-       stdout.style(Style::Reset).unwrap();
-       stdout.goto(0, self.scrolledY() as u16).unwrap();
-       stdout.color(Color::White).unwrap();
-       stdout.bg_color(Color::Black).unwrap();
-       stdout.write(s.as_bytes()).unwrap();
-
-       stdout.hide_cursor().unwrap();
-       stdout.reset().unwrap();
+       write!(stdout, "{}{}{}{}{}",
+               termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
+               color::Fg(color::White),
+               color::Bg(color::Black),
+               s, style::Reset);
     }
 
-    fn print_reply(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
+    fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
 
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();

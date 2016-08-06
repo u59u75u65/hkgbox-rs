@@ -13,7 +13,10 @@ use kuchiki::NodeRef;
 use std::default::Default;
 
 // use rustbox::{Color, RustBox, Key};
-use termion::{TermRead, TermWrite, IntoRawMode, Color, Style, Key};
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::{color, style};
+use termion::event::Key;
 use termion::terminal_size;
 use std::io::{Read, Write, Stdout, Stdin};
 use std::io::{stdout, stdin};
@@ -63,7 +66,7 @@ fn main() {
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
 
     // Clear the screen.
-    stdout.clear().unwrap();
+    print!("{}", termion::clear::All); // stdout.clear().unwrap();
 
     // GUI init
     // let rustbox = match RustBox::init(Default::default()) {
@@ -147,7 +150,7 @@ fn main() {
 
         // show UI
         if prev_state != state {
-            stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox); // clear screen when switching state
+            print!("{}", termion::clear::All); // stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox); // clear screen when switching state
             prev_state = state;
         }
 
@@ -167,7 +170,7 @@ fn main() {
                                                 is_web_requesting));
 
                 post.resetY(); // show.resetY();
-                stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
+                print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
                 state = Status::Show;
                 is_web_requesting = false;
             }
@@ -196,14 +199,14 @@ fn main() {
             for c in stdin.keys() {
 
                 if prev_width != terminal_size().unwrap().0 {
-                   stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
+                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
                    prev_width = terminal_size().unwrap().0;
                 }
 
                 let w = terminal_size().unwrap().0;
                 match c.unwrap() {
                     Key::Char('q') => {
-                        stdout.clear().unwrap();
+                        print!("{}", termion::clear::All); // stdout.clear().unwrap();
                         return
                     },
                     Key::Char('\n') => {
@@ -283,7 +286,7 @@ fn main() {
                             }
                             Status::Show => {
                                 if post.scrollUp(2) {
-                                    stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
+                                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
                                 }
                             }
                         }
@@ -304,12 +307,14 @@ fn main() {
                             }
                             Status::Show => {
                                 if post.scrollDown(2) {
-                                    stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
+                                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
                                 }
                             }
                         }
                         break
                     },
+                    // Key::PageUp => {},
+                    // Key::PageDown => {},
                     Key::Backspace => {
                         // status = format_status(status, w as usize, &format!("×"));
                         status = format_status(status, w as usize, "B");
@@ -321,10 +326,10 @@ fn main() {
                         }
                         break
                     },
-                    Key::Invalid => {
-                        status = format_status(status, w as usize, &format!("???"));
-                        break
-                    },
+                    // Key::Invalid => {
+                    //     status = format_status(status, w as usize, &format!("???"));
+                    //     break
+                    // },
                     _ => {},
                 }
             }
@@ -564,7 +569,7 @@ fn get_show_page_status_message(postid: &String, page: usize, status_message: &S
     format!("[{}-{}:{}]", postid, page, status_message)
 }
 
-fn print_status(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, status: &str) {
+fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, status: &str) {
     // // for status bar only
     let w = terminal_size().unwrap().0; // let w = rustbox.width();
     let h = terminal_size().unwrap().1; // let h = rustbox.height();
@@ -576,15 +581,14 @@ fn print_status(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, status: 
     };
     let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
 
-    stdout.goto(0, h - 1).unwrap();
-    stdout.color(Color::White).unwrap();
-    stdout.bg_color(Color::Black).unwrap();
-    stdout.style(Style::Bold).unwrap();
-    stdout.write(format!("{status}{status_spacing}",
-                           status = status,
-                           status_spacing = status_spacing).as_bytes()).unwrap();
-    stdout.hide_cursor().unwrap();
-    stdout.reset().unwrap();
+    write!(stdout, "{}{}{}{}{}{}",
+            termion::cursor::Goto(1, h),
+            color::Fg(color::White),
+            color::Bg(color::Black),
+            style::Bold,
+            format!("{status}{status_spacing}",
+                                   status = status,
+                                   status_spacing = status_spacing), style::Reset);
 }
 
 // fn print_status(rustbox: &rustbox::RustBox, status: &str) {

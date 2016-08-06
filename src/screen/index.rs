@@ -1,6 +1,9 @@
 extern crate termion;
 
-use termion::{TermRead, TermWrite, IntoRawMode, Color, Style, Key};
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::{color, style};
+use termion::event::Key;
 use termion::terminal_size;
 use std::io::{Read, Write, Stdout, Stdin};
 use std::io::{stdout, stdin};
@@ -31,7 +34,7 @@ impl Index {
         self.selected_topic_index
     }
 
-    pub fn print(&mut self, stdout: &mut termion::RawTerminal<std::io::StdoutLock>, collection: &Vec<ListTopicItem>) {
+    pub fn print(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, collection: &Vec<ListTopicItem>) {
 
         if self.selected_topic_index > self.body_height() {
             self.selected_topic_index = self.body_height();
@@ -72,28 +75,25 @@ impl Index {
 
 }
 
-fn print_header(stdout: &mut termion::RawTerminal<std::io::StdoutLock>, width: usize, text: &str) {
+fn print_header(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str) {
     // print header
     let padding = ((width - text.len()) / 2) as u16;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
 
-    stdout.goto(padding, 0).unwrap();
-    stdout.color(Color::White).unwrap();
-    stdout.bg_color(Color::Black).unwrap();
-    stdout.style(Style::Bold).unwrap();
-    stdout.write(text.as_bytes()).unwrap();
+    write!(stdout, "{}{}{}{}{}{}",
+            termion::cursor::Goto(padding + 1, 1),
+            color::Fg(color::White),
+            color::Bg(color::Black),
+            style::Bold, text, style::Reset);
 
-    stdout.goto(0, 1).unwrap();
-    stdout.color(Color::Yellow).unwrap();
-    stdout.bg_color(Color::Black).unwrap();
-    stdout.style(Style::Bold).unwrap();
-    stdout.write(header_bottom.as_bytes()).unwrap();
-
-    stdout.hide_cursor().unwrap();
-    stdout.reset().unwrap();
+    write!(stdout, "{}{}{}{}{}{}",
+            termion::cursor::Goto(1, 2),
+            color::Fg(color::Yellow),
+            color::Bg(color::Black),
+            style::Bold, header_bottom, style::Reset);
 }
 
-fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
+fn print_body(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>,
     width: usize,
     offset_y: usize,
     rows: usize,
@@ -124,16 +124,16 @@ fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
         let author_spacing = (0..author_spacing_width).map(|_| " ").collect::<Vec<_>>().join("");
 
         if selected_topic_index == i + 1 {
-            stdout.goto(0, (i + offset_y) as u16).unwrap();
-            stdout.style(Style::Reset).unwrap();
-            stdout.color(Color::Black).unwrap();
-            stdout.bg_color(Color::Yellow).unwrap();
-            stdout.write(&format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
-                     no = i + 1,
-                     title = title,
-                     title_spacing = title_spacing,
-                     author = &author,
-                     author_spacing = author_spacing).as_bytes()).unwrap();
+             write!(stdout, "{}{}{}{}{}",
+                     termion::cursor::Goto(1, (i + offset_y + 1) as u16),
+                     color::Fg(color::Black),
+                     color::Bg(color::Yellow),
+                      format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+                              no = i + 1,
+                              title = title,
+                              title_spacing = title_spacing,
+                              author = &author,
+                              author_spacing = author_spacing), style::Reset);
 
             // rustbox.print(0,
             //               i + offset_y,
@@ -147,17 +147,16 @@ fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
             //                        author = &author,
             //                        author_spacing = author_spacing));
         } else {
-
-            stdout.goto(0, (i + offset_y) as u16).unwrap();
-            stdout.style(Style::Reset).unwrap();
-            stdout.color(Color::White).unwrap();
-            stdout.bg_color(Color::Black).unwrap();
-            stdout.write(&format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
-                     no = i + 1,
-                     title = title,
-                     title_spacing = title_spacing,
-                     author = &author,
-                     author_spacing = author_spacing).as_bytes()).unwrap();
+             write!(stdout, "{}{}{}{}{}",
+                     termion::cursor::Goto(1, (i + offset_y + 1) as u16),
+                     color::Fg(color::White),
+                     color::Bg(color::Black),
+                     format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
+                              no = i + 1,
+                              title = title,
+                              title_spacing = title_spacing,
+                              author = &author,
+                              author_spacing = author_spacing), style::Reset);
 
             // rustbox.print(0,
             //               i + offset_y,
@@ -170,8 +169,7 @@ fn print_body(stdout: &mut termion::RawTerminal<std::io::StdoutLock>,
             //                        title_spacing = title_spacing,
             //                        author = &author,
             //                        author_spacing = author_spacing));
-            stdout.hide_cursor().unwrap();
-            stdout.reset().unwrap();
+
         }
 
     }
