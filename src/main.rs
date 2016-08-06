@@ -86,10 +86,8 @@ fn main() {
     let mut prev_state = state;
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
-    // let mut list = hkg::screen::list::List::new(&rustbox);
     let mut index = hkg::screen::index::Index::new();
-    // let mut show = hkg::screen::show::Show::new(&rustbox);
-    let mut post = hkg::screen::post::Post::new();
+    let mut show = hkg::screen::show::Show::new();
 
     let mut builder = hkg::builder::Builder::new();
 
@@ -154,7 +152,7 @@ fn main() {
                                                 show_item.page,
                                                 is_web_requesting));
 
-                post.resetY(); // show.resetY();
+                show.resetY(); // show.resetY();
                 print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
                 state = Status::Show;
                 is_web_requesting = false;
@@ -169,7 +167,7 @@ fn main() {
             }
             Status::Show => {
                 // show.print(&title, &show_item);
-                post.print(&mut stdout, &title, &show_item);
+                show.print(&mut stdout, &title, &show_item);
             }
         }
 
@@ -269,8 +267,8 @@ fn main() {
                                 }
                             }
                             Status::Show => {
-                                let bh = post.body_height();
-                                if post.scrollUp(bh) {
+                                let bh = show.body_height();
+                                if show.scrollUp(bh) {
                                     print!("{}", termion::clear::All); // hkg::screen::common::clear(&rustbox);
                                 }
                             }
@@ -284,8 +282,8 @@ fn main() {
                         match state {
                             Status::List => {}
                             Status::Show => {
-                                let bh = post.body_height();
-                                if post.scrollDown(bh) {
+                                let bh = show.body_height();
+                                if show.scrollDown(bh) {
                                     print!("{}", termion::clear::All); //hkg::screen::common::clear(&rustbox);
                                 }
                             }
@@ -305,7 +303,7 @@ fn main() {
                                 }
                             }
                             Status::Show => {
-                                if post.scrollUp(2) {
+                                if show.scrollUp(2) {
                                     print!("{}", termion::clear::All); // stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
                                 }
                             }
@@ -326,7 +324,7 @@ fn main() {
                                 }
                             }
                             Status::Show => {
-                                if post.scrollDown(2) {
+                                if show.scrollDown(2) {
                                     print!("{}", termion::clear::All); // stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
                                 }
                             }

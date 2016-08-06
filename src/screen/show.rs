@@ -16,7 +16,7 @@ use model::ShowReplyItem;
 use model::ShowItem;
 use reply_model::*;
 
-pub struct Post {
+pub struct Show {
     scrollY: usize,
     y: usize,
     replier_max_width: usize,
@@ -24,9 +24,9 @@ pub struct Post {
     is_scroll_to_end: bool
 }
 
-impl Post {
+impl Show {
     pub fn new() -> Self {
-        Post {
+        Show {
             scrollY: 0,
             y: 0,
             replier_max_width: 14,
