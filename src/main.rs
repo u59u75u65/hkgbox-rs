@@ -271,6 +271,42 @@ fn main() {
                         }
                         break
                     },
+                    Key::PageUp => {
+                        status = format_status(status, w as usize, "↑");
+
+                        match state {
+                            Status::List => {
+                                let tmp = index.get_selected_topic();
+                                status = format_status(status, w as usize, &format!("{}", tmp));
+
+                                if tmp > 1 {
+                                    index.select_topic(tmp - 1);
+                                }
+                            }
+                            Status::Show => {
+                                let bh = post.body_height();
+                                if post.scrollUp(bh) {
+                                    print!("{}", termion::clear::All); // hkg::screen::common::clear(&rustbox);
+                                }
+                            }
+                        }
+
+                        break
+                    },
+                    Key::PageDown => {
+                        status = format_status(status, w as usize, "↓");
+
+                        match state {
+                            Status::List => {}
+                            Status::Show => {
+                                let bh = post.body_height();
+                                if post.scrollDown(bh) {
+                                    print!("{}", termion::clear::All); //hkg::screen::common::clear(&rustbox);
+                                }
+                            }
+                        }
+                        break
+                    },
                     Key::Up => {
                         status = format_status(status, w as usize, "↑");
 
@@ -312,8 +348,6 @@ fn main() {
                         }
                         break
                     },
-                    // Key::PageUp => {},
-                    // Key::PageDown => {},
                     Key::Backspace => {
                         // status = format_status(status, w as usize, &format!("×"));
                         status = format_status(status, w as usize, "B");
