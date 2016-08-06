@@ -15,6 +15,7 @@ use utility::string::*;
 use model::ShowReplyItem;
 use model::ShowItem;
 use reply_model::*;
+use screen::common::*;
 
 pub struct Show {
     scrollY: usize,
@@ -132,10 +133,12 @@ impl Show {
 
     fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
 
+        let icon_width = 2;
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();
         let mut is_first = true;
 
+        let mut image_count = 0;
         let vec_clean = clean_reply_body(vec);
         for (j, node) in vec_clean.iter().enumerate() {
             match node.clone() {
@@ -146,7 +149,16 @@ impl Show {
                 }
                 NodeType::Image(n) => {
                     if n.data != "" {
-                        line = format!("{}[img {}]", line, n.data);
+                        if self.can_print() {
+                            image_count = image_count + 1;
+                            let image_x = (depth * (image_count + 1)) + jks_len(&line) + image_count + 1;
+                            line = format!("{}{}{}{}",
+                                    line,
+                                    termion::cursor::Goto(image_x as u16, (self.scrolledY() + 1) as u16),
+                                    imgcat(&"clown.gif", icon_width),
+                                    termion::cursor::Goto((image_x + icon_width) as u16, (self.scrolledY() + 1) as u16)
+                                    );
+                        }
                     }
                 }
                 NodeType::BlockQuote(n) => {
@@ -159,6 +171,7 @@ impl Show {
                             self.print_reply_line(stdout, format!(" {}{}", padding, line));
                         }
                         line = String::new();
+                        image_count = 0;
                         is_first = false;
                     }
 
@@ -176,6 +189,7 @@ impl Show {
                 self.print_reply_line(stdout, format!(" {}{}  ", padding, line));
             }
             line = String::new();
+            image_count = 0;
             self.y += 1;
         }
 
