@@ -206,7 +206,7 @@ fn main() {
                 let w = terminal_size().unwrap().0;
                 match c.unwrap() {
                     Key::Char('q') => {
-                        print!("{}", termion::clear::All); // stdout.clear().unwrap();
+                        print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show); // stdout.clear().unwrap();
                         return
                     },
                     Key::Char('\n') => {
@@ -229,7 +229,6 @@ fn main() {
                         }
                         break
                     },
-                    // Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
                     Key::Alt(c) => {
                         status = format_status(status, w as usize, &format!("^{}", c));
                         break
@@ -326,6 +325,7 @@ fn main() {
                         }
                         break
                     },
+                    Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
                     // Key::Invalid => {
                     //     status = format_status(status, w as usize, &format!("???"));
                     //     break
