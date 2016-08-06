@@ -155,7 +155,7 @@ impl Show {
                             line = format!("{}{}{}{}",
                                     line,
                                     termion::cursor::Goto(image_x as u16, (self.scrolledY() + 1) as u16),
-                                    imgcat(&"clown.gif", icon_width),
+                                    imgcat(&"data/img/clown.gif", icon_width),
                                     termion::cursor::Goto((image_x + icon_width) as u16, (self.scrolledY() + 1) as u16)
                                     );
                         }
