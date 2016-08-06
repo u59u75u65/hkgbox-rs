@@ -12,6 +12,15 @@ rustc-serialize = "0.3"
 chrono = "0.2"
 regex = "0.1"
 cancellation = "0.1"
+termion = "1.0"
+
+# [dependencies.termion]
+# git = "https://github.com/ticki/termion"
+# version = "1.0"
+# features = ["nightly"]
 
 [dependencies.url]
 git = "https://github.com/servo/rust-url"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.8"
