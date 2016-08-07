@@ -134,11 +134,11 @@ impl Show {
     fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
 
         let icon_width = 2;
+        let clown = imgcat(&"data/img/clown.gif", icon_width);
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();
         let mut is_first = true;
 
-        let mut image_count = 0;
         let vec_clean = clean_reply_body(vec);
         for (j, node) in vec_clean.iter().enumerate() {
             match node.clone() {
@@ -150,14 +150,10 @@ impl Show {
                 NodeType::Image(n) => {
                     if n.data != "" {
                         if self.can_print() {
-                            image_count = image_count + 1;
-                            let image_x = (depth * (image_count + 1)) + jks_len(&line) + image_count + 1;
-                            line = format!("{}{}{}{}",
+
+                            line = format!("{}{}",
                                     line,
-                                    termion::cursor::Goto(image_x as u16, (self.scrolledY() + 1) as u16),
-                                    imgcat(&"data/img/clown.gif", icon_width),
-                                    termion::cursor::Goto((image_x + icon_width) as u16, (self.scrolledY() + 1) as u16)
-                                    );
+                                    clown);
                         }
                     }
                 }
@@ -171,7 +167,6 @@ impl Show {
                             self.print_reply_line(stdout, format!(" {}{}", padding, line));
                         }
                         line = String::new();
-                        image_count = 0;
                         is_first = false;
                     }
 
@@ -189,10 +184,8 @@ impl Show {
                 self.print_reply_line(stdout, format!(" {}{}  ", padding, line));
             }
             line = String::new();
-            image_count = 0;
             self.y += 1;
         }
-
     }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
