@@ -17,5 +17,5 @@ pub fn imgcat(path: &str, width: usize) -> String {
     f.read_to_end(&mut buffer);
 
     let e = buffer.as_slice().to_base64(base64::STANDARD);
-    return String::from(format!("\x1b]1337;File=inline=1;width={width};:{code}\x07\x0a", width = width, code = e));
+    return String::from(format!("\x1b]1337;File=inline=1;width={width};:{code}\x07", width = width,  code = e));
 }
