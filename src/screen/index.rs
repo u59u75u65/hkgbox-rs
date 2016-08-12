@@ -81,27 +81,24 @@ fn print_header(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, wid
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
     let header_top_padding = seq_str_gen(0, width, " ", "");
 
-    write!(stdout, "{}{}{}{}{}{}",
+    write!(stdout, "{}{}{}{}{}",
             termion::cursor::Goto(1, 1),
             color::Fg(color::White),
-            color::Bg(color::Black),
             header_top_padding,
             style::Reset,
             termion::cursor::Hide);
 
-    write!(stdout, "{}{}{}{}{}{}{}",
+    write!(stdout, "{}{}{}{}{}{}",
             termion::cursor::Goto(padding + 1, 1),
             color::Fg(color::White),
-            color::Bg(color::Black),
             style::Bold,
             text,
             style::Reset,
             termion::cursor::Hide);
 
-    write!(stdout, "{}{}{}{}{}{}{}",
+    write!(stdout, "{}{}{}{}{}{}",
             termion::cursor::Goto(1, 2),
             color::Fg(color::Yellow),
-            color::Bg(color::Black),
             style::Bold,
             header_bottom,
             style::Reset,
@@ -153,10 +150,9 @@ fn print_body(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>,
                       termion::cursor::Hide);
 
         } else {
-             write!(stdout, "{}{}{}{}{}{}",
+             write!(stdout, "{}{}{}{}{}",
                      termion::cursor::Goto(1, (i + offset_y + 1) as u16),
                      color::Fg(color::White),
-                     color::Bg(color::Black),
                      format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
                               no = i + 1,
                               title = title,

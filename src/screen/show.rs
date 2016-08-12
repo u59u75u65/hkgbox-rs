@@ -64,10 +64,9 @@ impl Show {
 
     fn print_separator_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
 
-        write!(stdout, "{}{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}{}",
                 termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
                 color::Fg(color::Green),
-                color::Bg(color::Black),
                 s,
                 style::Reset,
                 termion::cursor::Hide);
@@ -84,18 +83,16 @@ impl Show {
 
         let header_bottom = seq_str_gen(0, w, "─", "");
 
-        write!(stdout, "{}{}{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}{}{}",
                 termion::cursor::Goto(padding + 1, 1),
                 color::Fg(color::White),
-                color::Bg(color::Black),
                 style::Bold,
                 text, style::Reset,
                 termion::cursor::Hide);
 
-        write!(stdout, "{}{}{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}{}{}",
                 termion::cursor::Goto(1, 2),
                 color::Fg(color::Yellow),
-                color::Bg(color::Black),
                 style::Bold,
                 header_bottom,
                 style::Reset,
@@ -122,10 +119,9 @@ impl Show {
 
     fn print_reply_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: String) {
 
-       write!(stdout, "{}{}{}{}{}{}",
+       write!(stdout, "{}{}{}{}{}",
                termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
                color::Fg(color::White),
-               color::Bg(color::Black),
                s,
                style::Reset,
                termion::cursor::Hide);
