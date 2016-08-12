@@ -16,8 +16,6 @@ use termion::raw::IntoRawMode;
 use termion::{color, style};
 use termion::event::Key;
 use termion::terminal_size;
-use std::io::{Read, Write, Stdout, Stdin};
-use std::io::{stdout, stdin};
 
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
@@ -37,9 +35,10 @@ use std::path::Path;
 use std::fs::File;
 use std::fs;
 use std::io::{Error, ErrorKind};
-
 use std::io::Cursor;
 use std::io::BufReader;
+use std::io::{Read, Write, Stdout, Stdin};
+use std::io::{stdout, stdin};
 
 use std::collections::HashMap;
 
