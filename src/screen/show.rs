@@ -181,7 +181,7 @@ impl Show {
 
         if !line.is_empty() {
             if self.can_print() {
-                self.print_reply_line(stdout, format!(" {}{}  ", padding, line));
+                self.print_reply_line(stdout, format!(" {}{}", padding, line));
             }
             line = String::new();
             self.y += 1;
