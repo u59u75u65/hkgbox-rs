@@ -447,20 +447,11 @@ fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, sta
     let w = terminal_size().unwrap().0; // let w = rustbox.width();
     let h = terminal_size().unwrap().1; // let h = rustbox.height();
 
-    let status_width = if w > status.len() as u16 {
-        w - status.len() as u16
-    } else {
-        0
-    };
-    let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
-
     write!(stdout, "{}{}{}{}{}{}",
             termion::cursor::Goto(1, h),
             color::Fg(color::White),
             style::Bold,
-            format!("{status}{status_spacing}",
-                                   status = status,
-                                   status_spacing = status_spacing),
+            format!("{status}", status = status),
             style::Reset,
             termion::cursor::Hide);
 }
