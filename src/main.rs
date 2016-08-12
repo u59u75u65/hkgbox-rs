@@ -338,6 +338,7 @@ fn main() {
                             Status::List => {}
                             Status::Show => {
                                 state = Status::List;
+                                print!("{}", termion::clear::All); 
                             }
                         }
                         break
