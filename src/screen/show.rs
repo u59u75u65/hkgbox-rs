@@ -15,6 +15,7 @@ use utility::string::*;
 use model::ShowReplyItem;
 use model::ShowItem;
 use reply_model::*;
+use screen::common::*;
 
 pub struct Show {
     scrollY: usize,
@@ -132,6 +133,8 @@ impl Show {
 
     fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
 
+        let icon_width = 2;
+        let clown = imgcat(&"data/img/clown.gif", icon_width);
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();
         let mut is_first = true;
@@ -146,7 +149,12 @@ impl Show {
                 }
                 NodeType::Image(n) => {
                     if n.data != "" {
-                        line = format!("{}[img {}]", line, n.data);
+                        if self.can_print() {
+
+                            line = format!("{}{}",
+                                    line,
+                                    clown);
+                        }
                     }
                 }
                 NodeType::BlockQuote(n) => {
@@ -178,7 +186,6 @@ impl Show {
             line = String::new();
             self.y += 1;
         }
-
     }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
