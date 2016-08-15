@@ -61,3 +61,11 @@ pub struct UrlQueryItem {
     // pub type: String,
     pub message: String
 }
+
+#[derive(Debug)]
+#[derive(RustcDecodable)]
+#[derive(RustcEncodable)]
+pub struct IconItem {
+    pub src: String,
+    pub alt: String
+}
