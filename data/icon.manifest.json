@@ -136,4 +136,10 @@
 }, {
     "src": "kill2.gif",
     "alt": "#kill2#"
+}, {
+    "src" : "ThumbUp.gif",
+    "alt" : "#good2#"
+}, {
+    "src" : "ThumbDown.gif",
+    "alt" : "#bad#"
 }]
