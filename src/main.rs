@@ -90,7 +90,8 @@ fn main() {
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
     let mut index = hkg::screen::index::Index::new();
-    let mut show = hkg::screen::show::Show::new();
+    let mut show_icon_collection = &[icon_collection];
+    let mut show = hkg::screen::show::Show::new(show_icon_collection);
 
     let mut builder = hkg::builder::Builder::new();
 
