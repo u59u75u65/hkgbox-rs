@@ -148,16 +148,14 @@ impl <'a> Show <'a> {
                 NodeType::Image(n) => {
                     if n.data != "" {
                         if self.can_print() {
-                            let mut image = "".to_string();
                             if n.alt != "" {
-                                let icon_reference = self.get_icon_reference(&n.alt);
-                                if icon_reference != "" {
-                                    image = imgcat(&icon_reference, icon_width);
+                                match self.get_icon_reference(&n.alt) {
+                                    Some(icon_reference) => line = format!("{}{}", line, imgcat(&icon_reference, icon_width)),
+                                    None => line = format!("{}{}", line, format!("[{}]", n.data))
                                 }
+                            } else {
+                                line = format!("{}{}", line, format!("[{}]", n.data));
                             }
-                            line = format!("{}{}",
-                                    line,
-                                    image);
                         }
                     }
                 }
@@ -192,8 +190,11 @@ impl <'a> Show <'a> {
         }
     }
 
-    fn get_icon_reference(&mut self, alt: &str) -> &str {
-        return "data/img/clown.gif";
+    fn get_icon_reference(&mut self, alt: &str) -> Option<String> {
+        match self.icon_collection[0].iter().find(|icon_item| icon_item.alt.contains(&alt) ) {
+            Some(item) => Some(format!("data/img/{}", &item.src)),
+            None => None
+        }
     }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
