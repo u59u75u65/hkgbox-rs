@@ -23,6 +23,7 @@ pub struct TextNode {
 #[derive(RustcEncodable)]
 pub struct ImageNode {
     pub data: String,
+    pub alt: String
 }
 
 #[derive(Clone)]

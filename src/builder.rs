@@ -208,7 +208,8 @@ fn recursive(elm: &kuchiki::NodeRef) -> Vec<NodeType> {
 
                     let attrs = (&element_data.attributes).borrow();
                     let url = attrs.get("src").unwrap_or("");
-                    let node = NodeType::Image(ImageNode { data: url.to_string() });
+                    let alt = attrs.get("alt").unwrap_or("");
+                    let node = NodeType::Image(ImageNode { data: url.to_string(), alt: alt.to_string() });
                     vec.push(node);
 
                 } else {
