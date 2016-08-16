@@ -143,23 +143,27 @@ fn main() {
 
         match rx_res.try_recv() {
             Ok(item) => {
-                let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
+                match item.extra {
+                    ChannelItemType::Show(extra) => {
+                        let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
-                let posturl = get_posturl(&item.postid, item.page);
-                show_item = builder.show_item(&document, &posturl);
+                        let posturl = get_posturl(&extra.postid, extra.page);
+                        show_item = builder.show_item(&document, &posturl);
 
-                let w = terminal_size().unwrap().0 as usize; //rustbox.width();
-                status = format_status(status,
-                                       w,
-                                       &format!("[{}-{}:ROK][{}]",
-                                                show_item.url_query.message,
-                                                show_item.page,
-                                                is_web_requesting));
+                        let w = terminal_size().unwrap().0 as usize; //rustbox.width();
+                        status = format_status(status,
+                                               w,
+                                               &format!("[{}-{}:ROK][{}]",
+                                                        show_item.url_query.message,
+                                                        show_item.page,
+                                                        is_web_requesting));
 
-                show.resetY(); // show.resetY();
-                print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
-                state = Status::Show;
-                is_web_requesting = false;
+                        show.resetY(); // show.resetY();
+                        print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
+                        state = Status::Show;
+                        is_web_requesting = false;
+                    }                    
+                }                        
             }
             Err(e) => {}
         }
@@ -394,32 +398,35 @@ fn page_request(item: &ChannelItem,
                 wr: &mut WebResource,
                 ct: &CancellationTokenSource)
                 -> ChannelItem {
+    
+    match item.extra.clone() {
+        ChannelItemType::Show(extra) => {
+            let html_path = format!("data/html/{postid}/", postid = extra.postid);
+            let show_file_name = format!("show_{page}.html", page = extra.page);
 
-    let html_path = format!("data/html/{postid}/", postid = item.postid);
-    let show_file_name = format!("show_{page}.html", page = item.page);
+            let postid = extra.postid.clone();
 
-    let postid = item.postid.clone();
-    let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
-        Ok(result) => (true, result),
-        Err(e) => {
-            let posturl = get_posturl(&item.postid, item.page);
-            let result = wr.get(&posturl);
-            (false, result)
+            let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
+                Ok(result) => (true, result),
+                Err(e) => {
+                    let posturl = get_posturl(&extra.postid, extra.page);
+                    let result = wr.get(&posturl);
+                    (false, result)
+                }
+            };
+
+            if !from_cache {
+                let result2 = result.clone();
+                write_cache(&html_path, &show_file_name, result2);
+            }
+
+            let result_item = ChannelItem {
+                extra: ChannelItemType::Show(ChannelShowItem { postid: postid, page: extra.page }),
+                result: result,
+            };
+            result_item
         }
-    };
-
-    if !from_cache {
-        let result2 = result.clone();
-        write_cache(&html_path, &show_file_name, result2);
     }
-
-    let result_item = ChannelItem {
-        postid: postid,
-        page: item.page,
-        result: result,
-    };
-
-    result_item
 
 }
 
@@ -427,8 +434,7 @@ fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req:
     let posturl = get_posturl(postid, page);
 
     let ci = ChannelItem {
-        postid: postid.clone(),
-        page: page,
+        extra: ChannelItemType::Show(ChannelShowItem { postid: postid.clone(), page: page }), 
         result: String::from(""),
     };
 
