@@ -162,8 +162,11 @@ fn main() {
                         print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
                         state = Status::Show;
                         is_web_requesting = false;
-                    }                    
-                }                        
+                    },
+                    ChannelItemType::Index(extra) => {
+
+                    }
+                }
             }
             Err(e) => {}
         }
@@ -346,7 +349,7 @@ fn main() {
                             Status::List => {}
                             Status::Show => {
                                 state = Status::List;
-                                print!("{}", termion::clear::All); 
+                                print!("{}", termion::clear::All);
                             }
                         }
                         break
@@ -398,7 +401,7 @@ fn page_request(item: &ChannelItem,
                 wr: &mut WebResource,
                 ct: &CancellationTokenSource)
                 -> ChannelItem {
-    
+
     match item.extra.clone() {
         ChannelItemType::Show(extra) => {
             let html_path = format!("data/html/{postid}/", postid = extra.postid);
@@ -425,6 +428,13 @@ fn page_request(item: &ChannelItem,
                 result: result,
             };
             result_item
+        },
+        ChannelItemType::Index(extra) => {
+            let result_item = ChannelItem {
+                extra: ChannelItemType::Index(ChannelIndexItem { }),
+                result: "".to_string(),
+            };
+            result_item
         }
     }
 
@@ -434,7 +444,7 @@ fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req:
     let posturl = get_posturl(postid, page);
 
     let ci = ChannelItem {
-        extra: ChannelItemType::Show(ChannelShowItem { postid: postid.clone(), page: page }), 
+        extra: ChannelItemType::Show(ChannelShowItem { postid: postid.clone(), page: page }),
         result: String::from(""),
     };
 

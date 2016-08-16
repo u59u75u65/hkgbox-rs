@@ -14,8 +14,12 @@ use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 #[derive(Clone)]
 pub enum ChannelItemType {
-    Show(ChannelShowItem)
+    Show(ChannelShowItem),
+    Index(ChannelIndexItem)
 }
+
+#[derive(Clone)]
+pub struct ChannelIndexItem { }
 
 #[derive(Clone)]
 pub struct ChannelShowItem {
@@ -24,7 +28,7 @@ pub struct ChannelShowItem {
 }
 
 pub struct ChannelItem {
-    pub extra: ChannelItemType, 
+    pub extra: ChannelItemType,
     pub result: String
 }
 
