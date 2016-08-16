@@ -64,9 +64,10 @@ impl Show {
 
     fn print_separator_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
 
-        write!(stdout, "{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}{}{}",
                 termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
                 color::Fg(color::Green),
+                style::Bold,
                 s,
                 style::Reset,
                 termion::cursor::Hide);
