@@ -12,27 +12,30 @@ use std;
 
 use chrono::*;
 use utility::string::*;
+use model::IconItem;
 use model::ShowReplyItem;
 use model::ShowItem;
 use reply_model::*;
 use screen::common::*;
 
-pub struct Show {
+pub struct Show<'a> {
     scrollY: usize,
     y: usize,
     replier_max_width: usize,
     time_max_width: usize,
-    is_scroll_to_end: bool
+    is_scroll_to_end: bool,
+    icon_collection: &'a [Vec<IconItem>]
 }
 
-impl Show {
-    pub fn new() -> Self {
+impl <'a> Show <'a> {
+    pub fn new (icon_collection: &'a [Vec<IconItem>]) -> Self {
         Show {
             scrollY: 0,
             y: 0,
             replier_max_width: 14,
             time_max_width: 5,
-            is_scroll_to_end: false
+            is_scroll_to_end: false,
+            icon_collection: icon_collection
         }
     }
     pub fn print(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, title: &str, item: &ShowItem) {
@@ -131,7 +134,6 @@ impl Show {
     fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
 
         let icon_width = 2;
-        let clown = imgcat(&"data/img/clown.gif", icon_width);
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();
         let mut is_first = true;
@@ -147,10 +149,14 @@ impl Show {
                 NodeType::Image(n) => {
                     if n.data != "" {
                         if self.can_print() {
-
-                            line = format!("{}{}",
-                                    line,
-                                    clown);
+                            if n.alt != "" {
+                                match self.get_icon_reference(&n.alt) {
+                                    Some(icon_reference) => line = format!("{}{}", line, imgcat(&icon_reference, icon_width)),
+                                    None => line = format!("{}{}", line, format!("[{}]", n.data))
+                                }
+                            } else {
+                                line = format!("{}{}", line, format!("[{}]", n.data));
+                            }
                         }
                     }
                 }
@@ -182,6 +188,13 @@ impl Show {
             }
             line = String::new();
             self.y += 1;
+        }
+    }
+
+    fn get_icon_reference(&mut self, alt: &str) -> Option<String> {
+        match self.icon_collection[0].iter().find(|icon_item| icon_item.alt.contains(&alt) ) {
+            Some(item) => Some(format!("data/img/{}", &item.src)),
+            None => None
         }
     }
 

@@ -23,6 +23,7 @@ use rustc_serialize::json::Json;
 use chrono::*;
 
 use hkg::utility::cache;
+use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
 use hkg::model::ShowItem;
 use hkg::model::ShowReplyItem;
@@ -66,6 +67,9 @@ fn main() {
     print!("{}", termion::clear::All); // stdout.clear().unwrap();
 
     let title = String::from("高登");
+    let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
+    let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
+
     let s = cache::readfile(String::from("data/topics.json"));
     let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
 
@@ -86,7 +90,8 @@ fn main() {
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
     let mut index = hkg::screen::index::Index::new();
-    let mut show = hkg::screen::show::Show::new();
+    let mut show_icon_collection = &[icon_collection];
+    let mut show = hkg::screen::show::Show::new(show_icon_collection);
 
     let mut builder = hkg::builder::Builder::new();
 
