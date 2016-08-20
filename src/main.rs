@@ -181,6 +181,8 @@ fn main() {
                         let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
                         let url = get_topic_bw_url();
+                        let list_topic_items = builder.list_topic_items(&document);
+
 
                         let w = terminal_size().unwrap().0 as usize; //rustbox.width();
                         status = format_status(status,
@@ -193,144 +195,12 @@ fn main() {
                             termion::cursor::Goto(1, 1),
                             color::Fg(color::White));
 
-                        let trs = match document.select(".Topic_ListPanel tr[id]") {
-                                Ok(trs) => trs,
-                                Err(e) => panic!("{:?}", e)
-                        };
-
-                        let mut line = "".to_string();
-                        let mut count = 0;
-                        for (i, tr) in trs.enumerate() {
-                            let items = match tr.as_node().select("td") {
-                                Ok(items) => items,
-                                Err(e) => panic!("{:?}", e)
-                            };
-                            for (j, item) in items.enumerate() {
-                                // write!(stdout, "{}{}{}",
-                                //     termion::cursor::Goto(1, (i + j + 1) as u16),
-                                //     color::Fg(color::White),
-                                //     &format!("[{}][{}] => {:?}", i, j, item.as_node())
-                                // );
-
-                                match j {
-                                    0 => {  },
-                                    1 => {
-
-                                        let (first_link, links_count) = {
-                                            let mut links = match item.as_node().select("a") {
-                                                Ok(links) => links,
-                                                Err(e) => panic!("ERR: {:?}", e)
-                                            };
-
-                                            let firstLinkOption = links.next();
-                                            let lastLinkOption = links.last();
-
-                                            let first_link = match firstLinkOption {
-                                                Some(first_link) => first_link,
-                                                None => { panic!("ERR: Can't find 'first_link'.") }
-                                            };
-
-                                            let max_page = match lastLinkOption {
-                                                Some(last_link) =>
-                                                    last_link.text_contents().trim().to_string().parse::<usize>()
-                                                    .unwrap_or(0)
-                                                ,
-                                                None => { 1 }
-                                            };
-
-                                            (first_link, max_page)
-                                        };
-
-                                        let (url_str, url_query_item) = {
-                                            let attrs = &(first_link.attributes).borrow();
-                                            let href = attrs.get("href").unwrap_or("");
-
-                                            let base_url = Url::parse("http://forum1.hkgolden.com/view.aspx").unwrap();
-                                            let url = base_url.join(&href).unwrap();
-                                            let url_str = url.into_string();
-                                            let url_query_item = builder.url_query_item(&url_str);
-                                            (url_str, url_query_item)
-                                        };
-
-                                        let text = first_link.text_contents().trim().to_string();
-
-                                        let result = ListTopicTitleItem {
-                                            url: url_str,
-                                            url_query: url_query_item,
-                                            text: text,
-                                            num_of_pages: links_count
-                                        };
-                                        write!(stdout, "{}{}{}",
-                                            termion::cursor::Goto(1, (count + 1) as u16),
-                                            color::Fg(color::White),
-                                            &format!("[{}][{}] => {:?} {} {}", i, j, result.url_query, result.num_of_pages, result.text)
-                                        );
-                                        count = count + 1;
-                                    },
-                                    2 => {
-                                        let (url, name) = {
-                                            let mut links = match item.as_node().select("a") {
-                                                Ok(links) => links,
-                                                Err(e) => panic!("ERR: {:?}", e)
-                                            };
-
-                                            let firstLinkOption = links.next();
-
-                                            let first_link = match firstLinkOption {
-                                                Some(first_link) => first_link,
-                                                None => { panic!("ERR: Can't find 'first_link'.") }
-                                            };
-
-                                            let attrs = &(first_link.attributes).borrow();
-                                            let href = attrs.get("href").unwrap_or("").to_string();
-                                            let text = first_link.text_contents().trim().to_string();
-                                            (href, text)
-                                        };
-
-                                        let result = ListTopicAuthorItem {
-                                            url: url,
-                                            name: name
-                                        };
-
-                                        write!(stdout, "{}{}{}",
-                                            termion::cursor::Goto(1, (count + 1) as u16),
-                                            color::Fg(color::White),
-                                            &format!("[{}][{}] => {} {}", i, j, result.url, result.name)
-                                        );
-
-                                        count = count + 1;
-                                    },
-                                    3 => {
-                                        let (date, time) = {
-                                            let text = item.text_contents().trim().to_string();
-                                            let map = text.split("\n").map(|x| x.trim().to_string()).collect::<Vec<_>>();
-                                            if map.len() < 2 {
-                                                panic!("length of map is invalid.");
-                                            }
-                                            (map[0].clone(), map[1].clone())
-                                            // let datetime = map.join(&" ");
-                                        };
-                                        write!(stdout, "{}{}{}",
-                                            termion::cursor::Goto(1, (count + 1) as u16),
-                                            color::Fg(color::White),
-                                            &format!("[{}][{}] => {} {}", i, j, date, time)
-                                        );
-                                        count = count + 1;
-                                    },
-                                    _ => {
-                                        let text = item.text_contents().trim().to_string();
-                                        write!(stdout, "{}{}{}",
-                                            termion::cursor::Goto(1, (count + 1) as u16),
-                                            color::Fg(color::White),
-                                            &format!("[{}][{}] => {}", i, j, text)
-                                        );
-                                        count = count + 1;
-                                    }
-                                }
-
-
-                            }
-                        }
+                        println!("{:?}", list_topic_items);
+                            // write!(stdout, "{}{}{}",
+                            //     termion::cursor::Goto(1, (i + j + 1) as u16),
+                            //     color::Fg(color::White),
+                            //     &format!("[{}][{}] => {:?}", i, j, item.as_node())
+                            // );
 
                         // state = Status::List;
                         is_web_requesting = false;
