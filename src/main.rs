@@ -187,12 +187,18 @@ fn main() {
                                                &format!("[TOPICS:ROK]"));
 
                         print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
+
+                        write!(stdout, "{}{}",
+                            termion::cursor::Goto(1, 1),
+                            color::Fg(color::White));
+
                         let trs = match document.select(".Topic_ListPanel tr[id]") {
                                 Ok(trs) => trs,
                                 Err(e) => panic!("{:?}", e)
                         };
 
                         let mut line = "".to_string();
+                        let mut count = 0;
                         for (i, tr) in trs.enumerate() {
                             let items = match tr.as_node().select("td") {
                                 Ok(items) => items,
@@ -206,13 +212,8 @@ fn main() {
                                 // );
 
                                 match j {
-                                    0 => { line = "".to_string(); },
+                                    0 => {  },
                                     1 => {
-                                        write!(stdout, "{}{}{}",
-                                            termion::cursor::Goto(1, 1),
-                                            color::Fg(color::White),
-                                            &"0 here!"
-                                        );
 
                                         let (first_link, links_count) = {
                                             let mut links = match item.as_node().select("a") {
@@ -258,16 +259,19 @@ fn main() {
                                             text: text,
                                             num_of_pages: links_count
                                         };
-                                        line = format!("[{}][{}] => {:?} {} {}", i, j, result.url_query, result.num_of_pages, result.text).to_string();                                        
+                                        write!(stdout, "{}{}{}",
+                                            termion::cursor::Goto(1, (count + 1) as u16),
+                                            color::Fg(color::White),
+                                            &format!("[{}][{}] => {:?} {} {}", i, j, result.url_query, result.num_of_pages, result.text)
+                                        );
+                                        count = count + 1;
                                     },
-                                    _ => { line = "".to_string(); }
+                                    2 => {
+                                        
+                                    },
+                                    _ => {  }
                                 }
 
-                                write!(stdout, "{}{}{}",
-                                    termion::cursor::Goto(1, (i + j + 2) as u16),
-                                    color::Fg(color::White),
-                                    &line
-                                );
 
                             }
                         }
