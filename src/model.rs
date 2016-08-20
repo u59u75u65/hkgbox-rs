@@ -58,7 +58,7 @@ pub struct ShowReplyItem {
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
 pub struct UrlQueryItem {
-    // pub type: String,
+    pub channel: String,
     pub message: String
 }
 

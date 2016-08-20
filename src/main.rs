@@ -7,6 +7,9 @@ extern crate hyper;
 extern crate cancellation;
 extern crate time;
 
+extern crate url;
+use url::Url;
+
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
 
@@ -26,6 +29,8 @@ use chrono::*;
 use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
+use hkg::model::ListTopicTitleItem;
+use hkg::model::ListTopicAuthorItem;
 use hkg::model::ShowItem;
 use hkg::model::ShowReplyItem;
 use hkg::model::UrlQueryItem;
@@ -72,12 +77,11 @@ fn main() {
     let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
     let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
 
-    let s = cache::readfile(String::from("data/topics.json"));
-    let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
+    let mut list_topic_items: Vec<ListTopicItem> = vec![];
 
     // initialize show with empty page
     let mut show_item = ShowItem {
-        url_query: UrlQueryItem { message: String::from("") },
+        url_query: UrlQueryItem { channel: "".to_string(), message: String::from("") },
         replies: vec![],
         page: 0,
         max_page: 0,
@@ -175,6 +179,7 @@ fn main() {
                         let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
                         let url = get_topic_bw_url();
+                        list_topic_items = builder.list_topic_items(&document);
 
                         let w = terminal_size().unwrap().0 as usize; //rustbox.width();
                         status = format_status(status,
@@ -182,6 +187,7 @@ fn main() {
                                                &format!("[TOPICS:ROK]"));
 
                         print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
+
                         state = Status::List;
                         is_web_requesting = false;
                     }
@@ -196,7 +202,7 @@ fn main() {
             },
             Status::List => {
                 // list.print(&title, &collection);
-                index.print(&mut stdout, &collection);
+                index.print(&mut stdout, &list_topic_items);
             }
             Status::Show => {
                 // show.print(&title, &show_item);
@@ -246,7 +252,7 @@ fn main() {
                             Status::List => {
                                 let i = index.get_selected_topic();
                                 if i > 0 {
-                                    let topic_item = &collection[i - 1];
+                                    let topic_item = &list_topic_items[i - 1];
                                     let postid = &topic_item.title.url_query.message;
                                     let page = 1;
                                     let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
