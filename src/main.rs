@@ -300,7 +300,32 @@ fn main() {
 
                                         count = count + 1;
                                     },
-                                    _ => {  }
+                                    3 => {
+                                        let (date, time) = {
+                                            let text = item.text_contents().trim().to_string();
+                                            let map = text.split("\n").map(|x| x.trim().to_string()).collect::<Vec<_>>();
+                                            if map.len() < 2 {
+                                                panic!("length of map is invalid.");
+                                            }
+                                            (map[0].clone(), map[1].clone())
+                                            // let datetime = map.join(&" ");
+                                        };
+                                        write!(stdout, "{}{}{}",
+                                            termion::cursor::Goto(1, (count + 1) as u16),
+                                            color::Fg(color::White),
+                                            &format!("[{}][{}] => {} {}", i, j, date, time)
+                                        );
+                                        count = count + 1;
+                                    },
+                                    _ => {
+                                        let text = item.text_contents().trim().to_string();
+                                        write!(stdout, "{}{}{}",
+                                            termion::cursor::Goto(1, (count + 1) as u16),
+                                            color::Fg(color::White),
+                                            &format!("[{}][{}] => {}", i, j, text)
+                                        );
+                                        count = count + 1;
+                                    }
                                 }
 
 
