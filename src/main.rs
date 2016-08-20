@@ -5,6 +5,7 @@ extern crate chrono;
 extern crate kuchiki;
 extern crate hyper;
 extern crate cancellation;
+extern crate time;
 
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
@@ -164,7 +165,18 @@ fn main() {
                         is_web_requesting = false;
                     },
                     ChannelItemType::Index(extra) => {
+                        let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
+                        let url = get_topic_bw_url();
+
+                        let w = terminal_size().unwrap().0 as usize; //rustbox.width();
+                        status = format_status(status,
+                                               w,
+                                               &format!("[TOPICS:ROK]"));
+
+                        print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
+                        state = Status::List;
+                        is_web_requesting = false;
                     }
                 }
             }
@@ -181,6 +193,18 @@ fn main() {
                 show.print(&mut stdout, &title, &show_item);
             }
         }
+
+        let w = terminal_size().unwrap().0;
+
+        let timeFormat = |t: time::Tm| {
+            match t.strftime("%Y%m%d%H%M") {
+                Ok(s) => s.to_string(),
+                Err(e) => panic!(e)
+            }
+        };
+
+        // let (time1, time2) = (timeFormat(time::now()), timeFormat(time::now()));
+        // status = format_status(status.clone(), w as usize, &format!("now: {:?} {:?}", time1, time2));
 
         print_status(&mut stdout, &status); // print_status(&rustbox, &status);
 
@@ -397,6 +421,12 @@ fn get_posturl(postid: &String, page: usize) -> String {
     posturl
 }
 
+fn get_topic_bw_url() -> String {
+    let base_url = "http://forum1.hkgolden.com";
+    let url = format!("{base_url}/topics_bw.htm", base_url = base_url);
+    url
+}
+
 fn page_request(item: &ChannelItem,
                 wr: &mut WebResource,
                 ct: &CancellationTokenSource)
@@ -430,14 +460,59 @@ fn page_request(item: &ChannelItem,
             result_item
         },
         ChannelItemType::Index(extra) => {
+
+            let timeFormat = |t: time::Tm| {
+                match t.strftime("%Y%m%d%H%M") {
+                    Ok(s) => s.to_string(),
+                    Err(e) => panic!(e)
+                }
+            };
+
+            let time = timeFormat(time::now());
+
+            let html_path = format!("data/html/topics/");
+            let file_name = format!("{time}.html", time = time);
+
+            let (from_cache, result) = match read_cache(&html_path, &file_name) {
+                Ok(result) => (true, result),
+                Err(e) => {
+                    let url = get_topic_bw_url();
+                    let result = wr.get(&url);
+                    (false, result)
+                }
+            };
+
+            if !from_cache {
+                let result2 = result.clone();
+                write_cache(&html_path, &file_name, result2);
+            }
+
             let result_item = ChannelItem {
                 extra: ChannelItemType::Index(ChannelIndexItem { }),
-                result: "".to_string(),
+                result: result,
             };
             result_item
         }
     }
 
+}
+
+fn list_page(is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> String {
+
+    let ci = ChannelItem {
+        extra: ChannelItemType::Index(ChannelIndexItem { }),
+        result: String::from(""),
+    };
+
+    let status_message = match tx_req.send(ci) {
+        Ok(()) => {
+            *is_web_requesting = true;
+            "SOK".to_string()
+        }
+        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+    };
+
+    status_message
 }
 
 fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> String {

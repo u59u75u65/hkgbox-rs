@@ -12,6 +12,7 @@ chrono = "0.2"
 regex = "0.1"
 cancellation = "0.1"
 termion = "1.0"
+time = "0.1"
 
 # [dependencies.termion]
 # git = "https://github.com/ticki/termion"
