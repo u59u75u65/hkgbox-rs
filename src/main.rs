@@ -54,6 +54,7 @@ use std::sync::mpsc::Sender;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
+    Startup,
     List,
     Show,
 }
@@ -86,7 +87,7 @@ fn main() {
 
     let mut status = String::from("> ");
 
-    let mut state = Status::List;
+    let mut state = Status::Startup;
     let mut prev_state = state;
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
@@ -134,6 +135,12 @@ fn main() {
 
     let mut is_web_requesting = false;
 
+    // topics request
+    let w = terminal_size().unwrap().0;
+    let status_message = list_page(&mut is_web_requesting, &tx_req);
+    status = format_status(status.clone(),
+                           w as usize,
+                           &status_message);
     loop {
 
         // show UI
@@ -184,6 +191,9 @@ fn main() {
         }
 
         match state {
+            Status::Startup => {
+
+            },
             Status::List => {
                 // list.print(&title, &collection);
                 index.print(&mut stdout, &collection);
@@ -222,6 +232,7 @@ fn main() {
                 }
 
                 let w = terminal_size().unwrap().0;
+
                 match c.unwrap() {
                     Key::Char('q') => {
                         print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show); // stdout.clear().unwrap();
@@ -231,6 +242,7 @@ fn main() {
                         // status = format_status(status, w as usize, &format!("ENTER"));
                         status = format_status(status, w as usize, "ENTER");
                         match state {
+                            Status::Startup => {},
                             Status::List => {
                                 let i = index.get_selected_topic();
                                 if i > 0 {
@@ -258,6 +270,7 @@ fn main() {
                     Key::Left => {
                         status = format_status(status, w as usize, &format!("←"));
                         match state {
+                            Status::Startup => {},
                             Status::List => {}
                             Status::Show => {
                                 if show_item.page > 1 {
@@ -275,6 +288,7 @@ fn main() {
                     Key::Right => {
                         status = format_status(status, w as usize, &format!("→"));
                         match state {
+                            Status::Startup => {},
                             Status::List => {}
                             Status::Show => {
                                 if show_item.max_page > show_item.page {
@@ -293,6 +307,7 @@ fn main() {
                         status = format_status(status, w as usize, "↑");
 
                         match state {
+                            Status::Startup => {},
                             Status::List => {
                                 let tmp = index.get_selected_topic();
                                 status = format_status(status, w as usize, &format!("{}", tmp));
@@ -315,6 +330,7 @@ fn main() {
                         status = format_status(status, w as usize, "↓");
 
                         match state {
+                            Status::Startup => {},
                             Status::List => {}
                             Status::Show => {
                                 let bh = show.body_height();
@@ -329,6 +345,7 @@ fn main() {
                         status = format_status(status, w as usize, "↑");
 
                         match state {
+                            Status::Startup => {},
                             Status::List => {
                                 let tmp = index.get_selected_topic();
                                 status = format_status(status, w as usize, &format!("{}", tmp));
@@ -350,6 +367,7 @@ fn main() {
                         status = format_status(status, w as usize, "↓");
 
                         match state {
+                            Status::Startup => {},
                             Status::List => {
                                 let tmp = index.get_selected_topic();
                                 status = format_status(status, w as usize, &format!("{}", tmp));
@@ -370,6 +388,7 @@ fn main() {
                         // status = format_status(status, w as usize, &format!("×"));
                         status = format_status(status, w as usize, "B");
                         match state {
+                            Status::Startup => {},
                             Status::List => {}
                             Status::Show => {
                                 state = Status::List;
