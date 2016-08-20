@@ -66,39 +66,30 @@ enum Status {
 
 fn main() {
 
-    // Initialize 'em all.
+    // Initialize
     let stdout = stdout();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
 
     // Clear the screen.
     print!("{}", termion::clear::All); // stdout.clear().unwrap();
 
-    let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
-    let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
-
-    let mut list_topic_items: Vec<ListTopicItem> = vec![];
-
-    // initialize show with empty page
-    let mut show_item = ShowItem {
-        url_query: UrlQueryItem { channel: "".to_string(), message: String::from("") },
-        replies: vec![],
-        page: 0,
-        max_page: 0,
-        reply_count: String::from(""),
-        title: String::from(""),
-    };
-
+    let mut builder = hkg::builder::Builder::new();
     let mut status = String::from("> ");
 
     let mut state = Status::Startup;
     let mut prev_state = state;
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
+    let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
+    let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
+
+    // initialize empty page
+    let mut list_topic_items: Vec<ListTopicItem> = vec![];
+    let mut show_item = builder.default_show_item();
+
     let mut index = hkg::screen::index::Index::new();
     let mut show_icon_collection = &[icon_collection];
     let mut show = hkg::screen::show::Show::new(show_icon_collection);
-
-    let mut builder = hkg::builder::Builder::new();
 
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
