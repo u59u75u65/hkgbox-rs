@@ -9,6 +9,8 @@ use std::io::BufReader;
 
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
+use kuchiki::NodeDataRef;
+use kuchiki::ElementData;
 
 use model::ListTopicItem;
 use model::ListTopicTitleItem;
@@ -28,7 +30,6 @@ impl Builder {
     pub fn new() -> Self {
         Builder {}
     }
-
     pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> ShowItem {
         parse_show_item(&document, &url)
     }
@@ -41,6 +42,9 @@ impl Builder {
 impl Builder {
     pub fn list_topic_items(&mut self, document: &NodeRef) -> Vec<ListTopicItem> {
         parse_list_topic_items(&document)
+    }
+    pub fn default_list_item() -> ListTopicItem {
+        default_list_item()
     }
 }
 
@@ -80,81 +84,10 @@ fn parse_list_topic_items(document: &NodeRef) -> Vec<ListTopicItem>{
         };
         let mut result = default_list_item();
 
-        for (j, item) in items.enumerate() {
-
+        for (j, item) in items.enumerate().filter(|&(j, _)| j > 0 && j < 6) {
             match j {
-                0 => { },
-                1 => {
-                    let (first_link, links_count) = {
-                        let mut links = match item.as_node().select("a") {
-                            Ok(links) => links,
-                            Err(e) => panic!("ERR: {:?}", e)
-                        };
-
-                        let firstLinkOption = links.next();
-                        let lastLinkOption = links.last();
-
-                        let first_link = match firstLinkOption {
-                            Some(first_link) => first_link,
-                            None => { panic!("ERR: Can't find 'first_link'.") }
-                        };
-
-                        let max_page = match lastLinkOption {
-                            Some(last_link) =>
-                                last_link.text_contents().trim().to_string().parse::<usize>()
-                                .unwrap_or(0)
-                            ,
-                            None => { 1 }
-                        };
-
-                        (first_link, max_page)
-                    };
-
-                    let (url_str, url_query_item) = {
-                        let attrs = &(first_link.attributes).borrow();
-                        let href = attrs.get("href").unwrap_or("");
-
-                        let base_url = Url::parse("http://forum1.hkgolden.com/view.aspx").unwrap();
-                        let url = base_url.join(&href).unwrap();
-                        let url_str = url.into_string();
-                        let url_query_item = parse_url_query_item(&url_str);
-                        (url_str, url_query_item)
-                    };
-
-                    let text = first_link.text_contents().trim().to_string();
-
-                    result.title = ListTopicTitleItem {
-                        url: url_str,
-                        url_query: url_query_item,
-                        text: text,
-                        num_of_pages: links_count
-                    };
-                },
-                2 => {
-                    let (url, name) = {
-                        let mut links = match item.as_node().select("a") {
-                            Ok(links) => links,
-                            Err(e) => panic!("ERR: {:?}", e)
-                        };
-
-                        let firstLinkOption = links.next();
-
-                        let first_link = match firstLinkOption {
-                            Some(first_link) => first_link,
-                            None => { panic!("ERR: Can't find 'first_link'.") }
-                        };
-
-                        let attrs = &(first_link.attributes).borrow();
-                        let href = attrs.get("href").unwrap_or("").to_string();
-                        let text = first_link.text_contents().trim().to_string();
-                        (href, text)
-                    };
-
-                     result.author = ListTopicAuthorItem {
-                        url: url,
-                        name: name
-                    };
-                },
+                1 => { result.title = parse_list_topic_title_item(&item) },
+                2 => { result.author = parse_list_topic_author_item(&item) },
                 3 => {
                     let (date, time) = {
                         let text = item.text_contents().trim().to_string();
@@ -177,10 +110,82 @@ fn parse_list_topic_items(document: &NodeRef) -> Vec<ListTopicItem>{
                 },
                 _ => {}
             }
-            ()
         }
         result
     }).collect::<Vec<_>>()
+}
+
+fn parse_list_topic_title_item(item: &NodeDataRef<ElementData>) -> ListTopicTitleItem {
+    let (first_link, links_count) = {
+        let mut links = match item.as_node().select("a") {
+            Ok(links) => links,
+            Err(e) => panic!("ERR: {:?}", e)
+        };
+
+        let firstLinkOption = links.next();
+        let lastLinkOption = links.last();
+
+        let first_link = match firstLinkOption {
+            Some(first_link) => first_link,
+            None => { panic!("ERR: Can't find 'first_link'.") }
+        };
+
+        let max_page = match lastLinkOption {
+            Some(last_link) =>
+                last_link.text_contents().trim().to_string().parse::<usize>()
+                .unwrap_or(0)
+            ,
+            None => { 1 }
+        };
+
+        (first_link, max_page)
+    };
+
+    let (url_str, url_query_item) = {
+        let attrs = &(first_link.attributes).borrow();
+        let href = attrs.get("href").unwrap_or("");
+
+        let base_url = Url::parse("http://forum1.hkgolden.com/view.aspx").unwrap();
+        let url = base_url.join(&href).unwrap();
+        let url_str = url.into_string();
+        let url_query_item = parse_url_query_item(&url_str);
+        (url_str, url_query_item)
+    };
+
+    let text = first_link.text_contents().trim().to_string();
+
+     ListTopicTitleItem {
+        url: url_str,
+        url_query: url_query_item,
+        text: text,
+        num_of_pages: links_count
+    }
+}
+
+fn parse_list_topic_author_item(item: &NodeDataRef<ElementData>) -> ListTopicAuthorItem {
+    let (url, name) = {
+        let mut links = match item.as_node().select("a") {
+            Ok(links) => links,
+            Err(e) => panic!("ERR: {:?}", e)
+        };
+
+        let firstLinkOption = links.next();
+
+        let first_link = match firstLinkOption {
+            Some(first_link) => first_link,
+            None => { panic!("ERR: Can't find 'first_link'.") }
+        };
+
+        let attrs = &(first_link.attributes).borrow();
+        let href = attrs.get("href").unwrap_or("").to_string();
+        let text = first_link.text_contents().trim().to_string();
+        (href, text)
+    };
+
+    ListTopicAuthorItem {
+       url: url,
+       name: name
+    }
 }
 
 fn parse_show_item(document: &NodeRef, url: &str) -> ShowItem {
