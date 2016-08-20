@@ -6,14 +6,9 @@ extern crate kuchiki;
 extern crate hyper;
 extern crate cancellation;
 extern crate time;
-
 extern crate url;
-use url::Url;
 
 use kuchiki::traits::*;
-use kuchiki::NodeRef;
-
-use std::default::Default;
 
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -22,38 +17,21 @@ use termion::event::Key;
 use termion::terminal_size;
 
 use rustc_serialize::json;
-use rustc_serialize::json::Json;
-
-use chrono::*;
 
 use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
-use hkg::model::ListTopicTitleItem;
-use hkg::model::ListTopicAuthorItem;
-use hkg::model::ShowItem;
-use hkg::model::ShowReplyItem;
-use hkg::model::UrlQueryItem;
 use hkg::utility::client::*;
 
 use std::path::Path;
 
-// use std::io::prelude::*;
 use std::fs::File;
 use std::fs;
-use std::io::{Error, ErrorKind};
-use std::io::Cursor;
-use std::io::BufReader;
-use std::io::{Read, Write, Stdout, Stdin};
+use std::io::{Read, Write};
 use std::io::{stdout, stdin};
 
-use std::collections::HashMap;
-
-use hyper::Client;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
-use std::sync::mpsc::sync_channel;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
 
@@ -71,14 +49,14 @@ fn main() {
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
 
     // Clear the screen.
-    print!("{}", termion::clear::All); // stdout.clear().unwrap();
+    print!("{}", termion::clear::All);
 
     let mut builder = hkg::builder::Builder::new();
     let mut status = String::from("> ");
 
     let mut state = Status::Startup;
     let mut prev_state = state;
-    let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
+    let mut prev_width = terminal_size().unwrap().0;
 
     let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
     let icon_collection: Box<Vec<IconItem>> = Box::new(json::decode(&icon_manifest_string).unwrap());
@@ -93,9 +71,10 @@ fn main() {
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
 
-    let wclient = thread::spawn(move || {
+    // web client
+    thread::spawn(move || {
         let mut wr = WebResource::new();
-        let mut ct = CancellationTokenSource::new();
+        let ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
 
         loop {
@@ -117,7 +96,7 @@ fn main() {
                         // Ok(())
                     }
                 }
-                Err(e) => {}
+                Err(_) => {}
             }
         }
     });
@@ -134,7 +113,7 @@ fn main() {
 
         // show UI
         if prev_state != state {
-            print!("{}", termion::clear::All); // stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox); // clear screen when switching state
+            print!("{}", termion::clear::All); // clear screen when switching state
             prev_state = state;
         }
 
@@ -147,7 +126,7 @@ fn main() {
                         let posturl = get_posturl(&extra.postid, extra.page);
                         show_item = builder.show_item(&document, &posturl);
 
-                        let w = terminal_size().unwrap().0 as usize; //rustbox.width();
+                        let w = terminal_size().unwrap().0 as usize;
                         status = format_status(status,
                                                w,
                                                &format!("[{}-{}:ROK][{}]",
@@ -155,30 +134,29 @@ fn main() {
                                                         show_item.page,
                                                         is_web_requesting));
 
-                        show.resetY(); // show.resetY();
-                        print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
+                        show.resetY();
+                        print!("{}", termion::clear::All);
                         state = Status::Show;
                         is_web_requesting = false;
                     },
-                    ChannelItemType::Index(extra) => {
+                    ChannelItemType::Index(_) => {
                         let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
-                        let url = get_topic_bw_url();
                         list_topic_items = builder.list_topic_items(&document);
 
-                        let w = terminal_size().unwrap().0 as usize; //rustbox.width();
+                        let w = terminal_size().unwrap().0 as usize;
                         status = format_status(status,
                                                w,
                                                &format!("[TOPICS:ROK]"));
 
-                        print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
+                        print!("{}", termion::clear::All);
 
                         state = Status::List;
                         is_web_requesting = false;
                     }
                 }
             }
-            Err(e) => {}
+            Err(_) => {}
         }
 
         match state {
@@ -193,18 +171,9 @@ fn main() {
             }
         }
 
-        let w = terminal_size().unwrap().0;
+        print_status(&mut stdout, &status);
 
-        let timeFormat = |t: time::Tm| {
-            match t.strftime("%Y%m%d%H%M") {
-                Ok(s) => s.to_string(),
-                Err(e) => panic!(e)
-            }
-        };
-
-        print_status(&mut stdout, &status); // print_status(&rustbox, &status);
-
-        stdout.flush().unwrap();         // rustbox.present();
+        stdout.flush().unwrap();
 
         if !is_web_requesting {
 
@@ -213,7 +182,7 @@ fn main() {
             for c in stdin.keys() {
 
                 if prev_width != terminal_size().unwrap().0 {
-                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
+                    print!("{}", termion::clear::All);
                    prev_width = terminal_size().unwrap().0;
                 }
 
@@ -221,11 +190,10 @@ fn main() {
 
                 match c.unwrap() {
                     Key::Char('q') => {
-                        print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show); // stdout.clear().unwrap();
+                        print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
                         return
                     },
                     Key::Char('\n') => {
-                        // status = format_status(status, w as usize, &format!("ENTER"));
                         status = format_status(status, w as usize, "ENTER");
                         match state {
                             Status::Startup => {},
@@ -305,7 +273,7 @@ fn main() {
                             Status::Show => {
                                 let bh = show.body_height();
                                 if show.scrollUp(bh) {
-                                    print!("{}", termion::clear::All); // hkg::screen::common::clear(&rustbox);
+                                    print!("{}", termion::clear::All);
                                 }
                             }
                         }
@@ -321,7 +289,7 @@ fn main() {
                             Status::Show => {
                                 let bh = show.body_height();
                                 if show.scrollDown(bh) {
-                                    print!("{}", termion::clear::All); //hkg::screen::common::clear(&rustbox);
+                                    print!("{}", termion::clear::All);
                                 }
                             }
                         }
@@ -342,7 +310,7 @@ fn main() {
                             }
                             Status::Show => {
                                 if show.scrollUp(2) {
-                                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
+                                    print!("{}", termion::clear::All);
                                 }
                             }
                         }
@@ -364,14 +332,13 @@ fn main() {
                             }
                             Status::Show => {
                                 if show.scrollDown(2) {
-                                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
+                                    print!("{}", termion::clear::All);
                                 }
                             }
                         }
                         break
                     },
                     Key::Backspace => {
-                        // status = format_status(status, w as usize, &format!("×"));
                         status = format_status(status, w as usize, "B");
                         match state {
                             Status::Startup => {},
@@ -446,7 +413,7 @@ fn page_request(item: &ChannelItem,
 
             let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
                 Ok(result) => (true, result),
-                Err(e) => {
+                Err(_) => {
                     let posturl = get_posturl(&extra.postid, extra.page);
                     let result = wr.get(&posturl);
                     (false, result)
@@ -464,23 +431,23 @@ fn page_request(item: &ChannelItem,
             };
             result_item
         },
-        ChannelItemType::Index(extra) => {
+        ChannelItemType::Index(_) => {
 
-            let timeFormat = |t: time::Tm| {
+            let time_format = |t: time::Tm| {
                 match t.strftime("%Y%m%d%H%M") {
                     Ok(s) => s.to_string(),
                     Err(e) => panic!(e)
                 }
             };
 
-            let time = timeFormat(time::now());
+            let time = time_format(time::now());
 
             let html_path = format!("data/html/topics/");
             let file_name = format!("{time}.html", time = time);
 
             let (from_cache, result) = match read_cache(&html_path, &file_name) {
                 Ok(result) => (true, result),
-                Err(e) => {
+                Err(_) => {
                     let url = get_topic_bw_url();
                     let result = wr.get(&url);
                     (false, result)
@@ -521,7 +488,6 @@ fn list_page(is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> Stri
 }
 
 fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> String {
-    let posturl = get_posturl(postid, page);
 
     let ci = ChannelItem {
         extra: ChannelItemType::Show(ChannelShowItem { postid: postid.clone(), page: page }),
@@ -544,9 +510,8 @@ fn get_show_page_status_message(postid: &String, page: usize, status_message: &S
 }
 
 fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, status: &str) {
-    // // for status bar only
-    let w = terminal_size().unwrap().0; // let w = rustbox.width();
-    let h = terminal_size().unwrap().1; // let h = rustbox.height();
+    // for status bar only
+    let h = terminal_size().unwrap().1;
 
     write!(stdout, "{}{}{}{}{}{}",
             termion::cursor::Goto(1, h),
