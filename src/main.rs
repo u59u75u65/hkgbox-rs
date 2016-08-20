@@ -73,7 +73,6 @@ fn main() {
     // Clear the screen.
     print!("{}", termion::clear::All); // stdout.clear().unwrap();
 
-    let title = String::from("高登");
     let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
     let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
 
@@ -200,7 +199,7 @@ fn main() {
                 index.print(&mut stdout, &list_topic_items);
             }
             Status::Show => {
-                show.print(&mut stdout, &title, &show_item);
+                show.print(&mut stdout, &show_item);
             }
         }
 

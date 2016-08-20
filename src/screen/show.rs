@@ -19,6 +19,7 @@ use reply_model::*;
 use screen::common::*;
 
 pub struct Show<'a> {
+    title: String,
     scrollY: usize,
     y: usize,
     replier_max_width: usize,
@@ -30,6 +31,7 @@ pub struct Show<'a> {
 impl <'a> Show <'a> {
     pub fn new (icon_collection: &'a [Vec<IconItem>]) -> Self {
         Show {
+            title: String::from("高登"),
             scrollY: 0,
             y: 0,
             replier_max_width: 14,
@@ -38,10 +40,10 @@ impl <'a> Show <'a> {
             icon_collection: icon_collection
         }
     }
-    pub fn print(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, title: &str, item: &ShowItem) {
+    pub fn print(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
 
         self.y = 2;
-
+        let title = self.title.clone();
         self.print_header(stdout, &format!("{} - {} [{}/{}]",
                                    item.title,
                                    title,
