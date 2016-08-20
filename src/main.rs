@@ -72,12 +72,13 @@ fn main() {
     let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
     let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
 
-    let s = cache::readfile(String::from("data/topics.json"));
-    let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
+    // let s = cache::readfile(String::from("data/topics.json"));
+    // let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
+    let collection: Vec<ListTopicItem> = vec![];
 
     // initialize show with empty page
     let mut show_item = ShowItem {
-        url_query: UrlQueryItem { message: String::from("") },
+        url_query: UrlQueryItem { channel: "".to_string(), message: String::from("") },
         replies: vec![],
         page: 0,
         max_page: 0,

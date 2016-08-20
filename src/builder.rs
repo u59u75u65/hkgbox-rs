@@ -177,6 +177,7 @@ fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
     };
 
     UrlQueryItem {
+        channel: String::from(channel),
         message: String::from(message)
     }
 
