@@ -7,6 +7,9 @@ extern crate hyper;
 extern crate cancellation;
 extern crate time;
 
+extern crate url;
+use url::Url;
+
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
 
@@ -26,6 +29,7 @@ use chrono::*;
 use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
+use hkg::model::ListTopicTitleItem;
 use hkg::model::ShowItem;
 use hkg::model::ShowReplyItem;
 use hkg::model::UrlQueryItem;
@@ -183,7 +187,92 @@ fn main() {
                                                &format!("[TOPICS:ROK]"));
 
                         print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
-                        state = Status::List;
+                        let trs = match document.select(".Topic_ListPanel tr[id]") {
+                                Ok(trs) => trs,
+                                Err(e) => panic!("{:?}", e)
+                        };
+
+                        let mut line = "".to_string();
+                        for (i, tr) in trs.enumerate() {
+                            let items = match tr.as_node().select("td") {
+                                Ok(items) => items,
+                                Err(e) => panic!("{:?}", e)
+                            };
+                            for (j, item) in items.enumerate() {
+                                // write!(stdout, "{}{}{}",
+                                //     termion::cursor::Goto(1, (i + j + 1) as u16),
+                                //     color::Fg(color::White),
+                                //     &format!("[{}][{}] => {:?}", i, j, item.as_node())
+                                // );
+
+                                match j {
+                                    0 => { line = "".to_string(); },
+                                    1 => {
+                                        write!(stdout, "{}{}{}",
+                                            termion::cursor::Goto(1, 1),
+                                            color::Fg(color::White),
+                                            &"0 here!"
+                                        );
+
+                                        let (first_link, links_count) = {
+                                            let mut links = match item.as_node().select("a") {
+                                                Ok(links) => links,
+                                                Err(e) => panic!("ERR: {:?}", e)
+                                            };
+
+                                            let firstLinkOption = links.next();
+                                            let lastLinkOption = links.last();
+
+                                            let first_link = match firstLinkOption {
+                                                Some(first_link) => first_link,
+                                                None => { panic!("ERR: Can't find 'first_link'.") }
+                                            };
+
+                                            let max_page = match lastLinkOption {
+                                                Some(last_link) =>
+                                                    last_link.text_contents().trim().to_string().parse::<usize>()
+                                                    .unwrap_or(0)
+                                                ,
+                                                None => { 1 }
+                                            };
+
+                                            (first_link, max_page)
+                                        };
+
+                                        let (url_str, url_query_item) = {
+                                            let attrs = &(first_link.attributes).borrow();
+                                            let href = attrs.get("href").unwrap_or("");
+
+                                            let base_url = Url::parse("http://forum1.hkgolden.com/view.aspx").unwrap();
+                                            let url = base_url.join(&href).unwrap();
+                                            let url_str = url.into_string();
+                                            let url_query_item = builder.url_query_item(&url_str);
+                                            (url_str, url_query_item)
+                                        };
+
+                                        let text = first_link.text_contents().trim().to_string();
+
+                                        let result = ListTopicTitleItem {
+                                            url: url_str,
+                                            url_query: url_query_item,
+                                            text: text,
+                                            num_of_pages: links_count
+                                        };
+                                        line = format!("[{}][{}] => {:?} {} {}", i, j, result.url_query, result.num_of_pages, result.text).to_string();                                        
+                                    },
+                                    _ => { line = "".to_string(); }
+                                }
+
+                                write!(stdout, "{}{}{}",
+                                    termion::cursor::Goto(1, (i + j + 2) as u16),
+                                    color::Fg(color::White),
+                                    &line
+                                );
+
+                            }
+                        }
+
+                        // state = Status::List;
                         is_web_requesting = false;
                     }
                 }
