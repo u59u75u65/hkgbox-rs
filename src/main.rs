@@ -77,9 +77,7 @@ fn main() {
     let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
     let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
 
-    // let s = cache::readfile(String::from("data/topics.json"));
-    // let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
-    let collection: Vec<ListTopicItem> = vec![];
+    let mut list_topic_items: Vec<ListTopicItem> = vec![];
 
     // initialize show with empty page
     let mut show_item = ShowItem {
@@ -181,8 +179,7 @@ fn main() {
                         let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
                         let url = get_topic_bw_url();
-                        let list_topic_items = builder.list_topic_items(&document);
-
+                        list_topic_items = builder.list_topic_items(&document);
 
                         let w = terminal_size().unwrap().0 as usize; //rustbox.width();
                         status = format_status(status,
@@ -191,18 +188,7 @@ fn main() {
 
                         print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
 
-                        write!(stdout, "{}{}",
-                            termion::cursor::Goto(1, 1),
-                            color::Fg(color::White));
-
-                        println!("{:?}", list_topic_items);
-                            // write!(stdout, "{}{}{}",
-                            //     termion::cursor::Goto(1, (i + j + 1) as u16),
-                            //     color::Fg(color::White),
-                            //     &format!("[{}][{}] => {:?}", i, j, item.as_node())
-                            // );
-
-                        // state = Status::List;
+                        state = Status::List;
                         is_web_requesting = false;
                     }
                 }
@@ -216,7 +202,7 @@ fn main() {
             },
             Status::List => {
                 // list.print(&title, &collection);
-                index.print(&mut stdout, &collection);
+                index.print(&mut stdout, &list_topic_items);
             }
             Status::Show => {
                 // show.print(&title, &show_item);
@@ -266,7 +252,7 @@ fn main() {
                             Status::List => {
                                 let i = index.get_selected_topic();
                                 if i > 0 {
-                                    let topic_item = &collection[i - 1];
+                                    let topic_item = &list_topic_items[i - 1];
                                     let postid = &topic_item.title.url_query.message;
                                     let page = 1;
                                     let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
