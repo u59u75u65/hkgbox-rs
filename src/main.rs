@@ -30,6 +30,7 @@ use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
 use hkg::model::ListTopicTitleItem;
+use hkg::model::ListTopicAuthorItem;
 use hkg::model::ShowItem;
 use hkg::model::ShowReplyItem;
 use hkg::model::UrlQueryItem;
@@ -267,7 +268,37 @@ fn main() {
                                         count = count + 1;
                                     },
                                     2 => {
-                                        
+                                        let (url, name) = {
+                                            let mut links = match item.as_node().select("a") {
+                                                Ok(links) => links,
+                                                Err(e) => panic!("ERR: {:?}", e)
+                                            };
+
+                                            let firstLinkOption = links.next();
+
+                                            let first_link = match firstLinkOption {
+                                                Some(first_link) => first_link,
+                                                None => { panic!("ERR: Can't find 'first_link'.") }
+                                            };
+
+                                            let attrs = &(first_link.attributes).borrow();
+                                            let href = attrs.get("href").unwrap_or("").to_string();
+                                            let text = first_link.text_contents().trim().to_string();
+                                            (href, text)
+                                        };
+
+                                        let result = ListTopicAuthorItem {
+                                            url: url,
+                                            name: name
+                                        };
+
+                                        write!(stdout, "{}{}{}",
+                                            termion::cursor::Goto(1, (count + 1) as u16),
+                                            color::Fg(color::White),
+                                            &format!("[{}][{}] => {} {}", i, j, result.url, result.name)
+                                        );
+
+                                        count = count + 1;
                                     },
                                     _ => {  }
                                 }
