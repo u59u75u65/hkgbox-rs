@@ -18,18 +18,18 @@ use model::ShowItem;
 use reply_model::*;
 use screen::common::*;
 
-pub struct Show<'a> {
+pub struct Show {
     title: String,
     scrollY: usize,
     y: usize,
     replier_max_width: usize,
     time_max_width: usize,
     is_scroll_to_end: bool,
-    icon_collection: &'a [Vec<IconItem>]
+    icon_collection: Box<Vec<IconItem>>
 }
 
-impl <'a> Show <'a> {
-    pub fn new (icon_collection: &'a [Vec<IconItem>]) -> Self {
+impl Show {
+    pub fn new (icon_collection: Box<Vec<IconItem>>) -> Self {
         Show {
             title: String::from("高登"),
             scrollY: 0,
@@ -194,7 +194,7 @@ impl <'a> Show <'a> {
     }
 
     fn get_icon_reference(&mut self, alt: &str) -> Option<String> {
-        match self.icon_collection[0].iter().find(|icon_item| icon_item.alt.contains(&alt) ) {
+        match self.icon_collection.iter().find(|icon_item| icon_item.alt.contains(&alt) ) {
             Some(item) => Some(format!("data/img/{}", &item.src)),
             None => None
         }

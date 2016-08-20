@@ -81,15 +81,14 @@ fn main() {
     let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
 
     let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
-    let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
+    let icon_collection: Box<Vec<IconItem>> = Box::new(json::decode(&icon_manifest_string).unwrap());
 
     // initialize empty page
     let mut list_topic_items: Vec<ListTopicItem> = vec![];
     let mut show_item = builder.default_show_item();
 
     let mut index = hkg::screen::index::Index::new();
-    let mut show_icon_collection = &[icon_collection];
-    let mut show = hkg::screen::show::Show::new(show_icon_collection);
+    let mut show = hkg::screen::show::Show::new(icon_collection);
 
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
