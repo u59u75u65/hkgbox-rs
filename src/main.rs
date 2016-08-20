@@ -101,10 +101,6 @@ fn main() {
 
     let mut builder = hkg::builder::Builder::new();
 
-    // let url = String::from("http://www.alexa.com/");
-    // let url = String::from("http://localhost:3000");
-    // let url = String::from("https://www.yahoo.com.hk/");
-
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
 
@@ -201,11 +197,9 @@ fn main() {
 
             },
             Status::List => {
-                // list.print(&title, &collection);
                 index.print(&mut stdout, &list_topic_items);
             }
             Status::Show => {
-                // show.print(&title, &show_item);
                 show.print(&mut stdout, &title, &show_item);
             }
         }
@@ -218,9 +212,6 @@ fn main() {
                 Err(e) => panic!(e)
             }
         };
-
-        // let (time1, time2) = (timeFormat(time::now()), timeFormat(time::now()));
-        // status = format_status(status.clone(), w as usize, &format!("now: {:?} {:?}", time1, time2));
 
         print_status(&mut stdout, &status); // print_status(&rustbox, &status);
 
@@ -584,65 +575,3 @@ fn format_status(status: String, w: usize, s: &str) -> String {
         String::from(format!("{}{}", &status, s))
     }
 }
-
-// fn show_item_build_example(rustbox: &rustbox::RustBox, collection: &Vec<ListTopicItem>) {
-//
-//     rustbox.print(1,
-//                   1,
-//                   rustbox::RB_NORMAL,
-//                   Color::White,
-//                   Color::Black,
-//                   &format!("before parse => {}", Local::now()));
-//
-//     let mut builder = hkg::builder::Builder::new();
-//
-//     let url = &collection[1].title.url;
-//     rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
-//
-//     let uqi = builder.url_query_item(&url);
-//     let postid = "6360604"; //uqi.message;
-//     let page = 1;
-//     let path = format!("data/html/{postid}/show_{page}.html",
-//                        postid = postid,
-//                        page = page);
-//
-//     rustbox.print(1,
-//                   3,
-//                   rustbox::RB_NORMAL,
-//                   Color::White,
-//                   Color::Black,
-//                   &format!("path: {}", path));
-//
-//     let show_item = match kuchiki::parse_html().from_utf8().from_file(&path) {
-//         Ok(document) => Some(builder.show_item(&document, &url)),
-//         Err(e) => None,
-//     };
-//
-//     match show_item {
-//         Some(si) => {
-//
-//             rustbox.print(1,
-//                           5,
-//                           rustbox::RB_NORMAL,
-//                           Color::White,
-//                           Color::Black,
-//                           &format!("url_query->message: {} title:{} reploy count: {} page: {} \
-//                                     max_page: {}",
-//                                    si.url_query.message,
-//                                    si.title,
-//                                    si.reply_count,
-//                                    si.page,
-//                                    si.max_page));
-//
-//             for (index, item) in si.replies.iter().enumerate() {
-//                 rustbox.print(1,
-//                               index + 7,
-//                               rustbox::RB_NORMAL,
-//                               Color::White,
-//                               Color::Black,
-//                               &format!("{:<2}={:?}", index, item));
-//             }
-//         }
-//         _ => {}
-//     }
-// }
