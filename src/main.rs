@@ -97,11 +97,7 @@ fn main() {
 
     // topics request
     let status_message = list_page(&mut is_web_requesting, &tx_req);
-
-    let w = terminal_size().unwrap().0;
-    status = format_status(status.clone(),
-                           w as usize,
-                           &status_message);
+    status = format_status(status.clone(), &status_message);
 
     loop {
 
@@ -120,9 +116,7 @@ fn main() {
                         let posturl = get_posturl(&extra.postid, extra.page);
                         show_item = builder.show_item(&document, &posturl);
 
-                        let w = terminal_size().unwrap().0 as usize;
                         status = format_status(status,
-                                               w,
                                                &format!("[{}-{}:ROK][{}]",
                                                         show_item.url_query.message,
                                                         show_item.page,
@@ -138,9 +132,7 @@ fn main() {
 
                         list_topic_items = builder.list_topic_items(&document);
 
-                        let w = terminal_size().unwrap().0 as usize;
                         status = format_status(status,
-                                               w,
                                                &format!("[TOPICS:ROK]"));
 
                         print!("{}", termion::clear::All);
@@ -187,8 +179,7 @@ fn main() {
                     },
                     Key::Char('\n') => {
 
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, "ENTER");
+                        status = format_status(status, "ENTER");
 
                         match state {
                             Status::Startup => {},
@@ -200,9 +191,7 @@ fn main() {
                                     let page = 1;
                                     let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
 
-                                    let w = terminal_size().unwrap().0;
                                     status = format_status(status.clone(),
-                                                           w as usize,
                                                            &get_show_page_status_message(postid, page, &status_message));
                                 }
                             }
@@ -211,23 +200,15 @@ fn main() {
                         break
                     },
                     Key::Alt(c) => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, &format!("^{}", c));
-
+                        status = format_status(status, &format!("^{}", c));
                         break
                     },
                     Key::Ctrl(c) => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, &format!("*{}", c));
-
+                        status = format_status(status, &format!("*{}", c));
                         break
                     },
                     Key::Left => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, &format!("←"));
+                        status = format_status(status, &format!("←"));
 
                         match state {
                             Status::Startup => {},
@@ -238,9 +219,7 @@ fn main() {
                                     let page = &show_item.page - 1;
                                     let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
 
-                                    let w = terminal_size().unwrap().0;
                                     status = format_status(status.clone(),
-                                                           w as usize,
                                                            &get_show_page_status_message(postid, page, &status_message));
                                 }
                             }
@@ -248,10 +227,7 @@ fn main() {
                         break
                     }
                     Key::Right => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, &format!("→"));
-
+                        status = format_status(status, &format!("→"));
                         match state {
                             Status::Startup => {},
                             Status::List => {}
@@ -261,9 +237,7 @@ fn main() {
                                     let page = &show_item.page + 1;
                                     let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
 
-                                    let w = terminal_size().unwrap().0;
                                     status = format_status(status.clone(),
-                                                           w as usize,
                                                            &get_show_page_status_message(postid, page, &status_message));
                                 }
                             }
@@ -271,17 +245,12 @@ fn main() {
                         break
                     },
                     Key::PageUp => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, "↑");
-
+                        status = format_status(status, "↑");
                         match state {
                             Status::Startup => {},
                             Status::List => {
-                                let tmp = index.get_selected_topic()
-;
-                                let w = terminal_size().unwrap().0;
-                                status = format_status(status, w as usize, &format!("{}", tmp));
+                                let tmp = index.get_selected_topic();
+                                status = format_status(status, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
@@ -298,10 +267,7 @@ fn main() {
                         break
                     },
                     Key::PageDown => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, "↓");
-
+                        status = format_status(status, "↓");
                         match state {
                             Status::Startup => {},
                             Status::List => {}
@@ -315,17 +281,12 @@ fn main() {
                         break
                     },
                     Key::Up => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, "↑");
-
+                        status = format_status(status, "↑");
                         match state {
                             Status::Startup => {},
                             Status::List => {
                                 let tmp = index.get_selected_topic();
-
-                                let w = terminal_size().unwrap().0;
-                                status = format_status(status, w as usize, &format!("{}", tmp));
+                                status = format_status(status, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
@@ -341,17 +302,12 @@ fn main() {
                         break
                     },
                     Key::Down => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, "↓");
-
+                        status = format_status(status, "↓");
                         match state {
                             Status::Startup => {},
                             Status::List => {
                                 let tmp = index.get_selected_topic();
-
-                                let w = terminal_size().unwrap().0;
-                                status = format_status(status, w as usize, &format!("{}", tmp));
+                                status = format_status(status, &format!("{}", tmp));
 
                                 if tmp < index.body_height() {
                                     index.select_topic(tmp + 1);
@@ -366,9 +322,7 @@ fn main() {
                         break
                     },
                     Key::Backspace => {
-
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, "B");
+                        status = format_status(status, "B");
 
                         match state {
                             Status::Startup => {},
@@ -381,8 +335,7 @@ fn main() {
                         break
                     },
                     Key::Char(c) => {
-                        let w = terminal_size().unwrap().0;
-                        status = format_status(status, w as usize, &format!(" {}", c));
+                        status = format_status(status, &format!(" {}", c));
                         break
                     },
                     // Key::Invalid => {
@@ -556,7 +509,8 @@ fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, sta
             termion::cursor::Hide);
 }
 
-fn format_status(status: String, w: usize, s: &str) -> String {
+fn format_status(status: String, s: &str) -> String {
+    let w = terminal_size().unwrap().0 as usize;;
     if status.len() >= w {
         String::from(format!("{}{}", &"> ", s))
     } else {
