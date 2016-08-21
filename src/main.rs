@@ -1,39 +1,32 @@
 extern crate hkg;
 extern crate termion;
 extern crate rustc_serialize;
-extern crate chrono;
 extern crate kuchiki;
+extern crate chrono;
 extern crate hyper;
 extern crate cancellation;
 extern crate time;
 extern crate url;
 
+use std::path::Path;
+use std::fs::File;
+use std::fs;
+use std::io::{stdout, stdin, Read, Write};
+use std::thread;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
+use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
 use kuchiki::traits::*;
-
+use rustc_serialize::json;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use termion::{color, style};
 use termion::event::Key;
 use termion::terminal_size;
-
-use rustc_serialize::json;
-
+use termion::{color, style};
 use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
 use hkg::utility::client::*;
-
-use std::path::Path;
-
-use std::fs::File;
-use std::fs;
-use std::io::{Read, Write};
-use std::io::{stdout, stdin};
-
-use std::thread;
-use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Sender;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 enum Status {
