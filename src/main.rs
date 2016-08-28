@@ -28,6 +28,8 @@ use hkg::utility::client::*;
 use hkg::state_manager::*;
 use hkg::screen_manager::*;
 use hkg::resources::common::*;
+use hkg::caches::common::*;
+use hkg::caches::file_cache::*;
 
 fn main() {
 
@@ -62,7 +64,8 @@ fn main() {
         let mut wr = WebResource::new();
         let ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
-        let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct);
+        let mut fc = FileCache::new();
+        let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct, &mut fc);
         loop {
             match rx_req.recv() {
                 Ok(item) => {

@@ -5,17 +5,21 @@ use utility::client::ChannelItem;
 use utility::client::ChannelItemType;
 use utility::client::ChannelIndexItem;
 use resources::common::*;
+use caches::common::*;
+use caches::file_cache::*;
 
 pub struct IndexResource<'a> {
     wr: &'a mut WebResource,
-    ct: &'a CancellationTokenSource
+    ct: &'a CancellationTokenSource,
+    fc: &'a FileCache
 }
 
 impl <'a> IndexResource<'a> {
-    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource) -> Self {
+    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource, fc: &'a mut FileCache) -> Self {
         IndexResource {
             wr: wr,
-            ct: ct
+            ct: ct,
+            fc: fc
         }
     }
 }
