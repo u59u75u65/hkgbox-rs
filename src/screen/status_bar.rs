@@ -21,14 +21,14 @@ impl StatusBar {
             self.store = format!("{}{}", &self.store, value).to_string()
         }
     }
-    pub fn print(&mut self, sm: &ScreenManager) -> String {
+    pub fn print(&mut self, sm: &ScreenManager) {
         let h = sm.getHeight() as u16;
-        format!( "{}{}{}{}{}{}",
+        print!("{}{}{}{}{}{}",
                 termion::cursor::Goto(1, h),
                 color::Fg(color::White),
                 style::Bold,
                 format!("{status}", status = self.store),
                 style::Reset,
-                termion::cursor::Hide).to_string()
+                termion::cursor::Hide);
     }
 }

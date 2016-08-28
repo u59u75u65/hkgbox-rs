@@ -143,7 +143,7 @@ fn main() {
             }
         }
 
-        print!("{}", &status_bar.print(&screen_manager));
+        status_bar.print(&screen_manager);
 
         stdout.flush().unwrap();
 
@@ -162,7 +162,7 @@ fn main() {
                     Status::List => {
                         match c.unwrap() {
                             Key::Char('q') => {
-                                hkg::screen::common::reset_screen(); 
+                                hkg::screen::common::reset_screen();
                                 return
                             },
                             Key::Char('\n') => {
