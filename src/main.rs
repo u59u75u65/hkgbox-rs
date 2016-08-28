@@ -21,7 +21,6 @@ use rustc_serialize::json;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::event::Key;
-use termion::style;
 use hkg::status::*;
 use hkg::utility::cache;
 use hkg::model::IconItem;
@@ -37,7 +36,7 @@ fn main() {
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
 
     // Clear the screen.
-    print!("{}", termion::clear::All);
+    hkg::screen::common::clear_screen();
 
     let mut builder = hkg::builder::Builder::new();
 
@@ -109,7 +108,7 @@ fn main() {
                                  state_manager.isWebRequest()));
 
                         show.resetY();
-                        print!("{}", termion::clear::All);
+                        hkg::screen::common::clear_screen();
                         state_manager.updateState(Status::Show); //state = Status::Show;
                         state_manager.setWebRequest(false); // is_web_requesting = false;
                     },
@@ -121,7 +120,7 @@ fn main() {
                         status_bar.append(&screen_manager,
                                                &format!("[TOPICS:ROK]"));
 
-                        print!("{}", termion::clear::All);
+                        hkg::screen::common::clear_screen();
 
                         state_manager.updateState(Status::List); // state = Status::List;
                         state_manager.setWebRequest(false); // is_web_requesting = false;
@@ -155,7 +154,7 @@ fn main() {
             for c in stdin.keys() {
 
                 if screen_manager.isWidthChanged() {
-                    print!("{}", termion::clear::All);
+                    hkg::screen::common::clear_screen();
                 }
 
                 match state_manager.getState() {
@@ -163,7 +162,7 @@ fn main() {
                     Status::List => {
                         match c.unwrap() {
                             Key::Char('q') => {
-                                print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+                                hkg::screen::common::reset_screen(); 
                                 return
                             },
                             Key::Char('\n') => {
@@ -216,7 +215,7 @@ fn main() {
                     Status::Show => {
                             match c.unwrap() {
                                 Key::Char('q') => {
-                                    print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+                                    hkg::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
                                     return
                                 },
                                 Key::Left => {
@@ -247,7 +246,7 @@ fn main() {
                                     status_bar.append(&screen_manager, "↑");
                                     let bh = show.body_height();
                                     if show.scrollUp(bh) {
-                                        print!("{}", termion::clear::All);
+                                    hkg::screen::common::clear_screen();
                                     }
                                     break
                                 },
@@ -255,28 +254,28 @@ fn main() {
                                     status_bar.append(&screen_manager, "↓");
                                     let bh = show.body_height();
                                     if show.scrollDown(bh) {
-                                        print!("{}", termion::clear::All);
+                                        hkg::screen::common::clear_screen();
                                     }
                                     break
                                 },
                                 Key::Up => {
                                     status_bar.append(&screen_manager, "↑");
                                     if show.scrollUp(2) {
-                                        print!("{}", termion::clear::All);
+                                        hkg::screen::common::clear_screen();
                                     }
                                     break
                                 },
                                 Key::Down => {
                                     status_bar.append(&screen_manager, "↓");
                                     if show.scrollDown(2) {
-                                        print!("{}", termion::clear::All);
+                                        hkg::screen::common::clear_screen();
                                     }
                                     break
                                 },
                                 Key::Backspace => {
                                     status_bar.append(&screen_manager, "B");
                                     state_manager.updateState(Status::List); // state = Status::List;
-                                    print!("{}", termion::clear::All);
+                                    hkg::screen::common::clear_screen();
                                     break
                                 },
                                 _ => {},
