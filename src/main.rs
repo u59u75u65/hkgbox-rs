@@ -28,6 +28,7 @@ use hkg::model::ListTopicItem;
 use hkg::utility::client::*;
 use hkg::state_manager::*;
 use hkg::screen_manager::*;
+use hkg::resources::common::*;
 
 fn main() {
 
@@ -62,7 +63,7 @@ fn main() {
         let mut wr = WebResource::new();
         let ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
-
+        let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct);
         loop {
             match rx_req.recv() {
                 Ok(item) => {
@@ -72,7 +73,8 @@ fn main() {
                                th.unpark();
                            },
                            || {
-                               tx_res.send(page_request(&item, &mut wr, &ct)).unwrap();
+                                tx_res.send(index_resource.fetch(&item)).unwrap();
+                            //    tx_res.send(page_request(&item, &mut wr, &ct)).unwrap();
                            });
 
                     if ct.is_canceled() {

@@ -5,6 +5,7 @@ extern crate kuchiki;
 extern crate regex;
 extern crate url;
 
+pub mod resources;
 pub mod status;
 pub mod state_manager;
 pub mod screen_manager;
