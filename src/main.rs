@@ -172,18 +172,16 @@ fn main() {
                    prev_width = terminal_size().unwrap().0;
                 }
 
-                match c.unwrap() {
-                    Key::Char('q') => {
-                        print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
-                        return
-                    },
-                    Key::Char('\n') => {
-
-                        status = format_status(status, "ENTER");
-
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                match state {
+                    Status::Startup => {},
+                    Status::List => {
+                        match c.unwrap() {
+                            Key::Char('q') => {
+                                print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+                                return
+                            },
+                            Key::Char('\n') => {
+                                status = format_status(status, "ENTER");
                                 let i = index.get_selected_topic();
                                 if i > 0 {
                                     let topic_item = &list_topic_items[i - 1];
@@ -194,156 +192,113 @@ fn main() {
                                     status = format_status(status.clone(),
                                                            &get_show_page_status_message(postid, page, &status_message));
                                 }
-                            }
-                            Status::Show => {}
-                        }
-                        break
-                    },
-                    Key::Alt(c) => {
-                        status = format_status(status, &format!("^{}", c));
-                        break
-                    },
-                    Key::Ctrl(c) => {
-                        status = format_status(status, &format!("*{}", c));
-                        break
-                    },
-                    Key::Left => {
-                        status = format_status(status, &format!("←"));
-
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.page > 1 {
-                                    let postid = &show_item.url_query.message;
-                                    let page = &show_item.page - 1;
-                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-
-                                    status = format_status(status.clone(),
-                                                           &get_show_page_status_message(postid, page, &status_message));
-                                }
-                            }
-                        }
-                        break
-                    }
-                    Key::Right => {
-                        status = format_status(status, &format!("→"));
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.max_page > show_item.page {
-                                    let postid = &show_item.url_query.message;
-                                    let page = &show_item.page + 1;
-                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-
-                                    status = format_status(status.clone(),
-                                                           &get_show_page_status_message(postid, page, &status_message));
-                                }
-                            }
-                        }
-                        break
-                    },
-                    Key::PageUp => {
-                        status = format_status(status, "↑");
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                                break
+                            },
+                            Key::PageUp => {
+                                status = format_status(status, "↑");
                                 let tmp = index.get_selected_topic();
                                 status = format_status(status, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
                                 }
-                            }
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollUp(bh) {
-                                    print!("{}", termion::clear::All);
-                                }
-                            }
-                        }
-
-                        break
-                    },
-                    Key::PageDown => {
-                        status = format_status(status, "↓");
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollDown(bh) {
-                                    print!("{}", termion::clear::All);
-                                }
-                            }
-                        }
-                        break
-                    },
-                    Key::Up => {
-                        status = format_status(status, "↑");
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                                break
+                            },
+                            Key::Up => {
+                                status = format_status(status, "↑");
                                 let tmp = index.get_selected_topic();
                                 status = format_status(status, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
                                 }
-                            }
-                            Status::Show => {
-                                if show.scrollUp(2) {
-                                    print!("{}", termion::clear::All);
-                                }
-                            }
-                        }
-
-                        break
-                    },
-                    Key::Down => {
-                        status = format_status(status, "↓");
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                                break
+                            },
+                            Key::Down => {
+                                status = format_status(status, "↓");
                                 let tmp = index.get_selected_topic();
                                 status = format_status(status, &format!("{}", tmp));
 
                                 if tmp < index.body_height() {
                                     index.select_topic(tmp + 1);
                                 }
-                            }
-                            Status::Show => {
-                                if show.scrollDown(2) {
-                                    print!("{}", termion::clear::All);
-                                }
-                            }
+                                break
+                            },
+                            _ => {},
                         }
-                        break
                     },
-                    Key::Backspace => {
-                        status = format_status(status, "B");
+                    Status::Show => {
+                            match c.unwrap() {
+                                Key::Char('q') => {
+                                    print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+                                    return
+                                },
+                                Key::Left => {
+                                    status = format_status(status, &format!("←"));
+                                    if show_item.page > 1 {
+                                        let postid = &show_item.url_query.message;
+                                        let page = &show_item.page - 1;
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
 
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                state = Status::List;
-                                print!("{}", termion::clear::All);
+                                        status = format_status(status.clone(),
+                                                               &get_show_page_status_message(postid, page, &status_message));
+                                    }
+                                    break
+                                }
+                                Key::Right => {
+                                    status = format_status(status, &format!("→"));
+                                    if show_item.max_page > show_item.page {
+                                        let postid = &show_item.url_query.message;
+                                        let page = &show_item.page + 1;
+                                        let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
+
+                                        status = format_status(status.clone(),
+                                                               &get_show_page_status_message(postid, page, &status_message));
+                                    }
+                                    break
+                                },
+                                Key::PageUp => {
+                                    status = format_status(status, "↑");
+                                    let bh = show.body_height();
+                                    if show.scrollUp(bh) {
+                                        print!("{}", termion::clear::All);
+                                    }
+                                    break
+                                },
+                                Key::PageDown => {
+                                    status = format_status(status, "↓");
+                                    let bh = show.body_height();
+                                    if show.scrollDown(bh) {
+                                        print!("{}", termion::clear::All);
+                                    }
+                                    break
+                                },
+                                Key::Up => {
+                                    status = format_status(status, "↑");
+                                    if show.scrollUp(2) {
+                                        print!("{}", termion::clear::All);
+                                    }
+                                    break
+                                },
+                                Key::Down => {
+                                    status = format_status(status, "↓");
+                                    if show.scrollDown(2) {
+                                        print!("{}", termion::clear::All);
+                                    }
+                                    break
+                                },
+                                Key::Backspace => {
+                                    status = format_status(status, "B");
+                                    state = Status::List;
+                                    print!("{}", termion::clear::All);
+                                    break
+                                },
+                                _ => {},
                             }
                         }
-                        break
-                    },
-                    Key::Char(c) => {
-                        status = format_status(status, &format!(" {}", c));
-                        break
-                    },
-                    // Key::Invalid => {
-                    //     status = format_status(status, w as usize, &format!("???"));
-                    //     break
-                    // },
-                    _ => {},
                 }
+
+
             }
         }
 
