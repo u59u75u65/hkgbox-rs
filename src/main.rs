@@ -22,7 +22,6 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::event::Key;
 use hkg::status::*;
-use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
 use hkg::utility::client::*;
@@ -44,7 +43,7 @@ fn main() {
     let mut state_manager = StateManager::new();
     let mut screen_manager = ScreenManager::new();
 
-    let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
+    let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
     let icon_collection: Box<Vec<IconItem>> = Box::new(json::decode(&icon_manifest_string).unwrap());
 
     // initialize empty page
