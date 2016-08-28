@@ -21,8 +21,7 @@ use rustc_serialize::json;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::event::Key;
-use termion::terminal_size;
-use termion::{color, style};
+use termion::style;
 use hkg::status::*;
 use hkg::utility::cache;
 use hkg::model::IconItem;
@@ -41,7 +40,6 @@ fn main() {
     print!("{}", termion::clear::All);
 
     let mut builder = hkg::builder::Builder::new();
-    let mut status = String::from("> ");
 
     let mut state_manager = StateManager::new();
     let mut screen_manager = ScreenManager::new();
@@ -53,6 +51,7 @@ fn main() {
     let mut list_topic_items: Vec<ListTopicItem> = vec![];
     let mut show_item = builder.default_show_item();
 
+    let mut status_bar = hkg::screen::status_bar::StatusBar::new();
     let mut index = hkg::screen::index::Index::new();
     let mut show = hkg::screen::show::Show::new(icon_collection);
 
@@ -91,7 +90,7 @@ fn main() {
 
     // topics request
     let status_message = list_page(&mut state_manager, &tx_req);
-    status = format_status(status.clone(), &status_message);
+    status_bar.append(&screen_manager, &status_message);
 
     loop {
 
@@ -104,11 +103,10 @@ fn main() {
                         let posturl = get_posturl(&extra.postid, extra.page);
                         show_item = builder.show_item(&document, &posturl);
 
-                        status = format_status(status,
-                                               &format!("[{}-{}:ROK][{}]",
-                                                        show_item.url_query.message,
-                                                        show_item.page,
-                                                        state_manager.isWebRequest()));
+                        status_bar.append(&screen_manager, &format!("[{}-{}:ROK][{}]",
+                                 show_item.url_query.message,
+                                 show_item.page,
+                                 state_manager.isWebRequest()));
 
                         show.resetY();
                         print!("{}", termion::clear::All);
@@ -120,7 +118,7 @@ fn main() {
 
                         list_topic_items = builder.list_topic_items(&document);
 
-                        status = format_status(status,
+                        status_bar.append(&screen_manager,
                                                &format!("[TOPICS:ROK]"));
 
                         print!("{}", termion::clear::All);
@@ -146,7 +144,7 @@ fn main() {
             }
         }
 
-        print_status(&mut stdout, &status);
+        print!("{}", &status_bar.print(&screen_manager));
 
         stdout.flush().unwrap();
 
@@ -169,7 +167,7 @@ fn main() {
                                 return
                             },
                             Key::Char('\n') => {
-                                status = format_status(status, "ENTER");
+                                status_bar.append(&screen_manager, "ENTER");
                                 let i = index.get_selected_topic();
                                 if i > 0 {
                                     let topic_item = &list_topic_items[i - 1];
@@ -177,15 +175,15 @@ fn main() {
                                     let page = 1;
                                     let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
 
-                                    status = format_status(status.clone(),
+                                    status_bar.append(&screen_manager,
                                                            &get_show_page_status_message(postid, page, &status_message));
                                 }
                                 break
                             },
                             Key::PageUp => {
-                                status = format_status(status, "↑");
+                                status_bar.append(&screen_manager, "↑");
                                 let tmp = index.get_selected_topic();
-                                status = format_status(status, &format!("{}", tmp));
+                                status_bar.append(&screen_manager, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
@@ -193,9 +191,9 @@ fn main() {
                                 break
                             },
                             Key::Up => {
-                                status = format_status(status, "↑");
+                                status_bar.append(&screen_manager, "↑");
                                 let tmp = index.get_selected_topic();
-                                status = format_status(status, &format!("{}", tmp));
+                                status_bar.append(&screen_manager, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
@@ -203,9 +201,9 @@ fn main() {
                                 break
                             },
                             Key::Down => {
-                                status = format_status(status, "↓");
+                                status_bar.append(&screen_manager, "↓");
                                 let tmp = index.get_selected_topic();
-                                status = format_status(status, &format!("{}", tmp));
+                                status_bar.append(&screen_manager, &format!("{}", tmp));
 
                                 if tmp < index.body_height() {
                                     index.select_topic(tmp + 1);
@@ -222,31 +220,31 @@ fn main() {
                                     return
                                 },
                                 Key::Left => {
-                                    status = format_status(status, &format!("←"));
+                                    status_bar.append(&screen_manager, &format!("←"));
                                     if show_item.page > 1 {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page - 1;
                                         let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
 
-                                        status = format_status(status.clone(),
+                                        status_bar.append(&screen_manager,
                                                                &get_show_page_status_message(postid, page, &status_message));
                                     }
                                     break
                                 }
                                 Key::Right => {
-                                    status = format_status(status, &format!("→"));
+                                    status_bar.append(&screen_manager, &format!("→"));
                                     if show_item.max_page > show_item.page {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page + 1;
                                         let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
 
-                                        status = format_status(status.clone(),
+                                        status_bar.append(&screen_manager,
                                                                &get_show_page_status_message(postid, page, &status_message));
                                     }
                                     break
                                 },
                                 Key::PageUp => {
-                                    status = format_status(status, "↑");
+                                    status_bar.append(&screen_manager, "↑");
                                     let bh = show.body_height();
                                     if show.scrollUp(bh) {
                                         print!("{}", termion::clear::All);
@@ -254,7 +252,7 @@ fn main() {
                                     break
                                 },
                                 Key::PageDown => {
-                                    status = format_status(status, "↓");
+                                    status_bar.append(&screen_manager, "↓");
                                     let bh = show.body_height();
                                     if show.scrollDown(bh) {
                                         print!("{}", termion::clear::All);
@@ -262,21 +260,21 @@ fn main() {
                                     break
                                 },
                                 Key::Up => {
-                                    status = format_status(status, "↑");
+                                    status_bar.append(&screen_manager, "↑");
                                     if show.scrollUp(2) {
                                         print!("{}", termion::clear::All);
                                     }
                                     break
                                 },
                                 Key::Down => {
-                                    status = format_status(status, "↓");
+                                    status_bar.append(&screen_manager, "↓");
                                     if show.scrollDown(2) {
                                         print!("{}", termion::clear::All);
                                     }
                                     break
                                 },
                                 Key::Backspace => {
-                                    status = format_status(status, "B");
+                                    status_bar.append(&screen_manager, "B");
                                     state_manager.updateState(Status::List); // state = Status::List;
                                     print!("{}", termion::clear::All);
                                     break
@@ -437,26 +435,4 @@ fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_
 
 fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
-}
-
-fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, status: &str) {
-    // for status bar only
-    let h = terminal_size().unwrap().1;
-
-    write!(stdout, "{}{}{}{}{}{}",
-            termion::cursor::Goto(1, h),
-            color::Fg(color::White),
-            style::Bold,
-            format!("{status}", status = status),
-            style::Reset,
-            termion::cursor::Hide);
-}
-
-fn format_status(status: String, s: &str) -> String {
-    let w = terminal_size().unwrap().0 as usize;;
-    if status.len() >= w {
-        String::from(format!("{}{}", &"> ", s))
-    } else {
-        String::from(format!("{}{}", &status, s))
-    }
 }
