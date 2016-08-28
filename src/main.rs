@@ -29,6 +29,7 @@ use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
 use hkg::utility::client::*;
 use hkg::state_manager::*;
+use hkg::screen_manager::*;
 
 fn main() {
 
@@ -42,11 +43,8 @@ fn main() {
     let mut builder = hkg::builder::Builder::new();
     let mut status = String::from("> ");
 
-    let mut sm = StateManager::new();
-    // let mut state = Status::Startup;
-    // let mut prev_state = state;
-    // let mut prev_width = terminal_size().unwrap().0;
-    // let mut is_web_requesting = false;
+    let mut state_manager = StateManager::new();
+    let mut screen_manager = ScreenManager::new();
 
     let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
     let icon_collection: Box<Vec<IconItem>> = Box::new(json::decode(&icon_manifest_string).unwrap());
@@ -92,7 +90,7 @@ fn main() {
     });
 
     // topics request
-    let status_message = list_page(&mut sm, &tx_req);
+    let status_message = list_page(&mut state_manager, &tx_req);
     status = format_status(status.clone(), &status_message);
 
     loop {
@@ -110,12 +108,12 @@ fn main() {
                                                &format!("[{}-{}:ROK][{}]",
                                                         show_item.url_query.message,
                                                         show_item.page,
-                                                        sm.isWebRequest()));
+                                                        state_manager.isWebRequest()));
 
                         show.resetY();
                         print!("{}", termion::clear::All);
-                        sm.updateState(Status::Show); //state = Status::Show;
-                        sm.setWebRequest(false); // is_web_requesting = false;
+                        state_manager.updateState(Status::Show); //state = Status::Show;
+                        state_manager.setWebRequest(false); // is_web_requesting = false;
                     },
                     ChannelItemType::Index(_) => {
                         let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
@@ -127,8 +125,8 @@ fn main() {
 
                         print!("{}", termion::clear::All);
 
-                        sm.updateState(Status::List); // state = Status::List;
-                        sm.setWebRequest(false); // is_web_requesting = false;
+                        state_manager.updateState(Status::List); // state = Status::List;
+                        state_manager.setWebRequest(false); // is_web_requesting = false;
 
                     }
                 }
@@ -136,7 +134,7 @@ fn main() {
             Err(_) => {}
         }
 
-        match sm.getState() {
+        match state_manager.getState() {
             Status::Startup => {
 
             },
@@ -152,18 +150,18 @@ fn main() {
 
         stdout.flush().unwrap();
 
-        if !sm.isWebRequest() {
+        if !state_manager.isWebRequest() {
 
             let stdin = stdin();
 
             for c in stdin.keys() {
 
-                sm.updateWidth();
-                if sm.isWidthChanged() {
+                screen_manager.updateWidth();
+                if screen_manager.isWidthChanged() {
                     print!("{}", termion::clear::All);
                 }
 
-                match sm.getState() {
+                match state_manager.getState() {
                     Status::Startup => {},
                     Status::List => {
                         match c.unwrap() {
@@ -178,7 +176,7 @@ fn main() {
                                     let topic_item = &list_topic_items[i - 1];
                                     let postid = &topic_item.title.url_query.message;
                                     let page = 1;
-                                    let status_message = show_page(&postid, page, &mut sm, &tx_req);
+                                    let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
 
                                     status = format_status(status.clone(),
                                                            &get_show_page_status_message(postid, page, &status_message));
@@ -229,7 +227,7 @@ fn main() {
                                     if show_item.page > 1 {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page - 1;
-                                        let status_message = show_page(&postid, page, &mut sm, &tx_req);
+                                        let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
 
                                         status = format_status(status.clone(),
                                                                &get_show_page_status_message(postid, page, &status_message));
@@ -241,7 +239,7 @@ fn main() {
                                     if show_item.max_page > show_item.page {
                                         let postid = &show_item.url_query.message;
                                         let page = &show_item.page + 1;
-                                        let status_message = show_page(&postid, page, &mut sm, &tx_req);
+                                        let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
 
                                         status = format_status(status.clone(),
                                                                &get_show_page_status_message(postid, page, &status_message));
@@ -280,7 +278,7 @@ fn main() {
                                 },
                                 Key::Backspace => {
                                     status = format_status(status, "B");
-                                    sm.updateState(Status::List); // state = Status::List;
+                                    state_manager.updateState(Status::List); // state = Status::List;
                                     print!("{}", termion::clear::All);
                                     break
                                 },
@@ -402,7 +400,7 @@ fn page_request(item: &ChannelItem,
 
 }
 
-fn list_page(sm: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
         extra: ChannelItemType::Index(ChannelIndexItem { }),
@@ -411,7 +409,7 @@ fn list_page(sm: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            sm.setWebRequest(true);    // *is_web_requesting = true;
+            state_manager.setWebRequest(true);    // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
@@ -420,7 +418,7 @@ fn list_page(sm: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
     status_message
 }
 
-fn show_page(postid: &String, page: usize, sm: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
         extra: ChannelItemType::Show(ChannelShowItem { postid: postid.clone(), page: page }),
@@ -429,7 +427,7 @@ fn show_page(postid: &String, page: usize, sm: &mut StateManager, tx_req: &Sende
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            sm.setWebRequest(true); // *is_web_requesting = true;
+            state_manager.setWebRequest(true); // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),

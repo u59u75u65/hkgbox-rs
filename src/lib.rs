@@ -7,6 +7,7 @@ extern crate url;
 
 pub mod status;
 pub mod state_manager;
+pub mod screen_manager;
 pub mod utility;
 pub mod reply_model;
 pub mod model;

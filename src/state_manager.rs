@@ -1,11 +1,8 @@
 use status::*;
-use termion::terminal_size;
 
 pub struct StateManager {
     current_state: Status,
-    prev_state: Status,    
-    current_width: usize,
-    prev_width: usize,
+    prev_state: Status,
     is_web_requesting: bool
 }
 
@@ -14,19 +11,8 @@ impl StateManager {
         StateManager {
             current_state: Status::Startup,
             prev_state: Status::Startup,
-            current_width: 0,
-            prev_width: 0,
             is_web_requesting: false
         }
-    }
-    pub fn updateWidth(&mut self) -> usize {
-        let w = terminal_size().unwrap().0 as usize;
-        self.prev_width = self.current_width;
-        self.current_width = w;
-        w
-    }
-    pub fn isWidthChanged(&self) -> bool {
-        self.current_width != self.prev_width
     }
     pub fn isWebRequest (&self) -> bool {
         self.is_web_requesting
