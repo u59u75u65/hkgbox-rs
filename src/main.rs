@@ -23,17 +23,11 @@ use termion::raw::IntoRawMode;
 use termion::event::Key;
 use termion::terminal_size;
 use termion::{color, style};
+use hkg::status::*;
 use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
 use hkg::utility::client::*;
-
-#[derive(PartialEq, Eq, Copy, Clone)]
-enum Status {
-    Startup,
-    List,
-    Show,
-}
 
 fn main() {
 
