@@ -156,7 +156,6 @@ fn main() {
 
             for c in stdin.keys() {
 
-                screen_manager.updateWidth();
                 if screen_manager.isWidthChanged() {
                     print!("{}", termion::clear::All);
                 }

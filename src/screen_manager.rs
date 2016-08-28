@@ -12,13 +12,13 @@ impl ScreenManager {
             prev_width: 0,
         }
     }
-    pub fn updateWidth(&mut self) -> usize {
+    pub fn isWidthChanged(&mut self) -> bool {
         let w = terminal_size().unwrap().0 as usize;
-        self.prev_width = self.current_width;
-        self.current_width = w;
-        w
-    }
-    pub fn isWidthChanged(&self) -> bool {
-        self.current_width != self.prev_width
-    }
+        if self.current_width != w {
+            self.prev_width = self.current_width;
+            self.current_width = w;
+            return true
+        }
+        return false
+    }    
 }
