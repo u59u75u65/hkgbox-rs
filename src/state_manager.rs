@@ -3,7 +3,7 @@ use termion::terminal_size;
 
 pub struct StateManager {
     current_state: Status,
-    prev_state: Status,
+    prev_state: Status,    
     current_width: usize,
     prev_width: usize,
     is_web_requesting: bool
@@ -35,15 +35,12 @@ impl StateManager {
         self.is_web_requesting = value;
     }
     pub fn updateState(&mut self, value: Status) {
-        // if self.current_state != value {
-        self.prev_state = self.current_state;
-        self.current_state = value;
-        // }
+        if self.current_state != value {
+            self.prev_state = self.current_state;
+            self.current_state = value;
+        }
     }
     pub fn getState(&self) -> Status {
         self.current_state
-    }
-    pub fn isStateChanged(&self) -> bool {
-        self.current_state != self.prev_state
     }
 }

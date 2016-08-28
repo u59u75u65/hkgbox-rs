@@ -97,11 +97,6 @@ fn main() {
 
     loop {
 
-        // show UI
-        if sm.isStateChanged() {
-            print!("{}", termion::clear::All); // clear screen when switching state
-        }
-
         match rx_res.try_recv() {
             Ok(item) => {
                 match item.extra {
