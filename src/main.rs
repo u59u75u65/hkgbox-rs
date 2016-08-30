@@ -64,7 +64,7 @@ fn main() {
         let mut wr = WebResource::new();
         let ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
-        let mut fc = FileCache::new();
+        let mut fc = Box::new(FileCache::new());
         let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct, &mut fc);
         loop {
             match rx_req.recv() {

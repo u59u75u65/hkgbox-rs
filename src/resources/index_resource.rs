@@ -8,23 +8,23 @@ use resources::common::*;
 use caches::common::*;
 use caches::file_cache::*;
 
-pub struct IndexResource<'a> {
+pub struct IndexResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,
     ct: &'a CancellationTokenSource,
-    fc: &'a FileCache
+    cache: &'a mut Box<T>,
 }
 
-impl <'a> IndexResource<'a> {
-    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource, fc: &'a mut FileCache) -> Self {
+impl<'a, T: 'a + Cache> IndexResource<'a, T> {
+    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource, cache: &'a mut Box<T>) -> Self {
         IndexResource {
             wr: wr,
             ct: ct,
-            fc: fc
+            cache: cache,
         }
     }
 }
 
-impl <'a> Resource for IndexResource<'a> {
+impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
         ChannelItem {
             extra: ChannelItemType::Index(ChannelIndexItem { }),
