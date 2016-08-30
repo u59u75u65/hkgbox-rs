@@ -65,7 +65,7 @@ fn main() {
         let ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
         let mut fc = Box::new(FileCache::new());
-        let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct, &mut fc);
+
         loop {
             match rx_req.recv() {
                 Ok(item) => {
@@ -75,8 +75,16 @@ fn main() {
                                th.unpark();
                            },
                            || {
-                                tx_res.send(index_resource.fetch(&item)).unwrap();
-                            //    tx_res.send(page_request(&item, &mut wr, &ct)).unwrap();
+                                match item.extra.clone() {
+                                    ChannelItemType::Index(_) => {
+                                        let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct, &mut fc);
+                                        tx_res.send(index_resource.fetch(&item)).unwrap();
+                                    },
+                                    ChannelItemType::Show(_) => {
+                                        let mut show_resource = hkg::resources::show_resource::ShowResource::new(&mut wr, &ct, &mut fc);
+                                        tx_res.send(show_resource.fetch(&item)).unwrap();
+                                    }
+                                }
                            });
 
                     if ct.is_canceled() {
