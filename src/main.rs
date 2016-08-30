@@ -8,10 +8,7 @@ extern crate cancellation;
 extern crate time;
 extern crate url;
 
-use std::path::Path;
-use std::fs::File;
-use std::fs;
-use std::io::{stdout, stdin, Read, Write};
+use std::io::{stdout, stdin, Write};
 use std::thread;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
@@ -28,7 +25,6 @@ use hkg::utility::client::*;
 use hkg::state_manager::*;
 use hkg::screen_manager::*;
 use hkg::resources::common::*;
-use hkg::caches::common::*;
 use hkg::caches::file_cache::*;
 
 fn main() {
@@ -62,10 +58,9 @@ fn main() {
     // web client
     thread::spawn(move || {
         let mut wr = WebResource::new();
+        let mut fc = Box::new(FileCache::new());
         let ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
-        let mut fc = Box::new(FileCache::new());
-
         loop {
             match rx_req.recv() {
                 Ok(item) => {
@@ -301,28 +296,6 @@ fn main() {
 
     }
 }
-
-fn read_cache<P: AsRef<Path>, S: AsRef<Path>>(cache_path: P,
-                                              file_name: S)
-                                              -> Result<String, String> {
-    let file_path = cache_path.as_ref().join(file_name);
-    let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
-    let mut contents = String::new();
-    try!(file.read_to_string(&mut contents).map_err(|e| e.to_string()));
-    Ok(contents)
-}
-
-fn write_cache<P: AsRef<Path>, S: AsRef<Path>>(cache_path: P,
-                                               file_name: S,
-                                               s: String)
-                                               -> Result<(), String> {
-    let file_path = cache_path.as_ref().join(file_name);
-    try!(fs::create_dir_all(&cache_path).map_err(|e| e.to_string()));
-    let mut file = try!(File::create(file_path).map_err(|e| e.to_string()));
-    try!(file.write_all(&s.into_bytes()).map_err(|e| e.to_string()));
-    Ok(())
-}
-
 fn get_posturl(postid: &String, page: usize) -> String {
     let base_url = "http://forum1.hkgolden.com/view.aspx";
     let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
@@ -330,82 +303,6 @@ fn get_posturl(postid: &String, page: usize) -> String {
                           postid = postid,
                           page = page);
     posturl
-}
-
-fn get_topic_bw_url() -> String {
-    let base_url = "http://forum1.hkgolden.com";
-    let url = format!("{base_url}/topics_bw.htm", base_url = base_url);
-    url
-}
-
-fn page_request(item: &ChannelItem,
-                wr: &mut WebResource,
-                ct: &CancellationTokenSource)
-                -> ChannelItem {
-
-    match item.extra.clone() {
-        ChannelItemType::Show(extra) => {
-            let html_path = format!("data/html/{postid}/", postid = extra.postid);
-            let show_file_name = format!("show_{page}.html", page = extra.page);
-
-            let postid = extra.postid.clone();
-
-            let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
-                Ok(result) => (true, result),
-                Err(_) => {
-                    let posturl = get_posturl(&extra.postid, extra.page);
-                    let result = wr.get(&posturl);
-                    (false, result)
-                }
-            };
-
-            if !from_cache {
-                let result2 = result.clone();
-                write_cache(&html_path, &show_file_name, result2);
-            }
-
-            let result_item = ChannelItem {
-                extra: ChannelItemType::Show(ChannelShowItem { postid: postid, page: extra.page }),
-                result: result,
-            };
-            result_item
-        },
-        ChannelItemType::Index(_) => {
-
-            let time_format = |t: time::Tm| {
-                match t.strftime("%Y%m%d%H%M") {
-                    Ok(s) => s.to_string(),
-                    Err(e) => panic!(e)
-                }
-            };
-
-            let time = time_format(time::now());
-
-            let html_path = format!("data/html/topics/");
-            let file_name = format!("{time}.html", time = time);
-
-            let (from_cache, result) = match read_cache(&html_path, &file_name) {
-                Ok(result) => (true, result),
-                Err(_) => {
-                    let url = get_topic_bw_url();
-                    let result = wr.get(&url);
-                    (false, result)
-                }
-            };
-
-            if !from_cache {
-                let result2 = result.clone();
-                write_cache(&html_path, &file_name, result2);
-            }
-
-            let result_item = ChannelItem {
-                extra: ChannelItemType::Index(ChannelIndexItem { }),
-                result: result,
-            };
-            result_item
-        }
-    }
-
 }
 
 fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
