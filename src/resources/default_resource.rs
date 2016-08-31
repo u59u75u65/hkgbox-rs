@@ -1,9 +1,7 @@
 extern crate cancellation;
 use self::cancellation::CancellationTokenSource;
-use utility::client::WebResource;
-use utility::client::ChannelItem;
-use utility::client::ChannelItemType;
-use utility::client::ChannelIndexItem;
+use net::*;
+use net::web_resource::*;
 use resources::common::*;
 
 pub struct DefaultResource<'a> {

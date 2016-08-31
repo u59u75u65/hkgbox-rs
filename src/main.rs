@@ -21,11 +21,12 @@ use termion::event::Key;
 use hkg::status::*;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
-use hkg::utility::client::*;
 use hkg::state_manager::*;
 use hkg::screen_manager::*;
 use hkg::resources::common::*;
 use hkg::caches::file_cache::*;
+use hkg::net::*;
+use hkg::net::web_resource::*;
 
 fn main() {
 

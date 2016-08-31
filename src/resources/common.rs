@@ -1,4 +1,4 @@
-use utility::client::ChannelItem;
+use net::ChannelItem;
 pub trait Resource {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem;
 }

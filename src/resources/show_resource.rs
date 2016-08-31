@@ -1,10 +1,8 @@
 extern crate cancellation;
 use self::cancellation::CancellationTokenSource;
 extern crate time;
-use utility::client::WebResource;
-use utility::client::ChannelItem;
-use utility::client::ChannelItemType;
-use utility::client::ChannelShowItem;
+use net::*;
+use net::web_resource::*;
 use resources::common::*;
 use caches::common::*;
 use caches::file_cache::*;
