@@ -136,11 +136,13 @@ impl Show {
     fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
 
         let icon_width = 2;
+        let img_height = 10;
         let padding = seq_str_gen(0, depth, "├─", "");
         let mut line = String::new();
         let mut is_first = true;
 
         let vec_clean = clean_reply_body(vec);
+        let mut img_offset = 0;
         for (j, node) in vec_clean.iter().enumerate() {
             match node.clone() {
                 NodeType::Text(n) => {
@@ -153,8 +155,13 @@ impl Show {
                         if self.can_print() {
                             if n.alt != "" {
                                 match self.get_icon_reference(&n.alt) {
+                                    // ICON
                                     Some(icon_reference) => line = format!("{}{}", line, imgcat(&icon_reference, icon_width)),
-                                    None => line = format!("{}{}", line, format!("[{}]", n.data))
+                                    // URL IMAGE
+                                    None => {
+                                        line = format!("{}{}", line, imgcatUrl(&n.data, img_height));
+                                        img_offset += img_height;
+                                    }
                                 }
                             } else {
                                 line = format!("{}{}", line, format!("[{}]", n.data));
@@ -173,6 +180,11 @@ impl Show {
                         }
                         line = String::new();
                         is_first = false;
+
+                        if (img_offset > 0) {
+                            self.y += img_offset;
+                            img_offset = 0;
+                        }
                     }
 
                     // prevent first line empty
@@ -187,6 +199,10 @@ impl Show {
         if !line.is_empty() {
             if self.can_print() {
                 self.print_reply_line(stdout, format!(" {}{}", padding, line));
+                if (img_offset > 0) {
+                    self.y += img_offset;
+                    img_offset = 0;
+                }
             }
             line = String::new();
             self.y += 1;
