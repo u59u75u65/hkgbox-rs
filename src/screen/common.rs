@@ -32,15 +32,18 @@ pub fn imgcatFromPath(path: &str, width: usize) -> String {
 }
 
 pub fn imgcatFromUrl(url: &str, height: usize) -> String {
-    let mut c = Client::new();
-    return match c.get(url).send() {
-        Ok(mut resp) => {
-                let mut buffer = Vec::new();
-                resp.read_to_end(&mut buffer);
-                return imgcat(buffer, &"height", height);
-            }
-        Err(e) => String::from("[IMG FAIL]")
-    }
+    let key = url.to_string().into_bytes().to_base64(base64::URL_SAFE);
+    let path = format!("data/img/{file_name}", file_name = key);
+
+    return match File::open(path) {
+        // Err(why) => String::from(format!("[{url}]", url = url)),
+        Err(why) => String::from(format!("[{code}]", code = why)),
+        Ok(mut file) => {
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer);
+            return imgcat(buffer, &"height", height);
+        },
+    };
 }
 
 pub fn reset_screen() {
