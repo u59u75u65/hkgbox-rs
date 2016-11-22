@@ -48,7 +48,7 @@ impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
                     Err(_) => {
                         let posturl = self.postUrl(&extra.postid, extra.page);
                         let result = self.wr.get(&posturl);
-                        (false, result)
+                        (false, result.into_bytes())
                     }
                 };
 
@@ -59,7 +59,7 @@ impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
 
                 let result_item = ChannelItem {
                     extra: ChannelItemType::Show(ChannelShowItem { postid: postid, page: extra.page }),
-                    result: result,
+                    result: String::from_utf8(result).unwrap(),
                 };
                 result_item
             },

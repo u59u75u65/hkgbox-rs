@@ -44,7 +44,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
             Err(_) => {
                 let url = self.url;
                 let result = self.wr.get(&url);
-                (false, result)
+                (false, result.into_bytes())
             }
         };
 
@@ -55,7 +55,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
 
         let result_item = ChannelItem {
             extra: ChannelItemType::Index(ChannelIndexItem { }),
-            result: result,
+            result: String::from_utf8(result).unwrap(),
         };
         result_item
     }
