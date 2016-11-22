@@ -30,12 +30,17 @@ impl Builder {
     pub fn new() -> Self {
         Builder {}
     }
-    pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> ShowItem {
-        parse_show_item(&document, &url)
-    }
-
     pub fn url_query_item(&mut self, url: &str) -> UrlQueryItem {
         parse_url_query_item(&url)
+    }
+}
+
+impl Builder {
+    pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> ShowItem {
+        parse_show_item(&document, &url)
+    }    
+    pub fn default_show_item(&self) -> ShowItem {
+        default_show_item()
     }
 }
 
@@ -43,8 +48,19 @@ impl Builder {
     pub fn list_topic_items(&mut self, document: &NodeRef) -> Vec<ListTopicItem> {
         parse_list_topic_items(&document)
     }
-    pub fn default_list_item() -> ListTopicItem {
+    pub fn default_list_item(&self) -> ListTopicItem {
         default_list_item()
+    }
+}
+
+fn default_show_item() -> ShowItem {
+    ShowItem {
+        url_query: UrlQueryItem { channel: "".to_string(), message: String::from("") },
+        replies: vec![],
+        page: 0,
+        max_page: 0,
+        reply_count: String::from(""),
+        title: String::from(""),
     }
 }
 

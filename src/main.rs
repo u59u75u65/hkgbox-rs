@@ -1,116 +1,66 @@
 extern crate hkg;
 extern crate termion;
 extern crate rustc_serialize;
-extern crate chrono;
 extern crate kuchiki;
+extern crate chrono;
 extern crate hyper;
 extern crate cancellation;
 extern crate time;
-
 extern crate url;
-use url::Url;
 
+use std::path::Path;
+use std::fs::File;
+use std::fs;
+use std::io::{stdout, stdin, Read, Write};
+use std::thread;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
+use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
 use kuchiki::traits::*;
-use kuchiki::NodeRef;
-
-use std::default::Default;
-
+use rustc_serialize::json;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use termion::{color, style};
 use termion::event::Key;
-use termion::terminal_size;
-
-use rustc_serialize::json;
-use rustc_serialize::json::Json;
-
-use chrono::*;
-
+use hkg::status::*;
 use hkg::utility::cache;
 use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
-use hkg::model::ListTopicTitleItem;
-use hkg::model::ListTopicAuthorItem;
-use hkg::model::ShowItem;
-use hkg::model::ShowReplyItem;
-use hkg::model::UrlQueryItem;
 use hkg::utility::client::*;
-
-use std::path::Path;
-
-// use std::io::prelude::*;
-use std::fs::File;
-use std::fs;
-use std::io::{Error, ErrorKind};
-use std::io::Cursor;
-use std::io::BufReader;
-use std::io::{Read, Write, Stdout, Stdin};
-use std::io::{stdout, stdin};
-
-use std::collections::HashMap;
-
-use hyper::Client;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
-use std::sync::mpsc::sync_channel;
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Sender;
-
-#[derive(PartialEq, Eq, Copy, Clone)]
-enum Status {
-    Startup,
-    List,
-    Show,
-}
+use hkg::state_manager::*;
+use hkg::screen_manager::*;
 
 fn main() {
 
-    // Initialize 'em all.
+    // Initialize
     let stdout = stdout();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
 
     // Clear the screen.
-    print!("{}", termion::clear::All); // stdout.clear().unwrap();
-
-    let title = String::from("高登");
-    let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
-    let icon_collection: Vec<IconItem> = json::decode(&icon_manifest_string).unwrap();
-
-    let mut list_topic_items: Vec<ListTopicItem> = vec![];
-
-    // initialize show with empty page
-    let mut show_item = ShowItem {
-        url_query: UrlQueryItem { channel: "".to_string(), message: String::from("") },
-        replies: vec![],
-        page: 0,
-        max_page: 0,
-        reply_count: String::from(""),
-        title: String::from(""),
-    };
-
-    let mut status = String::from("> ");
-
-    let mut state = Status::Startup;
-    let mut prev_state = state;
-    let mut prev_width = terminal_size().unwrap().0; //rustbox.width();
-
-    let mut index = hkg::screen::index::Index::new();
-    let mut show_icon_collection = &[icon_collection];
-    let mut show = hkg::screen::show::Show::new(show_icon_collection);
+    hkg::screen::common::clear_screen();
 
     let mut builder = hkg::builder::Builder::new();
 
-    // let url = String::from("http://www.alexa.com/");
-    // let url = String::from("http://localhost:3000");
-    // let url = String::from("https://www.yahoo.com.hk/");
+    let mut state_manager = StateManager::new();
+    let mut screen_manager = ScreenManager::new();
+
+    let icon_manifest_string = cache::readfile(String::from("data/icon.manifest.json"));
+    let icon_collection: Box<Vec<IconItem>> = Box::new(json::decode(&icon_manifest_string).unwrap());
+
+    // initialize empty page
+    let mut list_topic_items: Vec<ListTopicItem> = vec![];
+    let mut show_item = builder.default_show_item();
+
+    let mut status_bar = hkg::screen::status_bar::StatusBar::new();
+    let mut index = hkg::screen::index::Index::new();
+    let mut show = hkg::screen::show::Show::new(icon_collection);
 
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
 
-    let wclient = thread::spawn(move || {
+    // web client
+    thread::spawn(move || {
         let mut wr = WebResource::new();
-        let mut ct = CancellationTokenSource::new();
+        let ct = CancellationTokenSource::new();
         ct.cancel_after(std::time::Duration::new(10, 0));
 
         loop {
@@ -132,26 +82,16 @@ fn main() {
                         // Ok(())
                     }
                 }
-                Err(e) => {}
+                Err(_) => {}
             }
         }
     });
 
-    let mut is_web_requesting = false;
-
     // topics request
-    let w = terminal_size().unwrap().0;
-    let status_message = list_page(&mut is_web_requesting, &tx_req);
-    status = format_status(status.clone(),
-                           w as usize,
-                           &status_message);
-    loop {
+    let status_message = list_page(&mut state_manager, &tx_req);
+    status_bar.append(&screen_manager, &status_message);
 
-        // show UI
-        if prev_state != state {
-            print!("{}", termion::clear::All); // stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox); // clear screen when switching state
-            prev_state = state;
-        }
+    loop {
 
         match rx_res.try_recv() {
             Ok(item) => {
@@ -162,254 +102,188 @@ fn main() {
                         let posturl = get_posturl(&extra.postid, extra.page);
                         show_item = builder.show_item(&document, &posturl);
 
-                        let w = terminal_size().unwrap().0 as usize; //rustbox.width();
-                        status = format_status(status,
-                                               w,
-                                               &format!("[{}-{}:ROK][{}]",
-                                                        show_item.url_query.message,
-                                                        show_item.page,
-                                                        is_web_requesting));
+                        status_bar.append(&screen_manager, &format!("[{}-{}:ROK][{}]",
+                                 show_item.url_query.message,
+                                 show_item.page,
+                                 state_manager.isWebRequest()));
 
-                        show.resetY(); // show.resetY();
-                        print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
-                        state = Status::Show;
-                        is_web_requesting = false;
+                        show.resetY();
+                        hkg::screen::common::clear_screen();
+                        state_manager.updateState(Status::Show); //state = Status::Show;
+                        state_manager.setWebRequest(false); // is_web_requesting = false;
                     },
-                    ChannelItemType::Index(extra) => {
+                    ChannelItemType::Index(_) => {
                         let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
-                        let url = get_topic_bw_url();
                         list_topic_items = builder.list_topic_items(&document);
 
-                        let w = terminal_size().unwrap().0 as usize; //rustbox.width();
-                        status = format_status(status,
-                                               w,
+                        status_bar.append(&screen_manager,
                                                &format!("[TOPICS:ROK]"));
 
-                        print!("{}", termion::clear::All); // stdout.clear().unwrap();  // hkg::screen::common::clear(&rustbox);
+                        hkg::screen::common::clear_screen();
 
-                        state = Status::List;
-                        is_web_requesting = false;
+                        state_manager.updateState(Status::List); // state = Status::List;
+                        state_manager.setWebRequest(false); // is_web_requesting = false;
+
                     }
                 }
             }
-            Err(e) => {}
+            Err(_) => {}
         }
 
-        match state {
+        match state_manager.getState() {
             Status::Startup => {
 
             },
             Status::List => {
-                // list.print(&title, &collection);
                 index.print(&mut stdout, &list_topic_items);
             }
             Status::Show => {
-                // show.print(&title, &show_item);
-                show.print(&mut stdout, &title, &show_item);
+                show.print(&mut stdout, &show_item);
             }
         }
 
-        let w = terminal_size().unwrap().0;
+        status_bar.print(&screen_manager);
 
-        let timeFormat = |t: time::Tm| {
-            match t.strftime("%Y%m%d%H%M") {
-                Ok(s) => s.to_string(),
-                Err(e) => panic!(e)
-            }
-        };
+        stdout.flush().unwrap();
 
-        // let (time1, time2) = (timeFormat(time::now()), timeFormat(time::now()));
-        // status = format_status(status.clone(), w as usize, &format!("now: {:?} {:?}", time1, time2));
-
-        print_status(&mut stdout, &status); // print_status(&rustbox, &status);
-
-        stdout.flush().unwrap();         // rustbox.present();
-
-        if !is_web_requesting {
+        if !state_manager.isWebRequest() {
 
             let stdin = stdin();
 
             for c in stdin.keys() {
 
-                if prev_width != terminal_size().unwrap().0 {
-                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
-                   prev_width = terminal_size().unwrap().0;
+                if screen_manager.isWidthChanged() {
+                    hkg::screen::common::clear_screen();
                 }
 
-                let w = terminal_size().unwrap().0;
-
-                match c.unwrap() {
-                    Key::Char('q') => {
-                        print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show); // stdout.clear().unwrap();
-                        return
-                    },
-                    Key::Char('\n') => {
-                        // status = format_status(status, w as usize, &format!("ENTER"));
-                        status = format_status(status, w as usize, "ENTER");
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                match state_manager.getState() {
+                    Status::Startup => {},
+                    Status::List => {
+                        match c.unwrap() {
+                            Key::Char('q') => {
+                                hkg::screen::common::reset_screen();
+                                return
+                            },
+                            Key::Char('\n') => {
+                                status_bar.append(&screen_manager, "ENTER");
                                 let i = index.get_selected_topic();
                                 if i > 0 {
                                     let topic_item = &list_topic_items[i - 1];
                                     let postid = &topic_item.title.url_query.message;
                                     let page = 1;
-                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-                                    status = format_status(status.clone(),
-                                                           w as usize,
-                                                           &get_show_page_status_message(postid, page, &status_message));
-                                }
-                            }
-                            Status::Show => {}
-                        }
-                        break
-                    },
-                    Key::Alt(c) => {
-                        status = format_status(status, w as usize, &format!("^{}", c));
-                        break
-                    },
-                    Key::Ctrl(c) => {
-                        status = format_status(status, w as usize, &format!("*{}", c));
-                        break
-                    },
-                    Key::Left => {
-                        status = format_status(status, w as usize, &format!("←"));
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.page > 1 {
-                                    let postid = &show_item.url_query.message;
-                                    let page = &show_item.page - 1;
-                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-                                    status = format_status(status.clone(),
-                                                           w as usize,
-                                                           &get_show_page_status_message(postid, page, &status_message));
-                                }
-                            }
-                        }
-                        break
-                    }
-                    Key::Right => {
-                        status = format_status(status, w as usize, &format!("→"));
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.max_page > show_item.page {
-                                    let postid = &show_item.url_query.message;
-                                    let page = &show_item.page + 1;
-                                    let status_message = show_page(&postid, page, &mut is_web_requesting, &tx_req);
-                                    status = format_status(status.clone(),
-                                                           w as usize,
-                                                           &get_show_page_status_message(postid, page, &status_message));
-                                }
-                            }
-                        }
-                        break
-                    },
-                    Key::PageUp => {
-                        status = format_status(status, w as usize, "↑");
+                                    let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
 
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                                    status_bar.append(&screen_manager,
+                                                           &get_show_page_status_message(postid, page, &status_message));
+                                }
+                                break
+                            },
+                            Key::PageUp => {
+                                status_bar.append(&screen_manager, "↑");
                                 let tmp = index.get_selected_topic();
-                                status = format_status(status, w as usize, &format!("{}", tmp));
+                                status_bar.append(&screen_manager, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
                                 }
-                            }
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollUp(bh) {
-                                    print!("{}", termion::clear::All); // hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-
-                        break
-                    },
-                    Key::PageDown => {
-                        status = format_status(status, w as usize, "↓");
-
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollDown(bh) {
-                                    print!("{}", termion::clear::All); //hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                        break
-                    },
-                    Key::Up => {
-                        status = format_status(status, w as usize, "↑");
-
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                                break
+                            },
+                            Key::Up => {
+                                status_bar.append(&screen_manager, "↑");
                                 let tmp = index.get_selected_topic();
-                                status = format_status(status, w as usize, &format!("{}", tmp));
+                                status_bar.append(&screen_manager, &format!("{}", tmp));
 
                                 if tmp > 1 {
                                     index.select_topic(tmp - 1);
                                 }
-                            }
-                            Status::Show => {
-                                if show.scrollUp(2) {
-                                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); // hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-
-                        break
-                    },
-                    Key::Down => {
-                        status = format_status(status, w as usize, "↓");
-
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {
+                                break
+                            },
+                            Key::Down => {
+                                status_bar.append(&screen_manager, "↓");
                                 let tmp = index.get_selected_topic();
-                                status = format_status(status, w as usize, &format!("{}", tmp));
+                                status_bar.append(&screen_manager, &format!("{}", tmp));
 
                                 if tmp < index.body_height() {
                                     index.select_topic(tmp + 1);
                                 }
-                            }
-                            Status::Show => {
-                                if show.scrollDown(2) {
-                                    print!("{}", termion::clear::All); // stdout.clear().unwrap(); //hkg::screen::common::clear(&rustbox);
+                                break
+                            },
+                            _ => {},
+                        }
+                    },
+                    Status::Show => {
+                            match c.unwrap() {
+                                Key::Char('q') => {
+                                    hkg::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+                                    return
+                                },
+                                Key::Left => {
+                                    status_bar.append(&screen_manager, &format!("←"));
+                                    if show_item.page > 1 {
+                                        let postid = &show_item.url_query.message;
+                                        let page = &show_item.page - 1;
+                                        let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
+
+                                        status_bar.append(&screen_manager,
+                                                               &get_show_page_status_message(postid, page, &status_message));
+                                    }
+                                    break
                                 }
+                                Key::Right => {
+                                    status_bar.append(&screen_manager, &format!("→"));
+                                    if show_item.max_page > show_item.page {
+                                        let postid = &show_item.url_query.message;
+                                        let page = &show_item.page + 1;
+                                        let status_message = show_page(&postid, page, &mut state_manager, &tx_req);
+
+                                        status_bar.append(&screen_manager,
+                                                               &get_show_page_status_message(postid, page, &status_message));
+                                    }
+                                    break
+                                },
+                                Key::PageUp => {
+                                    status_bar.append(&screen_manager, "↑");
+                                    let bh = show.body_height();
+                                    if show.scrollUp(bh) {
+                                    hkg::screen::common::clear_screen();
+                                    }
+                                    break
+                                },
+                                Key::PageDown => {
+                                    status_bar.append(&screen_manager, "↓");
+                                    let bh = show.body_height();
+                                    if show.scrollDown(bh) {
+                                        hkg::screen::common::clear_screen();
+                                    }
+                                    break
+                                },
+                                Key::Up => {
+                                    status_bar.append(&screen_manager, "↑");
+                                    if show.scrollUp(2) {
+                                        hkg::screen::common::clear_screen();
+                                    }
+                                    break
+                                },
+                                Key::Down => {
+                                    status_bar.append(&screen_manager, "↓");
+                                    if show.scrollDown(2) {
+                                        hkg::screen::common::clear_screen();
+                                    }
+                                    break
+                                },
+                                Key::Backspace => {
+                                    status_bar.append(&screen_manager, "B");
+                                    state_manager.updateState(Status::List); // state = Status::List;
+                                    hkg::screen::common::clear_screen();
+                                    break
+                                },
+                                _ => {},
                             }
                         }
-                        break
-                    },
-                    Key::Backspace => {
-                        // status = format_status(status, w as usize, &format!("×"));
-                        status = format_status(status, w as usize, "B");
-                        match state {
-                            Status::Startup => {},
-                            Status::List => {}
-                            Status::Show => {
-                                state = Status::List;
-                                print!("{}", termion::clear::All);
-                            }
-                        }
-                        break
-                    },
-                    Key::Char(c) => { status = format_status(status, w as usize, &format!(" {}", c));break },
-                    // Key::Invalid => {
-                    //     status = format_status(status, w as usize, &format!("???"));
-                    //     break
-                    // },
-                    _ => {},
                 }
+
+
             }
         }
 
@@ -466,7 +340,7 @@ fn page_request(item: &ChannelItem,
 
             let (from_cache, result) = match read_cache(&html_path, &show_file_name) {
                 Ok(result) => (true, result),
-                Err(e) => {
+                Err(_) => {
                     let posturl = get_posturl(&extra.postid, extra.page);
                     let result = wr.get(&posturl);
                     (false, result)
@@ -484,23 +358,23 @@ fn page_request(item: &ChannelItem,
             };
             result_item
         },
-        ChannelItemType::Index(extra) => {
+        ChannelItemType::Index(_) => {
 
-            let timeFormat = |t: time::Tm| {
+            let time_format = |t: time::Tm| {
                 match t.strftime("%Y%m%d%H%M") {
                     Ok(s) => s.to_string(),
                     Err(e) => panic!(e)
                 }
             };
 
-            let time = timeFormat(time::now());
+            let time = time_format(time::now());
 
             let html_path = format!("data/html/topics/");
             let file_name = format!("{time}.html", time = time);
 
             let (from_cache, result) = match read_cache(&html_path, &file_name) {
                 Ok(result) => (true, result),
-                Err(e) => {
+                Err(_) => {
                     let url = get_topic_bw_url();
                     let result = wr.get(&url);
                     (false, result)
@@ -522,7 +396,7 @@ fn page_request(item: &ChannelItem,
 
 }
 
-fn list_page(is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> String {
+fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
         extra: ChannelItemType::Index(ChannelIndexItem { }),
@@ -531,7 +405,7 @@ fn list_page(is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> Stri
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            *is_web_requesting = true;
+            state_manager.setWebRequest(true);    // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
@@ -540,8 +414,7 @@ fn list_page(is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> Stri
     status_message
 }
 
-fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req: &Sender<ChannelItem>) -> String {
-    let posturl = get_posturl(postid, page);
+fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
         extra: ChannelItemType::Show(ChannelShowItem { postid: postid.clone(), page: page }),
@@ -550,7 +423,7 @@ fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req:
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            *is_web_requesting = true;
+            state_manager.setWebRequest(true); // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
@@ -562,87 +435,3 @@ fn show_page(postid: &String, page: usize, is_web_requesting: &mut bool, tx_req:
 fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
 }
-
-fn print_status(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, status: &str) {
-    // // for status bar only
-    let w = terminal_size().unwrap().0; // let w = rustbox.width();
-    let h = terminal_size().unwrap().1; // let h = rustbox.height();
-
-    write!(stdout, "{}{}{}{}{}{}",
-            termion::cursor::Goto(1, h),
-            color::Fg(color::White),
-            style::Bold,
-            format!("{status}", status = status),
-            style::Reset,
-            termion::cursor::Hide);
-}
-
-fn format_status(status: String, w: usize, s: &str) -> String {
-    if status.len() >= w {
-        String::from(format!("{}{}", &"> ", s))
-    } else {
-        String::from(format!("{}{}", &status, s))
-    }
-}
-
-// fn show_item_build_example(rustbox: &rustbox::RustBox, collection: &Vec<ListTopicItem>) {
-//
-//     rustbox.print(1,
-//                   1,
-//                   rustbox::RB_NORMAL,
-//                   Color::White,
-//                   Color::Black,
-//                   &format!("before parse => {}", Local::now()));
-//
-//     let mut builder = hkg::builder::Builder::new();
-//
-//     let url = &collection[1].title.url;
-//     rustbox.print(1, 2, rustbox::RB_NORMAL, Color::White, Color::Black, url);
-//
-//     let uqi = builder.url_query_item(&url);
-//     let postid = "6360604"; //uqi.message;
-//     let page = 1;
-//     let path = format!("data/html/{postid}/show_{page}.html",
-//                        postid = postid,
-//                        page = page);
-//
-//     rustbox.print(1,
-//                   3,
-//                   rustbox::RB_NORMAL,
-//                   Color::White,
-//                   Color::Black,
-//                   &format!("path: {}", path));
-//
-//     let show_item = match kuchiki::parse_html().from_utf8().from_file(&path) {
-//         Ok(document) => Some(builder.show_item(&document, &url)),
-//         Err(e) => None,
-//     };
-//
-//     match show_item {
-//         Some(si) => {
-//
-//             rustbox.print(1,
-//                           5,
-//                           rustbox::RB_NORMAL,
-//                           Color::White,
-//                           Color::Black,
-//                           &format!("url_query->message: {} title:{} reploy count: {} page: {} \
-//                                     max_page: {}",
-//                                    si.url_query.message,
-//                                    si.title,
-//                                    si.reply_count,
-//                                    si.page,
-//                                    si.max_page));
-//
-//             for (index, item) in si.replies.iter().enumerate() {
-//                 rustbox.print(1,
-//                               index + 7,
-//                               rustbox::RB_NORMAL,
-//                               Color::White,
-//                               Color::Black,
-//                               &format!("{:<2}={:?}", index, item));
-//             }
-//         }
-//         _ => {}
-//     }
-// }
