@@ -346,6 +346,24 @@ fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_
     status_message
 }
 
+fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+
+    let ci = ChannelItem {
+        extra: ChannelItemType::Image(ChannelImageItem { url: url.to_string(), bytes: Vec::new() }),
+        result: String::from(""),
+    };
+
+    let status_message = match tx_req.send(ci) {
+        Ok(()) => {
+            state_manager.setWebRequest(true); // *is_web_requesting = true;
+            "SOK".to_string()
+        }
+        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+    };
+
+    status_message
+}
+
 fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
 }
