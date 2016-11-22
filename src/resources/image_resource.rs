@@ -43,7 +43,7 @@ impl<'a, T: 'a + Cache> Resource for ImageResource<'a, T> {
             ChannelItemType::Image(extra) => {
                 let url = extra.url;
                 let url2 = url.clone();
-                let img_path = "data/img/";
+                let img_path = "data/cache/img/";
                 let img_file_name = url.into_bytes().as_slice().to_base64(base64::URL_SAFE);
                 let (from_cache, result, reason) = match self.cache.read(&img_path, &img_file_name) {
                     Ok(result) => (true, result, "".to_string()),

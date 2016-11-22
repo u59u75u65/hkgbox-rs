@@ -36,7 +36,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
 
         let time = time_format(time::now());
 
-        let html_path = format!("data/html/topics/");
+        let html_path = format!("data/cache/html/topics/");
         let file_name = format!("{time}.html", time = time);
 
         let (from_cache, result) = match self.cache.read(&html_path, &file_name) {

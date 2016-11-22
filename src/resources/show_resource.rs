@@ -38,7 +38,7 @@ impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
         match item.extra.clone() {
             ChannelItemType::Show(extra) => {
-                let html_path = format!("data/html/{postid}/", postid = extra.postid);
+                let html_path = format!("data/cache/html/{postid}/", postid = extra.postid);
                 let show_file_name = format!("show_{page}.html", page = extra.page);
 
                 let postid = extra.postid.clone();
