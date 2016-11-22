@@ -21,7 +21,6 @@ impl Cache for FileCache {
 
         let file_path = cache_path.as_ref().join(file_name);
         let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
-        let mut contents = String::new();
         let mut buffer = Vec::new();
         try!(file.read_to_end(&mut buffer).map_err(|e| e.to_string()));
         Ok(buffer)
