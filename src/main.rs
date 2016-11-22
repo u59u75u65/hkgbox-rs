@@ -81,6 +81,8 @@ fn main() {
                                         tx_res.send(show_resource.fetch(&item)).unwrap();
                                     },
                                     ChannelItemType::Image(_) => {
+                                        let mut image_resource = hkg::resources::image_resource::ImageResource::new(&mut wr, &ct, &mut fc);
+                                        tx_res.send(image_resource.fetch(&item)).unwrap();
                                     }
                                 }
                            });
