@@ -27,6 +27,7 @@ use hkg::resources::common::*;
 use hkg::caches::file_cache::*;
 use hkg::net::*;
 use hkg::net::web_resource::*;
+use std::sync::{Arc, Mutex};
 
 fn main() {
 
@@ -55,6 +56,10 @@ fn main() {
 
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
+
+    let mut image_request_count_lock = Arc::new(Mutex::new(0));
+    let mut image_request_count_lock2 = image_request_count_lock.clone();
+    let mut isBgRequest = false;
 
     // web client
     thread::spawn(move || {
@@ -119,6 +124,37 @@ fn main() {
                                  show_item.page,
                                  state_manager.isWebRequest()));
 
+                        // get all images links in an array, and send to background download
+                        let maps = show_item.replies.iter().flat_map(|reply|
+                            {
+                                 let f = reply.body.iter().filter(|node| {
+                                     let node2 = node.clone();
+                                     match *node2 {
+                                         hkg::reply_model::NodeType::Image(ref n) => (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") && n.alt.ends_with("[/img]"),
+                                         _ => false
+                                     }
+                                 }).collect::<Vec<_>>();
+                                 return f;
+                            }
+                        ).collect::<Vec<_>>();
+
+                        let mut count = image_request_count_lock.lock().unwrap();
+                        *count = maps.len();
+                        isBgRequest = true;
+                        status_bar.append(&screen_manager,
+                                                &format!("[SIMG:{count}]", count = *count ));
+
+                        for node in &maps {
+                            let node2 = node.clone();
+                            match *node2 {
+                                 hkg::reply_model::NodeType::Image(ref n) => {
+                                     let status_message = image_request(&n.data, &mut state_manager, &tx_req);
+                                     status_bar.append(&screen_manager,&status_message);
+                                 },
+                                 _ => {}
+                            }
+                        }
+
                         show.resetY();
                         hkg::screen::common::clear_screen();
                         state_manager.updateState(Status::Show); //state = Status::Show;
@@ -139,6 +175,31 @@ fn main() {
 
                     },
                     ChannelItemType::Image(extra) => {
+                        match image_request_count_lock2.lock() {
+                            Ok(mut count) => {
+                                if *count == 0 {
+                                    status_bar.append(&screen_manager,
+                                                           &format!("[RIMG:CERR]"));
+                                } else {
+                                    *count -= 1;
+                                    if (item.result != "") {
+                                        status_bar.append(&screen_manager,
+                                                           &format!("[RIMG:E-{count}-{error}]", count = *count, error = item.result ));
+                                    } else {
+                                        status_bar.append(&screen_manager,
+                                                           &format!("[RIMG:S-{count}]", count = *count ));
+                                    }
+                                }
+
+                                if *count <= 0 {
+                                    isBgRequest = false;
+                                    hkg::screen::common::clear_screen();
+                                    state_manager.setWebRequest(false); // is_web_requesting = false;
+                                }
+                            },
+                            Err(poisoned) => { status_bar.append(&screen_manager,
+                                                   &format!("[IMAGES:LOCKERR]")); }
+                        };
                     }
                 }
             }
