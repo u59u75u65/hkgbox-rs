@@ -156,10 +156,10 @@ impl Show {
                             if n.alt != "" {
                                 match self.get_icon_reference(&n.alt) {
                                     // ICON
-                                    Some(icon_reference) => line = format!("{}{}", line, imgcat(&icon_reference, icon_width)),
+                                    Some(icon_reference) => line = format!("{}{}", line, imgcatFromPath(&icon_reference, icon_width)),
                                     // URL IMAGE
                                     None => {
-                                        line = format!("{}{}", line, imgcatUrl(&n.data, img_height));
+                                        line = format!("{}{}", line, imgcatFromUrl(&n.data, img_height));
                                         img_offset += img_height;
                                     }
                                 }
