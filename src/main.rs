@@ -79,6 +79,8 @@ fn main() {
                                     ChannelItemType::Show(_) => {
                                         let mut show_resource = hkg::resources::show_resource::ShowResource::new(&mut wr, &ct, &mut fc);
                                         tx_res.send(show_resource.fetch(&item)).unwrap();
+                                    },
+                                    ChannelItemType::Image(_) => {
                                     }
                                 }
                            });
@@ -133,6 +135,8 @@ fn main() {
                         state_manager.updateState(Status::List); // state = Status::List;
                         state_manager.setWebRequest(false); // is_web_requesting = false;
 
+                    },
+                    ChannelItemType::Image(extra) => {
                     }
                 }
             }
