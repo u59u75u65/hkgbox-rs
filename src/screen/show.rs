@@ -211,7 +211,7 @@ impl Show {
 
     fn get_icon_reference(&mut self, alt: &str) -> Option<String> {
         match self.icon_collection.iter().find(|icon_item| icon_item.alt.contains(&alt) ) {
-            Some(item) => Some(format!("data/img/{}", &item.src)),
+            Some(item) => Some(format!("data/icon/{}", &item.src)),
             None => None
         }
     }
