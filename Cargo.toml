@@ -14,11 +14,6 @@ cancellation = "0.1"
 termion = "1.0"
 time = "0.1"
 
-# [dependencies.termion]
-# git = "https://github.com/ticki/termion"
-# version = "1.0"
-# features = ["nightly"]
-
 [dependencies.url]
 git = "https://github.com/servo/rust-url"
 
