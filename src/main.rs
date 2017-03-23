@@ -13,6 +13,7 @@ use std::io::{stdout, stdin, Write};
 use std::thread;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
 use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
 use kuchiki::traits::*;
 use rustc_serialize::json;
@@ -28,7 +29,7 @@ use hkg::caches::file_cache::*;
 use hkg::resources::*;
 use hkg::resources::web_resource::*;
 use hkg::resources::common::*;
-use std::sync::{Arc, Mutex};
+use hkg::web::*;
 
 use log4rs::*;
 
@@ -59,55 +60,15 @@ fn main() {
     let mut index = hkg::screen::index::Index::new();
     let mut show = hkg::screen::show::Show::new(icon_collection);
 
-    let (tx_req, rx_req) = channel::<ChannelItem>();
-    let (tx_res, rx_res) = channel::<ChannelItem>();
-
     let mut image_request_count_lock = Arc::new(Mutex::new(0));
     let mut image_request_count_lock2 = image_request_count_lock.clone();
     let mut isBgRequest = false;
 
-    // web client
-    thread::spawn(move || {
-        let mut wr = WebResource::new();
-        let mut fc = Box::new(FileCache::new());
-        let ct = CancellationTokenSource::new();
-        ct.cancel_after(std::time::Duration::new(10, 0));
-        loop {
-            match rx_req.recv() {
-                Ok(item) => {
+    // web background services
+    let (tx_req, rx_req) = channel::<ChannelItem>();
+    let (tx_res, rx_res) = channel::<ChannelItem>();
 
-                    let th = thread::current();
-                    ct.run(|| {
-                               th.unpark();
-                           },
-                           || {
-                                match item.extra.clone() {
-                                    ChannelItemType::Index(_) => {
-                                        let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct, &mut fc);
-                                        tx_res.send(index_resource.fetch(&item)).expect("[web client] fail to send index request");
-                                    },
-                                    ChannelItemType::Show(_) => {
-                                        let mut show_resource = hkg::resources::show_resource::ShowResource::new(&mut wr, &ct, &mut fc);
-                                        tx_res.send(show_resource.fetch(&item)).expect("[web client] fail to send show request");
-                                    },
-                                    ChannelItemType::Image(_) => {
-                                        let mut image_resource = hkg::resources::image_resource::ImageResource::new(&mut wr, &ct, &mut fc);
-                                        tx_res.send(image_resource.fetch(&item)).expect("[web client] fail to send image request");
-                                    }
-                                }
-                           });
-
-                    if ct.is_canceled() {
-                        thread::park_timeout(std::time::Duration::new(0, 250));
-                        // Err(OperationCanceled)
-                    } else {
-                        // Ok(())
-                    }
-                }
-                Err(_) => {}
-            }
-        }
-    });
+    Requester::new(rx_req, tx_res);
 
     // topics request
     let status_message = list_page(&mut state_manager, &tx_req);
