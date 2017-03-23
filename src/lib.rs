@@ -21,6 +21,7 @@ pub mod utility;
 pub mod reply_model;
 pub mod model;
 pub mod web;
+pub mod responser;
 pub mod builder;
 pub mod screen;
 
@@ -43,4 +44,6 @@ pub struct App <'a>{
     pub is_bg_request: bool,
     pub tx_req: &'a Sender<resources::ChannelItem>,
     pub rx_res: &'a Receiver<resources::ChannelItem>,
+
+    pub stdout: Box<termion::raw::RawTerminal<std::io::StdoutLock<'a>>>
 }

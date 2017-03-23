@@ -30,7 +30,7 @@ use hkg::resources::*;
 use hkg::resources::web_resource::*;
 use hkg::resources::common::*;
 use hkg::web::*;
-
+use hkg::responser::*;
 use log4rs::*;
 
 fn main() {
@@ -38,17 +38,20 @@ fn main() {
     // Initialize
     log4rs::init_file("config/log4rs.yaml", Default::default());
 
-    let stdout = stdout();
-    let mut stdout = stdout.lock().into_raw_mode().expect("fail to lock stdout");
-
     // Clear the screen.
     hkg::screen::common::clear_screen();
+
+    let _stdout = stdout();
 
     // web background services
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
 
     let mut app = {
+
+        let mut stdout = {
+            Box::new(_stdout.lock().into_raw_mode().expect("fail to lock stdout"))
+        };
 
         let icon_collection: Box<Vec<IconItem>> = {
             let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
@@ -70,11 +73,14 @@ fn main() {
             image_request_count_lock: Arc::new(Mutex::new(0)),
             is_bg_request: false,
             tx_req: &tx_req,
-            rx_res: &rx_res
+            rx_res: &rx_res,
+            stdout: stdout
         }
     };
 
     Requester::new(rx_req, tx_res);
+
+    let respsoner = Responser::new();
 
     // topics request
     let status_message = list_page(&mut app.state_manager, &tx_req);
@@ -82,12 +88,13 @@ fn main() {
 
     loop {
 
-        responser(&mut app);
-        print_screen(&mut app, &mut stdout);
+        respsoner.try_recv(&mut app);
+
+        print_screen(&mut app);
 
         app.status_bar.print(&app.screen_manager);
 
-        stdout.flush().expect("fail to flush the stdout");
+        app.stdout.flush().expect("fail to flush the stdout");
 
         if !app.state_manager.isWebRequest() {
 
@@ -102,17 +109,13 @@ fn main() {
                 match app.state_manager.getState() {
                     Status::Startup => {}
                     Status::List => {
-                        match index_control(c.ok().expect("fail to get stdin keys"),
-                                            &mut app,
-                                            &mut stdout) {
+                        match index_control(c.ok().expect("fail to get stdin keys"), &mut app) {
                             Some(i) => return if i == 0 { return } else { break },
                             None => {}
                         }
                     }
                     Status::Show => {
-                        match show_control(c.ok().expect("fail to get stdin keys"),
-                                           &mut app,
-                                           &mut stdout) {
+                        match show_control(c.ok().expect("fail to get stdin keys"), &mut app) {
                             Some(i) => return if i == 0 { return } else { break },
                             None => {}
                         }
@@ -122,16 +125,7 @@ fn main() {
 
             }
         }
-
     }
-}
-fn get_posturl(postid: &String, page: usize) -> String {
-    let base_url = "http://forum1.hkgolden.com/view.aspx";
-    let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
-                          base_url = base_url,
-                          postid = postid,
-                          page = page);
-    posturl
 }
 
 fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
@@ -173,153 +167,23 @@ fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_
     status_message
 }
 
-fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
-
-    let ci = ChannelItem {
-        extra: ChannelItemType::Image(ChannelImageItem {
-                                          url: url.to_string(),
-                                          bytes: Vec::new(),
-                                      }),
-        result: String::from(""),
-    };
-
-    let status_message = match tx_req.send(ci) {
-        Ok(()) => {
-            state_manager.setWebRequest(true); // *is_web_requesting = true;
-            "SOK".to_string()
-        }
-        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
-    };
-
-    status_message
-}
-
 fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
 }
 
-
-fn responser(app: &mut hkg::App) {
-    match app.rx_res.try_recv() {
-        Ok(item) => {
-            match item.extra {
-                ChannelItemType::Show(extra) => {
-                    let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
-
-                    let posturl = get_posturl(&extra.postid, extra.page);
-                    app.show_item = app.builder.show_item(&document, &posturl);
-
-                    app.status_bar.append(&app.screen_manager,
-                                          &format!("[{}-{}:ROK][{}]",
-                                                   app.show_item.url_query.message,
-                                                   app.show_item.page,
-                                                   app.state_manager.isWebRequest()));
-
-                    // get all images links in an array, and send to background download
-                    let maps = app.show_item.replies.iter().flat_map(|reply| {
-                            let f = reply.body.iter().filter(|node| {
-                                    let node2 = node.clone();
-                                    match *node2 {
-                                        hkg::reply_model::NodeType::Image(ref n) => {
-                                            (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") &&
-                                            n.alt.ends_with("[/img]")
-                                        }
-                                        _ => false,
-                                    }
-                                }).collect::<Vec<_>>();
-                            f
-                        })
-                        .collect::<Vec<_>>();
-
-                    let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
-                    *count = maps.len();
-                    app.is_bg_request = true;
-                    app.status_bar.append(&app.screen_manager,
-                                          &format!("[SIMG:{count}]", count = *count));
-
-                    for node in &maps {
-                        let node2 = node.clone();
-                        match *node2 {
-                            hkg::reply_model::NodeType::Image(ref n) => {
-                                let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
-                                app.status_bar.append(&app.screen_manager, &status_message);
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    app.show.resetY();
-                    hkg::screen::common::clear_screen();
-                    app.state_manager.updateState(Status::Show); //state = Status::Show;
-                    app.state_manager.setWebRequest(false); // is_web_requesting = false;
-                }
-                ChannelItemType::Index(_) => {
-                    let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
-
-                    app.list_topic_items.clear();
-                    for item in app.builder.list_topic_items(&document) {
-                        app.list_topic_items.push(item);
-                    }
-
-                    app.status_bar.append(&app.screen_manager, &format!("[TOPICS:ROK]"));
-
-                    hkg::screen::common::clear_screen();
-
-                    app.state_manager.updateState(Status::List); // state = Status::List;
-                    app.state_manager.setWebRequest(false); // is_web_requesting = false;
-
-                }
-                ChannelItemType::Image(extra) => {
-                    match app.image_request_count_lock.lock() {
-                        Ok(mut count) => {
-                            if *count == 0 {
-                                app.status_bar.append(&app.screen_manager, &format!("[RIMG:CERR]"));
-                            } else {
-                                *count -= 1;
-                                if (item.result != "") {
-                                    app.status_bar.append(&app.screen_manager,
-                                                          &format!("[RIMG:E-{count}-{error}]",
-                                                                   count = *count,
-                                                                   error = item.result));
-                                } else {
-                                    app.status_bar.append(&app.screen_manager,
-                                                          &format!("[RIMG:S-{count}]", count = *count));
-                                }
-                            }
-
-                            if *count <= 0 {
-                                app.is_bg_request = false;
-                                hkg::screen::common::clear_screen();
-                                app.state_manager.setWebRequest(false); // is_web_requesting = false;
-                            }
-                        }
-                        Err(poisoned) => {
-                            app.status_bar.append(&app.screen_manager, &format!("[IMAGES:LOCKERR]"));
-                        }
-                    };
-                }
-            }
-        }
-        Err(_) => {}
-    }
-}
-
-fn print_screen(app: &mut hkg::App, mut stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>) {
+fn print_screen(app: &mut hkg::App) {
     match app.state_manager.getState() {
         Status::Startup => {}
         Status::List => {
-            app.index.print(&mut stdout, &app.list_topic_items);
+            app.index.print(&mut app.stdout, &app.list_topic_items);
         }
         Status::Show => {
-            app.show.print(&mut stdout, &app.show_item);
+            app.show.print(&mut app.stdout, &app.show_item);
         }
     }
 }
 
-fn show_control(c: termion::event::Key,
-                app: &mut hkg::App,
-                mut stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>)
-                -> Option<i32> {
+fn show_control(c: termion::event::Key,app: &mut hkg::App) -> Option<i32> {
     match c {
         Key::Char('q') => {
             hkg::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
@@ -390,10 +254,7 @@ fn show_control(c: termion::event::Key,
 }
 
 
-fn index_control(c: termion::event::Key,
-                 app: &mut hkg::App,
-                 mut stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>)
-                 -> Option<i32> {
+fn index_control(c: termion::event::Key,app: &mut hkg::App)-> Option<i32> {
     match c {
         Key::Char('q') => {
             hkg::screen::common::reset_screen();

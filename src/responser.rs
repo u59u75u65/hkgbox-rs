@@ -1,0 +1,168 @@
+
+use std::io::{stdout, stdin, Write};
+use std::thread;
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
+use ::kuchiki::traits::*;
+use rustc_serialize::json;
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::event::Key;
+
+use status::*;
+use model::IconItem;
+use model::ListTopicItem;
+use state_manager::*;
+use screen_manager::*;
+use caches::file_cache::*;
+use resources::*;
+use resources::web_resource::*;
+use resources::common::*;
+use web::*;
+
+use log4rs::*;
+
+pub struct Responser {}
+
+impl Responser {
+
+    pub fn new () -> Self { Responser {} }
+    pub fn try_recv (&self, mut app: &mut ::App) {
+        match app.rx_res.try_recv() {
+            Ok(item) => {
+                match item.extra {
+                    ChannelItemType::Show(extra) => {
+                        let document = ::kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
+
+                        let posturl = get_posturl(&extra.postid, extra.page);
+                        app.show_item = app.builder.show_item(&document, &posturl);
+
+                        app.status_bar.append(&app.screen_manager,
+                                              &format!("[{}-{}:ROK][{}]",
+                                                       app.show_item.url_query.message,
+                                                       app.show_item.page,
+                                                       app.state_manager.isWebRequest()));
+
+                        // get all images links in an array, and send to background download
+                        let maps = app.show_item.replies.iter().flat_map(|reply| {
+                                let f = reply.body.iter().filter(|node| {
+                                        let node2 = node.clone();
+                                        match *node2 {
+                                            ::reply_model::NodeType::Image(ref n) => {
+                                                (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") &&
+                                                n.alt.ends_with("[/img]")
+                                            }
+                                            _ => false,
+                                        }
+                                    }).collect::<Vec<_>>();
+                                f
+                            })
+                            .collect::<Vec<_>>();
+
+                        let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
+                        *count = maps.len();
+                        app.is_bg_request = true;
+                        app.status_bar.append(&app.screen_manager,
+                                              &format!("[SIMG:{count}]", count = *count));
+
+                        for node in &maps {
+                            let node2 = node.clone();
+                            match *node2 {
+                                ::reply_model::NodeType::Image(ref n) => {
+                                    let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
+                                    app.status_bar.append(&app.screen_manager, &status_message);
+                                }
+                                _ => {}
+                            }
+                        }
+
+                        app.show.resetY();
+                        ::screen::common::clear_screen();
+                        app.state_manager.updateState(Status::Show); //state = Status::Show;
+                        app.state_manager.setWebRequest(false); // is_web_requesting = false;
+                    }
+                    ChannelItemType::Index(_) => {
+                        let document = ::kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
+
+                        app.list_topic_items.clear();
+                        for item in app.builder.list_topic_items(&document) {
+                            app.list_topic_items.push(item);
+                        }
+
+                        app.status_bar.append(&app.screen_manager, &format!("[TOPICS:ROK]"));
+
+                        ::screen::common::clear_screen();
+
+                        app.state_manager.updateState(Status::List); // state = Status::List;
+                        app.state_manager.setWebRequest(false); // is_web_requesting = false;
+
+                    }
+                    ChannelItemType::Image(extra) => {
+                        match app.image_request_count_lock.lock() {
+                            Ok(mut count) => {
+                                if *count == 0 {
+                                    app.status_bar.append(&app.screen_manager, &format!("[RIMG:CERR]"));
+                                } else {
+                                    *count -= 1;
+                                    if (item.result != "") {
+                                        app.status_bar.append(&app.screen_manager,
+                                                              &format!("[RIMG:E-{count}-{error}]",
+                                                                       count = *count,
+                                                                       error = item.result));
+                                    } else {
+                                        app.status_bar.append(&app.screen_manager,
+                                                              &format!("[RIMG:S-{count}]", count = *count));
+                                    }
+                                }
+
+                                if *count <= 0 {
+                                    app.is_bg_request = false;
+                                    ::screen::common::clear_screen();
+                                    app.state_manager.setWebRequest(false); // is_web_requesting = false;
+                                }
+                            }
+                            Err(poisoned) => {
+                                app.status_bar.append(&app.screen_manager, &format!("[IMAGES:LOCKERR]"));
+                            }
+                        };
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+    }
+
+}
+
+fn get_posturl(postid: &String, page: usize) -> String {
+    let base_url = "http://forum1.hkgolden.com/view.aspx";
+    let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
+                          base_url = base_url,
+                          postid = postid,
+                          page = page);
+    posturl
+}
+
+
+fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+
+    let ci = ChannelItem {
+        extra: ChannelItemType::Image(ChannelImageItem {
+                                          url: url.to_string(),
+                                          bytes: Vec::new(),
+                                      }),
+        result: String::from(""),
+    };
+
+    let status_message = match tx_req.send(ci) {
+        Ok(()) => {
+            state_manager.setWebRequest(true); // *is_web_requesting = true;
+            "SOK".to_string()
+        }
+        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+    };
+
+    status_message
+}
