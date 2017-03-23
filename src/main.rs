@@ -44,44 +44,34 @@ fn main() {
     // Clear the screen.
     hkg::screen::common::clear_screen();
 
-    let mut builder = hkg::builder::Builder::new();
-    let builder2 = builder.clone();
-    let mut state_manager = StateManager::new();
-    let mut screen_manager = ScreenManager::new();
-
-    let icon_collection: Box<Vec<IconItem>> = {
-        let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
-        Box::new(json::decode(&icon_manifest_string).expect("fail to lock stdout"))
-    };
-
-    let mut status_bar = hkg::screen::status_bar::StatusBar::new();
-    let mut index = hkg::screen::index::Index::new();
-    let mut show = hkg::screen::show::Show::new(icon_collection);
-
-    let mut image_request_count_lock = Arc::new(Mutex::new(0));
-    let mut image_request_count_lock2 = image_request_count_lock.clone();
-
     // web background services
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
 
-    let mut app = hkg::App {
-        builder: &mut builder,
-        state_manager: &mut state_manager,
-        screen_manager: &mut screen_manager,
+    let mut app = {
 
-        // initialize empty page
-        list_topic_items: &mut vec![],
-        show_item: builder2.default_show_item(),
+        let icon_collection: Box<Vec<IconItem>> = {
+            let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
+            Box::new(json::decode(&icon_manifest_string).expect("fail to lock stdout"))
+        };
 
-        status_bar: &mut status_bar,
-        index: &mut index,
-        show: &mut show,
-        image_request_count_lock: &mut image_request_count_lock,
-        image_request_count_lock2: &mut image_request_count_lock2,
-        is_bg_request: false,
-        tx_req: &tx_req,
-        rx_res: &rx_res
+        hkg::App {
+            builder: hkg::builder::Builder::new(),
+            state_manager: StateManager::new(),
+            screen_manager: ScreenManager::new(),
+
+            // initialize empty page
+            list_topic_items: vec![],
+            show_item: hkg::builder::Builder::new().default_show_item(),
+
+            status_bar: hkg::screen::status_bar::StatusBar::new(),
+            index: hkg::screen::index::Index::new(),
+            show: hkg::screen::show::Show::new(icon_collection),
+            image_request_count_lock: Arc::new(Mutex::new(0)),
+            is_bg_request: false,
+            tx_req: &tx_req,
+            rx_res: &rx_res
+        }
     };
 
     Requester::new(rx_req, tx_res);
@@ -160,7 +150,7 @@ fn main() {
 
                     },
                     ChannelItemType::Image(extra) => {
-                        match app.image_request_count_lock2.lock() {
+                        match app.image_request_count_lock.lock() {
                             Ok(mut count) => {
                                 if *count == 0 {
                                     app.status_bar.append(&app.screen_manager,
