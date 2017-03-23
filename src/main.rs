@@ -87,10 +87,6 @@ fn main() {
 
         print_screen(&mut app);
 
-        app.status_bar.print(&app.screen_manager);
-
-        app.stdout.flush().expect("fail to flush the stdout");
-
         if !app.state_manager.is_web_request() {
 
             let stdin = stdin();
@@ -151,4 +147,8 @@ fn print_screen(app: &mut hkg::App) {
             app.show.print(&mut app.stdout, &app.show_item);
         }
     }
+
+    app.status_bar.print(&app.screen_manager);
+
+    app.stdout.flush().expect("fail to flush the stdout");
 }
