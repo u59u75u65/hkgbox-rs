@@ -33,7 +33,7 @@ fn main() {
 
     // Initialize
     let stdout = stdout();
-    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    let mut stdout = stdout.lock().into_raw_mode().expect("fail to lock stdout");
 
     // Clear the screen.
     hkg::screen::common::clear_screen();
@@ -44,7 +44,7 @@ fn main() {
     let mut screen_manager = ScreenManager::new();
 
     let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
-    let icon_collection: Box<Vec<IconItem>> = Box::new(json::decode(&icon_manifest_string).unwrap());
+    let icon_collection: Box<Vec<IconItem>> = Box::new(json::decode(&icon_manifest_string).expect("fail to lock stdout"));
 
     // initialize empty page
     let mut list_topic_items: Vec<ListTopicItem> = vec![];
@@ -79,15 +79,15 @@ fn main() {
                                 match item.extra.clone() {
                                     ChannelItemType::Index(_) => {
                                         let mut index_resource = hkg::resources::index_resource::IndexResource::new(&mut wr, &ct, &mut fc);
-                                        tx_res.send(index_resource.fetch(&item)).unwrap();
+                                        tx_res.send(index_resource.fetch(&item)).expect("[web client] fail to send index request");
                                     },
                                     ChannelItemType::Show(_) => {
                                         let mut show_resource = hkg::resources::show_resource::ShowResource::new(&mut wr, &ct, &mut fc);
-                                        tx_res.send(show_resource.fetch(&item)).unwrap();
+                                        tx_res.send(show_resource.fetch(&item)).expect("[web client] fail to send show request");
                                     },
                                     ChannelItemType::Image(_) => {
                                         let mut image_resource = hkg::resources::image_resource::ImageResource::new(&mut wr, &ct, &mut fc);
-                                        tx_res.send(image_resource.fetch(&item)).unwrap();
+                                        tx_res.send(image_resource.fetch(&item)).expect("[web client] fail to send image request");
                                     }
                                 }
                            });
@@ -138,7 +138,7 @@ fn main() {
                             }
                         ).collect::<Vec<_>>();
 
-                        let mut count = image_request_count_lock.lock().unwrap();
+                        let mut count = image_request_count_lock.lock().expect("fail to lock image request count");
                         *count = maps.len();
                         isBgRequest = true;
                         status_bar.append(&screen_manager,
@@ -220,7 +220,7 @@ fn main() {
 
         status_bar.print(&screen_manager);
 
-        stdout.flush().unwrap();
+        stdout.flush().expect("fail to flush the stdout");
 
         if !state_manager.isWebRequest() {
 
@@ -235,7 +235,7 @@ fn main() {
                 match state_manager.getState() {
                     Status::Startup => {},
                     Status::List => {
-                        match c.unwrap() {
+                        match c.ok().expect("fail to get stdin keys") {
                             Key::Char('q') => {
                                 hkg::screen::common::reset_screen();
                                 return
@@ -288,7 +288,7 @@ fn main() {
                         }
                     },
                     Status::Show => {
-                            match c.unwrap() {
+                            match c.ok().expect("fail to get stdin keys") {
                                 Key::Char('q') => {
                                     hkg::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
                                     return
