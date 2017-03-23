@@ -1,7 +1,4 @@
-use ::cancellation::CancellationTokenSource;
-
 use resources::*;
-use resources::web_resource::*;
 use resources::common::*;
 use caches::common::*;
 
@@ -12,17 +9,13 @@ use std::io::Read;
 use ::hyper::Client;
 
 pub struct ImageResource<'a, T: 'a + Cache> {
-    wr: &'a mut WebResource,
-    ct: &'a CancellationTokenSource,
     cache: &'a mut Box<T>,
     client: Client
 }
 
 impl<'a, T: 'a + Cache> ImageResource<'a, T> {
-    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource, cache: &'a mut Box<T>) -> Self {
+    pub fn new(cache: &'a mut Box<T>) -> Self {
         ImageResource {
-            wr: wr,
-            ct: ct,
             cache: cache,
             client: Client::new()
         }

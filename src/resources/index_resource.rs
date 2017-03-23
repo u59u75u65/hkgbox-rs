@@ -1,6 +1,3 @@
-
-use ::cancellation::CancellationTokenSource;
-
 use resources::*;
 use resources::web_resource::*;
 use resources::common::*;
@@ -13,10 +10,9 @@ pub struct IndexResource<'a, T: 'a + Cache> {
 }
 
 impl<'a, T: 'a + Cache> IndexResource<'a, T> {
-    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource, cache: &'a mut Box<T>) -> Self {
+    pub fn new(wr: &'a mut WebResource, cache: &'a mut Box<T>) -> Self {
         IndexResource {
             wr: wr,
-            ct: ct,
             cache: cache,
             url: "http://archive.hkgolden.com/topics.aspx?type=BW"
         }
@@ -48,7 +44,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
 
         if !from_cache {
             let result2 = result.clone();
-            self.cache.write(&html_path, &file_name, result2);
+            self.cache.write(&html_path, &file_name, result2).expect("fail to write cache");
         }
 
         let result_item = ChannelItem {

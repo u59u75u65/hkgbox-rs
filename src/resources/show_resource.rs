@@ -1,5 +1,3 @@
-use ::cancellation::CancellationTokenSource;
-
 use resources::*;
 use resources::web_resource::*;
 use resources::common::*;
@@ -7,16 +5,14 @@ use caches::common::*;
 
 pub struct ShowResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,
-    ct: &'a CancellationTokenSource,
     cache: &'a mut Box<T>,
     url: &'static str
 }
 
 impl<'a, T: 'a + Cache> ShowResource<'a, T> {
-    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource, cache: &'a mut Box<T>) -> Self {
+    pub fn new(wr: &'a mut WebResource, cache: &'a mut Box<T>) -> Self {
         ShowResource {
             wr: wr,
-            ct: ct,
             cache: cache,
             url: "http://archive.hkgolden.com/topics.aspx?type=BW"
         }
