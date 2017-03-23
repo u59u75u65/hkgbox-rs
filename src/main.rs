@@ -27,7 +27,7 @@ use hkg::responser::*;
 fn main() {
 
     // Initialize
-    log4rs::init_file("config/log4rs.yaml", Default::default());
+    log4rs::init_file("config/log4rs.yaml", Default::default()).expect("fail to init log4rs");
 
     // Clear the screen.
     hkg::screen::common::clear_screen();
@@ -40,7 +40,7 @@ fn main() {
 
     let mut app = {
 
-        let mut stdout = {
+        let stdout = {
             Box::new(_stdout.lock().into_raw_mode().expect("fail to lock stdout"))
         };
 

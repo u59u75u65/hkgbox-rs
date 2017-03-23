@@ -66,7 +66,7 @@ impl Show {
                 ::termion::style::Bold,
                 s,
                 ::termion::style::Reset,
-                ::termion::cursor::Hide);
+                ::termion::cursor::Hide).expect("fail to write to shell");
     }
 
     fn print_header(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, text: &str) {
@@ -85,7 +85,7 @@ impl Show {
                 ::termion::color::Fg(::termion::color::White),
                 ::termion::style::Bold,
                 text, ::termion::style::Reset,
-                ::termion::cursor::Hide);
+                ::termion::cursor::Hide).expect("fail to write to shell");
 
         write!(stdout, "{}{}{}{}{}{}",
                 ::termion::cursor::Goto(1, 2),
@@ -93,7 +93,7 @@ impl Show {
                 ::termion::style::Bold,
                 header_bottom,
                 ::termion::style::Reset,
-                ::termion::cursor::Hide);
+                ::termion::cursor::Hide).expect("fail to write to shell");
     }
 
     pub fn print_body(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
@@ -121,7 +121,7 @@ impl Show {
                ::termion::color::Fg(::termion::color::White),
                s,
                ::termion::style::Reset,
-               ::termion::cursor::Hide);
+               ::termion::cursor::Hide).expect("fail to write to shell");
     }
 
     fn print_reply(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {

@@ -14,7 +14,7 @@ pub fn imgcat_from_path(path: &str, width: usize) -> String {
         Ok(file) => file,
     };
     let mut buffer = Vec::new();
-    f.read_to_end(&mut buffer);
+    f.read_to_end(&mut buffer).expect("fail to read image");
 
     return imgcat(buffer, &"width", width);
 }
@@ -28,7 +28,7 @@ pub fn imgcat_from_url(url: &str, height: usize) -> String {
         Err(why) => String::from(format!("[{code}]", code = why)),
         Ok(mut file) => {
             let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer);
+            file.read_to_end(&mut buffer).expect("fail to read image");
             return imgcat(buffer, &"height", height);
         },
     };

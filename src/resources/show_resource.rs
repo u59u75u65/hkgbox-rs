@@ -48,7 +48,7 @@ impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
 
                 if !from_cache {
                     let result2 = result.clone();
-                    self.cache.write(&html_path, &show_file_name, result2);
+                    self.cache.write(&html_path, &show_file_name, result2).expect("fail to write cache");
                 }
 
                 let result_item = ChannelItem {

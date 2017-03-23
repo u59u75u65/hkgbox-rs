@@ -77,7 +77,7 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::color::Fg(::termion::color::White),
             header_top_padding,
             ::termion::style::Reset,
-           	::termion::cursor::Hide);
+           	::termion::cursor::Hide).expect("fail to write to shell");
 
     write!(stdout, "{}{}{}{}{}{}",
             ::termion::cursor::Goto(padding + 1, 1),
@@ -85,7 +85,7 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::style::Bold,
             text,
             ::termion::style::Reset,
-            ::termion::cursor::Hide);
+            ::termion::cursor::Hide).expect("fail to write to shell");;
 
     write!(stdout, "{}{}{}{}{}{}",
             ::termion::cursor::Goto(1, 2),
@@ -93,7 +93,7 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::style::Bold,
             header_bottom,
             ::termion::style::Reset,
-            ::termion::cursor::Hide);
+            ::termion::cursor::Hide).expect("fail to write to shell");;
 }
 
 fn print_body(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>,
@@ -138,7 +138,7 @@ fn print_body(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>,
                               author = &author,
                               author_spacing = author_spacing),
                       ::termion::style::Reset,
-                      ::termion::cursor::Hide);
+                      ::termion::cursor::Hide).expect("fail to write to shell");
 
         } else {
              write!(stdout, "{}{}{}{}{}",
@@ -151,7 +151,7 @@ fn print_body(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>,
                               author = &author,
                               author_spacing = author_spacing),
                      ::termion::style::Reset,
-                     ::termion::cursor::Hide);
+                     ::termion::cursor::Hide).expect("fail to write to shell");
 
         }
 

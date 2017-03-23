@@ -36,8 +36,8 @@ impl<'a, T: 'a + Cache> Resource for ImageResource<'a, T> {
                         match self.client.get(&url2).send() {
                             Ok(mut resp) => {
                                     let mut buffer = Vec::new();
-                                    resp.read_to_end(&mut buffer);
-                                    self.cache.write(&img_path, &img_file_name, buffer.clone());
+                                    resp.read_to_end(&mut buffer).expect("fail to read buffer from the http response");
+                                    self.cache.write(&img_path, &img_file_name, buffer.clone()).expect("fail to write cache");
                                     (false, buffer, "".to_string())
                                 }
                             Err(e) => (false, Vec::new(), e.to_string())
