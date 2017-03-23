@@ -1,24 +1,16 @@
-use ::cancellation::CancellationTokenSource;
-
 use resources::*;
-use resources::web_resource::*;
 use resources::common::*;
 
-pub struct DefaultResource<'a> {
-    wr: &'a mut WebResource,
-    ct: &'a CancellationTokenSource
+pub struct DefaultResource {
 }
 
-impl <'a> DefaultResource<'a> {
-    pub fn new(wr: &'a mut WebResource, ct: &'a CancellationTokenSource) -> Self {
-        DefaultResource {
-            wr: wr,
-            ct: ct
-        }
+impl DefaultResource {
+    pub fn new() -> Self {
+        DefaultResource {}
     }
 }
 
-impl <'a> Resource for DefaultResource<'a> {
+impl Resource for DefaultResource {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
         ChannelItem {
             extra: ChannelItemType::Index(ChannelIndexItem { }),

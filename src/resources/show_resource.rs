@@ -5,16 +5,14 @@ use caches::common::*;
 
 pub struct ShowResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,
-    cache: &'a mut Box<T>,
-    url: &'static str
+    cache: &'a mut Box<T>
 }
 
 impl<'a, T: 'a + Cache> ShowResource<'a, T> {
     pub fn new(wr: &'a mut WebResource, cache: &'a mut Box<T>) -> Self {
         ShowResource {
             wr: wr,
-            cache: cache,
-            url: "http://archive.hkgolden.com/topics.aspx?type=BW"
+            cache: cache            
         }
     }
     fn post_url(&self, postid: &String, page: usize) -> String {
