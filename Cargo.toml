@@ -5,7 +5,7 @@ version = "0.0.1"
 authors = [ "u59u75u65" ]
 
 [dependencies]
-hyper = "0.8"
+hyper = "0.10"
 kuchiki = "*"
 rustc-serialize = "0.3"
 chrono = "0.2"
