@@ -105,13 +105,13 @@ fn main() {
                     Status::Startup => {}
                     Status::List => {
                         match index_control.handle(c.ok().expect("fail to get stdin keys"), &mut app) {
-                            Some(i) => return if i == 0 { return } else { break },
+                            Some(i) => if i == 0 { return } else { break },
                             None => {}
                         }
                     }
                     Status::Show => {
                         match show_control.handle(c.ok().expect("fail to get stdin keys"), &mut app) {
-                            Some(i) => return if i == 0 { return } else { break },
+                            Some(i) => if i == 0 { return } else { break },
                             None => {}
                         }
                     }
