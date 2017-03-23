@@ -1,6 +1,5 @@
 use std::sync::mpsc::Sender;
 use termion::event::Key;
-use status::*;
 use state_manager::*;
 use resources::*;
 
