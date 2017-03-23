@@ -13,9 +13,19 @@ regex = "0.1"
 cancellation = "0.1"
 termion = "1.0"
 time = "0.1"
+log = "*"
+log4rs = "0.6"
 
 [dependencies.url]
 git = "https://github.com/servo/rust-url"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.8"
+
+# [lib]
+# name = "hkg"
+# path = "src/lib.rs"
+#
+# [[bin]]
+# name = "hkg"
+# path = "src/main.rs"

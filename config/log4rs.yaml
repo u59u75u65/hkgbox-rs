@@ -1,0 +1,14 @@
+refresh_rate: 30 seconds
+appenders:
+  stdout:
+    kind: console
+  main:
+    kind: file
+    path: "log/main.log"
+    encoder:
+      pattern: "{d} - {m}{n}"
+root:
+  level: info
+  appenders:
+    - main
+loggers:

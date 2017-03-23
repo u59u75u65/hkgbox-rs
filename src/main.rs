@@ -5,6 +5,10 @@ extern crate kuchiki;
 extern crate chrono;
 extern crate cancellation;
 
+#[macro_use]
+extern crate log;
+extern crate log4rs;
+
 use std::io::{stdout, stdin, Write};
 use std::thread;
 use std::sync::mpsc::channel;
@@ -26,7 +30,11 @@ use hkg::net::*;
 use hkg::net::web_resource::*;
 use std::sync::{Arc, Mutex};
 
+use log4rs::*;
+
 fn main() {
+
+    log4rs::init_file("config/log4rs.yaml", Default::default());
 
     // Initialize
     let stdout = stdout();
