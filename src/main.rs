@@ -91,17 +91,17 @@ fn main() {
 
         app.stdout.flush().expect("fail to flush the stdout");
 
-        if !app.state_manager.isWebRequest() {
+        if !app.state_manager.is_web_request() {
 
             let stdin = stdin();
 
             for c in stdin.keys() {
 
-                if app.screen_manager.isWidthChanged() {
+                if app.screen_manager.is_width_changed() {
                     hkg::screen::common::clear_screen();
                 }
 
-                match app.state_manager.getState() {
+                match app.state_manager.get_state() {
                     Status::Startup => {}
                     Status::List => {
                         match index_control.handle(c.ok().expect("fail to get stdin keys"), &mut app) {
@@ -132,7 +132,7 @@ fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> 
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            state_manager.setWebRequest(true);    // *is_web_requesting = true;
+            state_manager.set_web_request(true);    // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
@@ -167,7 +167,7 @@ fn get_show_page_status_message(postid: &String, page: usize, status_message: &S
 }
 
 fn print_screen(app: &mut hkg::App) {
-    match app.state_manager.getState() {
+    match app.state_manager.get_state() {
         Status::Startup => {}
         Status::List => {
             app.index.print(&mut app.stdout, &app.list_topic_items);

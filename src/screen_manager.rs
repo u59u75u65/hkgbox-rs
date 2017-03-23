@@ -13,10 +13,10 @@ impl ScreenManager {
             prev_width: w,
         }
     }
-    pub fn getWidth(&self) -> usize {
+    pub fn get_width(&self) -> usize {
         self.current_width
     }
-    pub fn isWidthChanged(&mut self) -> bool {
+    pub fn is_width_changed(&mut self) -> bool {
         let w = terminal_size().expect("fail to get terminal size").0 as usize;
         if self.current_width != w {
             self.prev_width = self.current_width;
@@ -25,7 +25,7 @@ impl ScreenManager {
         }
         return false
     }
-    pub fn getHeight(&self) -> usize {
+    pub fn get_height(&self) -> usize {
         terminal_size().expect("fail to get terminal size").1 as usize
     }
 }

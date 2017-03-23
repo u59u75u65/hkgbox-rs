@@ -17,7 +17,7 @@ impl<'a, T: 'a + Cache> ShowResource<'a, T> {
             url: "http://archive.hkgolden.com/topics.aspx?type=BW"
         }
     }
-    fn postUrl(&self, postid: &String, page: usize) -> String {
+    fn post_url(&self, postid: &String, page: usize) -> String {
         let base_url = "http://forum1.hkgolden.com/view.aspx";
         let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
                               base_url = base_url,
@@ -40,7 +40,7 @@ impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
                 let (from_cache, result) = match self.cache.read(&html_path, &show_file_name) {
                     Ok(result) => (true, result),
                     Err(_) => {
-                        let posturl = self.postUrl(&extra.postid, extra.page);
+                        let posturl = self.post_url(&extra.postid, extra.page);
                         let result = self.wr.get(&posturl);
                         (false, result.into_bytes())
                     }

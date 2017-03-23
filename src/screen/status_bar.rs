@@ -13,14 +13,14 @@ impl StatusBar {
     }
 
     pub fn append(&mut self, sm: &ScreenManager, value: &str) {
-        if self.store.len() >= sm.getWidth() {
+        if self.store.len() >= sm.get_width() {
             self.store = format!("{}{}", &"> ", value).to_string()
         } else {
             self.store = format!("{}{}", &self.store, value).to_string()
         }
     }
     pub fn print(&mut self, sm: &ScreenManager) {
-        let h = sm.getHeight() as u16;
+        let h = sm.get_height() as u16;
         print!("{}{}{}{}{}{}",
                 ::termion::cursor::Goto(1, h),
                 ::termion::color::Fg(::termion::color::White),

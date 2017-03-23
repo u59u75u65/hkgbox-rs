@@ -132,15 +132,15 @@ fn parse_list_topic_title_item(item: &NodeDataRef<ElementData>) -> ListTopicTitl
             Err(e) => panic!("ERR: {:?}", e)
         };
 
-        let firstLinkOption = links.next();
-        let lastLinkOption = links.last();
+        let first_link_option = links.next();
+        let last_link_option = links.last();
 
-        let first_link = match firstLinkOption {
+        let first_link = match first_link_option {
             Some(first_link) => first_link,
             None => { panic!("ERR: Can't find 'first_link'.") }
         };
 
-        let max_page = match lastLinkOption {
+        let max_page = match last_link_option {
             Some(last_link) =>
                 last_link.text_contents().trim().to_string().parse::<usize>()
                 .unwrap_or(0)
@@ -185,9 +185,9 @@ fn parse_list_topic_author_item(item: &NodeDataRef<ElementData>) -> ListTopicAut
             Err(e) => panic!("ERR: {:?}", e)
         };
 
-        let firstLinkOption = links.next();
+        let first_link_option = links.next();
 
-        let first_link = match firstLinkOption {
+        let first_link = match first_link_option {
             Some(first_link) => first_link,
             None => { panic!("ERR: Can't find 'first_link'.") }
         };

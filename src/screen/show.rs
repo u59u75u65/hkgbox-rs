@@ -11,7 +11,7 @@ use screen::common::*;
 
 pub struct Show {
     title: String,
-    scrollY: usize,
+    scroll_y: usize,
     y: usize,
     replier_max_width: usize,
     time_max_width: usize,
@@ -23,7 +23,7 @@ impl Show {
     pub fn new (icon_collection: Box<Vec<IconItem>>) -> Self {
         Show {
             title: String::from("高登"),
-            scrollY: 0,
+            scroll_y: 0,
             y: 0,
             replier_max_width: 14,
             time_max_width: 5,
@@ -61,7 +61,7 @@ impl Show {
     fn print_separator_line(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
 
         write!(stdout, "{}{}{}{}{}{}",
-                ::termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
+                ::termion::cursor::Goto(1, (self.scrolled_y() + 1) as u16),
                 ::termion::color::Fg(::termion::color::Green),
                 ::termion::style::Bold,
                 s,
@@ -111,13 +111,13 @@ impl Show {
             self.y += 1;
         }
 
-        self.is_scroll_to_end = self.scrolledY() < self.body_height();
+        self.is_scroll_to_end = self.scrolled_y() < self.body_height();
     }
 
     fn print_reply_line(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, s: String) {
 
        write!(stdout, "{}{}{}{}{}",
-               ::termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
+               ::termion::cursor::Goto(1, (self.scrolled_y() + 1) as u16),
                ::termion::color::Fg(::termion::color::White),
                s,
                ::termion::style::Reset,
@@ -147,10 +147,10 @@ impl Show {
                             if n.alt != "" {
                                 match self.get_icon_reference(&n.alt) {
                                     // ICON
-                                    Some(icon_reference) => line = format!("{}{}", line, imgcatFromPath(&icon_reference, icon_width)),
+                                    Some(icon_reference) => line = format!("{}{}", line, imgcat_from_path(&icon_reference, icon_width)),
                                     // URL IMAGE
                                     None => {
-                                        line = format!("{}{}", line, imgcatFromUrl(&n.data, img_height));
+                                        line = format!("{}{}", line, imgcat_from_url(&n.data, img_height));
                                         img_offset += img_height;
                                     }
                                 }
@@ -239,32 +239,32 @@ impl Show {
         make_separator_bottom(separator_width, &separator_padding)
     }
 
-    pub fn resetY(&mut self) {
-        self.scrollY = 0;
+    pub fn reset_y(&mut self) {
+        self.scroll_y = 0;
     }
 
-    pub fn scrollUp(&mut self, value: usize) -> bool {
-        let tmp = self.scrollY;
+    pub fn scroll_up(&mut self, value: usize) -> bool {
+        let tmp = self.scroll_y;
         if tmp > value {
-            self.scrollY = tmp - value;
+            self.scroll_y = tmp - value;
             true
         } else if tmp != 0 {
-            self.scrollY = 0;
+            self.scroll_y = 0;
             true
         } else {
             false
         }
     }
 
-    pub fn scrollDown(&mut self, value: usize) -> bool {
+    pub fn scroll_down(&mut self, value: usize) -> bool {
 
         if !self.is_scroll_to_end {
-            let min_to_scroll = self.scrollY + self.body_height();
+            let min_to_scroll = self.scroll_y + self.body_height();
             if self.y >= min_to_scroll + value {
-                self.scrollY += value;
+                self.scroll_y += value;
                 return true;
             } else if self.y >= min_to_scroll {
-                self.scrollY += self.y - min_to_scroll;
+                self.scroll_y += self.y - min_to_scroll;
                 return true;
             }
         }
@@ -295,11 +295,11 @@ impl Show {
     }
 
     fn can_print(&self) -> bool {
-        self.y > self.scrollY + 1 && self.y < self.scrollY + 1 + self.body_height()
+        self.y > self.scroll_y + 1 && self.y < self.scroll_y + 1 + self.body_height()
     }
 
-    fn scrolledY(&self) -> usize {
-        self.y - self.scrollY
+    fn scrolled_y(&self) -> usize {
+        self.y - self.scroll_y
     }
 
 }

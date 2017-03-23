@@ -24,7 +24,7 @@ impl Responser {
                                               &format!("[{}-{}:ROK][{}]",
                                                        app.show_item.url_query.message,
                                                        app.show_item.page,
-                                                       app.state_manager.isWebRequest()));
+                                                       app.state_manager.is_web_request()));
 
                         // get all images links in an array, and send to background download
                         let maps = app.show_item.replies.iter().flat_map(|reply| {
@@ -44,7 +44,7 @@ impl Responser {
 
                         let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
                         *count = maps.len();
-                        app.state_manager.setBgRequest(true);
+                        app.state_manager.set_bg_request(true);
                         app.status_bar.append(&app.screen_manager,
                                               &format!("[SIMG:{count}]", count = *count));
 
@@ -59,10 +59,10 @@ impl Responser {
                             }
                         }
 
-                        app.show.resetY();
+                        app.show.reset_y();
                         ::screen::common::clear_screen();
-                        app.state_manager.updateState(Status::Show); //state = Status::Show;
-                        app.state_manager.setWebRequest(false); // is_web_requesting = false;
+                        app.state_manager.update_state(Status::Show); //state = Status::Show;
+                        app.state_manager.set_web_request(false); // is_web_requesting = false;
                     }
                     ChannelItemType::Index(_) => {
                         let document = ::kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
@@ -76,8 +76,8 @@ impl Responser {
 
                         ::screen::common::clear_screen();
 
-                        app.state_manager.updateState(Status::List); // state = Status::List;
-                        app.state_manager.setWebRequest(false); // is_web_requesting = false;
+                        app.state_manager.update_state(Status::List); // state = Status::List;
+                        app.state_manager.set_web_request(false); // is_web_requesting = false;
 
                     }
                     ChannelItemType::Image(extra) => {
@@ -99,9 +99,9 @@ impl Responser {
                                 }
 
                                 if *count <= 0 {
-                                    app.state_manager.setBgRequest(false);
+                                    app.state_manager.set_bg_request(false);
                                     ::screen::common::clear_screen();
-                                    app.state_manager.setWebRequest(false); // is_web_requesting = false;
+                                    app.state_manager.set_web_request(false); // is_web_requesting = false;
                                 }
                             }
                             Err(poisoned) => {
@@ -139,7 +139,7 @@ fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            state_manager.setWebRequest(true); // *is_web_requesting = true;
+            state_manager.set_web_request(true); // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),

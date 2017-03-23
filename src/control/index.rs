@@ -79,7 +79,7 @@ fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            state_manager.setWebRequest(true); // *is_web_requesting = true;
+            state_manager.set_web_request(true); // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),

@@ -44,7 +44,7 @@ impl Show {
             Key::PageUp => {
                 app.status_bar.append(&app.screen_manager, "↑");
                 let bh = app.show.body_height();
-                if app.show.scrollUp(bh) {
+                if app.show.scroll_up(bh) {
                     ::screen::common::clear_screen();
                 }
                 Some(1)
@@ -52,28 +52,28 @@ impl Show {
             Key::PageDown => {
                 app.status_bar.append(&app.screen_manager, "↓");
                 let bh = app.show.body_height();
-                if app.show.scrollDown(bh) {
+                if app.show.scroll_down(bh) {
                     ::screen::common::clear_screen();
                 }
                 Some(1)
             }
             Key::Up => {
                 app.status_bar.append(&app.screen_manager, "↑");
-                if app.show.scrollUp(2) {
+                if app.show.scroll_up(2) {
                     ::screen::common::clear_screen();
                 }
                 Some(1)
             }
             Key::Down => {
                 app.status_bar.append(&app.screen_manager, "↓");
-                if app.show.scrollDown(2) {
+                if app.show.scroll_down(2) {
                     ::screen::common::clear_screen();
                 }
                 Some(1)
             }
             Key::Backspace => {
                 app.status_bar.append(&app.screen_manager, "B");
-                app.state_manager.updateState(Status::List); // state = Status::List;
+                app.state_manager.update_state(Status::List); // state = Status::List;
                 ::screen::common::clear_screen();
                 Some(1)
             }
@@ -95,7 +95,7 @@ fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            state_manager.setWebRequest(true); // *is_web_requesting = true;
+            state_manager.set_web_request(true); // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),

@@ -8,7 +8,7 @@ fn imgcat(buffer: Vec<u8>, size_key: &str, size_value: usize) -> String {
     return String::from(format!("\x1b]1337;File=inline=1;{size_key}={size_value};:{code}\x07", size_key = size_key, size_value = size_value, code = e));
 }
 
-pub fn imgcatFromPath(path: &str, width: usize) -> String {
+pub fn imgcat_from_path(path: &str, width: usize) -> String {
     let mut f = match File::open(path) {
         Err(why) => panic!("couldn't open: {}", why),
         Ok(file) => file,
@@ -19,7 +19,7 @@ pub fn imgcatFromPath(path: &str, width: usize) -> String {
     return imgcat(buffer, &"width", width);
 }
 
-pub fn imgcatFromUrl(url: &str, height: usize) -> String {
+pub fn imgcat_from_url(url: &str, height: usize) -> String {
     let key = url.to_string().into_bytes().to_base64(base64::URL_SAFE);
     let path = format!("data/img/{file_name}", file_name = key);
 

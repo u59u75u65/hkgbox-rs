@@ -17,27 +17,27 @@ impl StateManager {
             is_bg_requesting: false,
         }
     }
-    pub fn isWebRequest (&self) -> bool {
+    pub fn is_web_request (&self) -> bool {
         self.is_web_requesting
     }
-    pub fn setWebRequest(&mut self, value: bool) {
+    pub fn set_web_request(&mut self, value: bool) {
         self.is_web_requesting = value;
     }
 
-    pub fn isBgRequest (&self) -> bool {
+    pub fn is_bg_request (&self) -> bool {
         self.is_bg_requesting
     }
-    pub fn setBgRequest(&mut self, value: bool) {
+    pub fn set_bg_request(&mut self, value: bool) {
         self.is_bg_requesting = value;
     }
 
-    pub fn updateState(&mut self, value: Status) {
+    pub fn update_state(&mut self, value: Status) {
         if self.current_state != value {
             self.prev_state = self.current_state;
             self.current_state = value;
         }
     }
-    pub fn getState(&self) -> Status {
+    pub fn get_state(&self) -> Status {
         self.current_state
     }
 }
