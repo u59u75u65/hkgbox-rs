@@ -21,7 +21,7 @@ pub fn imgcat_from_path(path: &str, width: usize) -> String {
 
 pub fn imgcat_from_url(url: &str, height: usize) -> String {
     let key = url.to_string().into_bytes().to_base64(base64::URL_SAFE);
-    let path = format!("data/img/{file_name}", file_name = key);
+    let path = format!("data/cache/img/{file_name}", file_name = key);
 
     return match File::open(path) {
         // Err(why) => String::from(format!("[{url}]", url = url)),
