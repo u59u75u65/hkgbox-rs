@@ -141,31 +141,6 @@ fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> 
     status_message
 }
 
-fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
-
-    let ci = ChannelItem {
-        extra: ChannelItemType::Show(ChannelShowItem {
-                                         postid: postid.clone(),
-                                         page: page,
-                                     }),
-        result: String::from(""),
-    };
-
-    let status_message = match tx_req.send(ci) {
-        Ok(()) => {
-            state_manager.setWebRequest(true); // *is_web_requesting = true;
-            "SOK".to_string()
-        }
-        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
-    };
-
-    status_message
-}
-
-fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
-    format!("[{}-{}:{}]", postid, page, status_message)
-}
-
 fn print_screen(app: &mut hkg::App) {
     match app.state_manager.get_state() {
         Status::Startup => {}
