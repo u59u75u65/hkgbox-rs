@@ -1,7 +1,8 @@
 
 use ::cancellation::CancellationTokenSource;
-use net::*;
-use net::web_resource::*;
+
+use resources::*;
+use resources::web_resource::*;
 use resources::common::*;
 use caches::common::*;
 use caches::file_cache::*;

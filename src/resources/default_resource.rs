@@ -1,6 +1,7 @@
 use ::cancellation::CancellationTokenSource;
-use net::*;
-use net::web_resource::*;
+
+use resources::*;
+use resources::web_resource::*;
 use resources::common::*;
 
 pub struct DefaultResource<'a> {

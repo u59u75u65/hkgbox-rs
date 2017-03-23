@@ -12,7 +12,6 @@ extern crate regex;
 extern crate log;
 extern crate log4rs;
 
-pub mod net;
 pub mod caches;
 pub mod resources;
 pub mod status;

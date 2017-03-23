@@ -24,10 +24,10 @@ use hkg::model::IconItem;
 use hkg::model::ListTopicItem;
 use hkg::state_manager::*;
 use hkg::screen_manager::*;
-use hkg::resources::common::*;
 use hkg::caches::file_cache::*;
-use hkg::net::*;
-use hkg::net::web_resource::*;
+use hkg::resources::*;
+use hkg::resources::web_resource::*;
+use hkg::resources::common::*;
 use std::sync::{Arc, Mutex};
 
 use log4rs::*;
