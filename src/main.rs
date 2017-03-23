@@ -70,9 +70,11 @@ fn main() {
             status_bar: hkg::screen::status_bar::StatusBar::new(),
             index: hkg::screen::index::Index::new(),
             show: hkg::screen::show::Show::new(icon_collection),
+
             image_request_count_lock: Arc::new(Mutex::new(0)),
             tx_req: &tx_req,
             rx_res: &rx_res,
+
             stdout: stdout
         }
     };
@@ -80,6 +82,9 @@ fn main() {
     Requester::new(rx_req, tx_res);
 
     let respsoner = Responser::new();
+
+    let mut index_control = hkg::control::index::Index::new();
+    let mut show_control = hkg::control::show::Show::new();
 
     // topics request
     let status_message = list_page(&mut app.state_manager, &tx_req);
@@ -108,13 +113,13 @@ fn main() {
                 match app.state_manager.getState() {
                     Status::Startup => {}
                     Status::List => {
-                        match index_control(c.ok().expect("fail to get stdin keys"), &mut app) {
+                        match index_control.handle(c.ok().expect("fail to get stdin keys"), &mut app) {
                             Some(i) => return if i == 0 { return } else { break },
                             None => {}
                         }
                     }
                     Status::Show => {
-                        match show_control(c.ok().expect("fail to get stdin keys"), &mut app) {
+                        match show_control.handle(c.ok().expect("fail to get stdin keys"), &mut app) {
                             Some(i) => return if i == 0 { return } else { break },
                             None => {}
                         }
@@ -179,130 +184,5 @@ fn print_screen(app: &mut hkg::App) {
         Status::Show => {
             app.show.print(&mut app.stdout, &app.show_item);
         }
-    }
-}
-
-fn show_control(c: termion::event::Key,app: &mut hkg::App) -> Option<i32> {
-    match c {
-        Key::Char('q') => {
-            hkg::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
-            Some(0)
-        }
-        Key::Left => {
-            app.status_bar.append(&app.screen_manager, &format!("←"));
-            if app.show_item.page > 1 {
-                let postid = &app.show_item.url_query.message;
-                let page = &app.show_item.page - 1;
-                let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
-
-                app.status_bar.append(&app.screen_manager,
-                                      &get_show_page_status_message(postid, page, &status_message));
-            }
-            Some(1)
-        }
-        Key::Right => {
-            app.status_bar.append(&app.screen_manager, &format!("→"));
-            if app.show_item.max_page > app.show_item.page {
-                let postid = &app.show_item.url_query.message;
-                let page = &app.show_item.page + 1;
-                let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
-
-                app.status_bar.append(&app.screen_manager,
-                                      &get_show_page_status_message(postid, page, &status_message));
-            }
-            Some(1)
-        }
-        Key::PageUp => {
-            app.status_bar.append(&app.screen_manager, "↑");
-            let bh = app.show.body_height();
-            if app.show.scrollUp(bh) {
-                hkg::screen::common::clear_screen();
-            }
-            Some(1)
-        }
-        Key::PageDown => {
-            app.status_bar.append(&app.screen_manager, "↓");
-            let bh = app.show.body_height();
-            if app.show.scrollDown(bh) {
-                hkg::screen::common::clear_screen();
-            }
-            Some(1)
-        }
-        Key::Up => {
-            app.status_bar.append(&app.screen_manager, "↑");
-            if app.show.scrollUp(2) {
-                hkg::screen::common::clear_screen();
-            }
-            Some(1)
-        }
-        Key::Down => {
-            app.status_bar.append(&app.screen_manager, "↓");
-            if app.show.scrollDown(2) {
-                hkg::screen::common::clear_screen();
-            }
-            Some(1)
-        }
-        Key::Backspace => {
-            app.status_bar.append(&app.screen_manager, "B");
-            app.state_manager.updateState(Status::List); // state = Status::List;
-            hkg::screen::common::clear_screen();
-            Some(1)
-        }
-        _ => None,
-    }
-}
-
-
-fn index_control(c: termion::event::Key,app: &mut hkg::App)-> Option<i32> {
-    match c {
-        Key::Char('q') => {
-            hkg::screen::common::reset_screen();
-            Some(0)
-        }
-        Key::Char('\n') => {
-            app.status_bar.append(&app.screen_manager, "ENTER");
-            let i = app.index.get_selected_topic();
-            if i > 0 {
-                let topic_item = &app.list_topic_items[i - 1];
-                let postid = &topic_item.title.url_query.message;
-                let page = 1;
-                let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
-
-                app.status_bar.append(&app.screen_manager,
-                                      &get_show_page_status_message(postid, page, &status_message));
-            }
-            Some(1)
-        }
-        Key::PageUp => {
-            app.status_bar.append(&app.screen_manager, "↑");
-            let tmp = app.index.get_selected_topic();
-            app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
-
-            if tmp > 1 {
-                app.index.select_topic(tmp - 1);
-            }
-            Some(1)
-        }
-        Key::Up => {
-            app.status_bar.append(&app.screen_manager, "↑");
-            let tmp = app.index.get_selected_topic();
-            app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
-
-            if tmp > 1 {
-                app.index.select_topic(tmp - 1);
-            }
-            Some(1)
-        }
-        Key::Down => {
-            app.status_bar.append(&app.screen_manager, "↓");
-            let tmp = app.index.get_selected_topic();
-            app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
-
-            if tmp < app.index.body_height() {
-                app.index.select_topic(tmp + 1);
-            }
-            Some(1)
-        }
-        _ => None,
     }
 }

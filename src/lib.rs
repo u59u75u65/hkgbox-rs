@@ -24,6 +24,7 @@ pub mod web;
 pub mod responser;
 pub mod builder;
 pub mod screen;
+pub mod control;
 
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
