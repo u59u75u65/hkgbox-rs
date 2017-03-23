@@ -71,7 +71,6 @@ fn main() {
             index: hkg::screen::index::Index::new(),
             show: hkg::screen::show::Show::new(icon_collection),
             image_request_count_lock: Arc::new(Mutex::new(0)),
-            is_bg_request: false,
             tx_req: &tx_req,
             rx_res: &rx_res,
             stdout: stdout

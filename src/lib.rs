@@ -41,7 +41,6 @@ pub struct App <'a>{
     pub show: screen::show::Show,
 
     pub image_request_count_lock: Arc<Mutex<usize>>,
-    pub is_bg_request: bool,
     pub tx_req: &'a Sender<resources::ChannelItem>,
     pub rx_res: &'a Receiver<resources::ChannelItem>,
 

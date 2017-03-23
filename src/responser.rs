@@ -63,7 +63,7 @@ impl Responser {
 
                         let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
                         *count = maps.len();
-                        app.is_bg_request = true;
+                        app.state_manager.setBgRequest(true);
                         app.status_bar.append(&app.screen_manager,
                                               &format!("[SIMG:{count}]", count = *count));
 
@@ -118,7 +118,7 @@ impl Responser {
                                 }
 
                                 if *count <= 0 {
-                                    app.is_bg_request = false;
+                                    app.state_manager.setBgRequest(false);
                                     ::screen::common::clear_screen();
                                     app.state_manager.setWebRequest(false); // is_web_requesting = false;
                                 }

@@ -4,7 +4,8 @@ use status::*;
 pub struct StateManager {
     current_state: Status,
     prev_state: Status,
-    is_web_requesting: bool
+    is_web_requesting: bool,
+    is_bg_requesting: bool
 }
 
 impl StateManager {
@@ -12,7 +13,8 @@ impl StateManager {
         StateManager {
             current_state: Status::Startup,
             prev_state: Status::Startup,
-            is_web_requesting: false
+            is_web_requesting: false,
+            is_bg_requesting: false,
         }
     }
     pub fn isWebRequest (&self) -> bool {
@@ -21,6 +23,14 @@ impl StateManager {
     pub fn setWebRequest(&mut self, value: bool) {
         self.is_web_requesting = value;
     }
+
+    pub fn isBgRequest (&self) -> bool {
+        self.is_bg_requesting
+    }
+    pub fn setBgRequest(&mut self, value: bool) {
+        self.is_bg_requesting = value;
+    }
+
     pub fn updateState(&mut self, value: Status) {
         if self.current_state != value {
             self.prev_state = self.current_state;
