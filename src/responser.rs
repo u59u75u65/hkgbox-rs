@@ -87,7 +87,7 @@ impl Responser {
                                     app.status_bar.append(&app.screen_manager, &format!("[RIMG:CERR]"));
                                 } else {
                                     *count -= 1;
-                                    if (item.result != "") {
+                                    if item.result != "" {
                                         app.status_bar.append(&app.screen_manager,
                                                               &format!("[RIMG:E-{count}-{error}]",
                                                                        count = *count,

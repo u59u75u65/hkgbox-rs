@@ -172,7 +172,7 @@ impl Show {
                         line = String::new();
                         is_first = false;
 
-                        if (img_offset > 0) {
+                        if img_offset > 0 {
                             self.y += img_offset;
                             img_offset = 0;
                         }
@@ -190,7 +190,7 @@ impl Show {
         if !line.is_empty() {
             if self.can_print() {
                 self.print_reply_line(stdout, format!(" {}{}", padding, line));
-                if (img_offset > 0) {
+                if img_offset > 0 {
                     self.y += img_offset;
                     img_offset = 0;
                 }
