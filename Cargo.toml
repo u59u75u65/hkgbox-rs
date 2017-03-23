@@ -15,6 +15,7 @@ termion = "1.0"
 time = "0.1"
 log = "*"
 log4rs = "0.6"
+hyper-native-tls = { github = "git@github.com:sfackler/hyper-native-tls.git" }
 
 [dependencies.url]
 git = "https://github.com/servo/rust-url"

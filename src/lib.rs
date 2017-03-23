@@ -3,6 +3,7 @@ extern crate rustc_serialize;
 extern crate kuchiki;
 extern crate chrono;
 extern crate hyper;
+extern crate hyper_native_tls;
 extern crate cancellation;
 extern crate time;
 extern crate url;

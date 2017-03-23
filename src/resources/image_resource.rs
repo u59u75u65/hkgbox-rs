@@ -7,6 +7,9 @@ use rustc_serialize::base64::{self, ToBase64};
 use std::io::Read;
 
 use ::hyper::Client;
+use ::hyper::net::HttpsConnector;
+use ::hyper_native_tls::NativeTlsClient;
+use ::hyper::header::{Headers, UserAgent};
 
 pub struct ImageResource<'a, T: 'a + Cache> {
     cache: &'a mut Box<T>,
@@ -15,9 +18,11 @@ pub struct ImageResource<'a, T: 'a + Cache> {
 
 impl<'a, T: 'a + Cache> ImageResource<'a, T> {
     pub fn new(cache: &'a mut Box<T>) -> Self {
+        let ssl = NativeTlsClient::new().unwrap();
+        let connector = HttpsConnector::new(ssl);
         ImageResource {
             cache: cache,
-            client: Client::new()
+            client: Client::with_connector(connector)
         }
     }
 }
@@ -33,7 +38,11 @@ impl<'a, T: 'a + Cache> Resource for ImageResource<'a, T> {
                 let (from_cache, result, reason) = match self.cache.read(&img_path, &img_file_name) {
                     Ok(result) => (true, result, "".to_string()),
                     Err(_) => {
-                        match self.client.get(&url2).send() {
+
+                        let mut headers = Headers::new();
+                        headers.set(UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36".to_owned()));
+
+                        match self.client.get(&url2).headers(headers).send() {
                             Ok(mut resp) => {
                                     let mut buffer = Vec::new();
                                     resp.read_to_end(&mut buffer).expect("fail to read buffer from the http response");
