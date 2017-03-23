@@ -1,5 +1,6 @@
 use status::*;
 
+#[derive(Clone)]
 pub struct StateManager {
     current_state: Status,
     prev_state: Status,

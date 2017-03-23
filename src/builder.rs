@@ -19,6 +19,7 @@ use regex::Regex;
 use url::Url;
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct Builder { }
 
 impl Builder {
