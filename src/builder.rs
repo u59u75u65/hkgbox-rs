@@ -161,8 +161,14 @@ fn parse_list_topic_title_item(item: &NodeDataRef<ElementData>) -> ListTopicTitl
         let attrs = &(first_link.attributes).borrow();
         let href = attrs.get("href").unwrap_or("");
 
-        let base_url = Url::parse("http://forum1.hkgolden.com/view.aspx").unwrap();
-        let url = base_url.join(&href).unwrap();
+        let base_url = match Url::parse("http://forum1.hkgolden.com/view.aspx") {
+            Ok(url) => url,
+            Err(e) => { panic!(format!("fail to parse Base URL. Reason: {}", e)) }
+        };
+        let url = match base_url.join(&href) {
+            Ok(url) => url,
+            Err(e) => { panic!(format!("fail to build URL. Reason: {}", e)) }
+        };
         let url_str = url.into_string();
         let url_query_item = parse_url_query_item(&url_str);
         (url_str, url_query_item)
@@ -209,21 +215,21 @@ fn parse_show_item(document: &NodeRef, url: &str) -> ShowItem {
     let url_query = parse_url_query_item(&url);
 
     let (title, reply_count) = {
-        let repliers_tr = document.select(".repliers tr").unwrap().next().unwrap();
+        let repliers_tr = document.select(".repliers tr").ok().expect("fail to build title and reply_count, reason: 'repliers_tr' not found").next().expect("fail to build title and reply_count, reason: 'repliers_tr' not found");
         let repliers_header = repliers_tr.as_node()
                                          .select(".repliers_header")
-                                         .unwrap()
+                                         .ok().expect("fail to build title and reply_count, reason: 'repliers_header' not found")
                                          .last()
-                                         .unwrap();
-        let divs = repliers_header.as_node().select("div").unwrap().collect::<Vec<_>>();
+                                         .expect("fail to build title and reply_count, reason: 'repliers_header' not found");
+        let divs = repliers_header.as_node().select("div").ok().expect("fail to build title and reply_count, reason: 'divs' not found").collect::<Vec<_>>();
 
         let topic_data = divs.iter()
                              .enumerate()
                              .map(|(index, div)| {
                                  let s_trimmed = div.text_contents().trim().to_string();
                                  if index == 1 {
-                                     let re = Regex::new(r"^(?P<count>\d+)個回應$").unwrap();
-                                     let cap = re.captures(&s_trimmed).unwrap();
+                                     let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
+                                     let cap = re.captures(&s_trimmed).expect("fail to build title and reply_count, reason: 'cap' not found");
                                      // String::from(cap.name("count").unwrap_or("0"))
                                      cap.name("count").unwrap_or("0").to_string()
                                  } else {
@@ -236,19 +242,19 @@ fn parse_show_item(document: &NodeRef, url: &str) -> ShowItem {
             panic!("length of topic_data is invalid.")
         }
 
-        (topic_data.get(0).unwrap().to_string(), // return as title
-         topic_data.get(1).unwrap().to_string() /* return as reply_count */)
+        (topic_data.get(0).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string(), // return as title
+         topic_data.get(1).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string() /* return as reply_count */)
     };
 
     let (page, max_page) = {
 
-        let page_select = document.select("select[name='page']").unwrap().last().unwrap();
+        let page_select = document.select("select[name='page']").ok().expect("fail to build page and max_page, reason: 'page_select' not found").last().expect("fail to build page and max_page, reason: 'page_select' not found");
         let page_str = page_select.as_node()
                                   .select("option[selected='selected']")
-                                  .unwrap()
+                                  .ok().expect("fail to build page and max_page, reason: 'page_str' not found")
                                   .next()
-                                  .unwrap();
-        let max_page_str = page_select.as_node().select("option").unwrap().last().unwrap();
+                                  .expect("fail to build page and max_page, reason: 'page_str' not found");
+        let max_page_str = page_select.as_node().select("option").ok().expect("fail to build page and max_page, reason: 'max_page_str' not found").last().expect("fail to build page and max_page, reason: 'max_page_str' not found");
 
         let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
         let max_page = max_page_str.text_contents()
@@ -275,7 +281,7 @@ fn parse_show_item(document: &NodeRef, url: &str) -> ShowItem {
 fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
 
     let replies_data = document.select(".repliers tr[userid][username]")
-                               .unwrap()
+                               .ok().expect("fail to parse show reply items, reason: 'replies_data' not found")
                                .collect::<Vec<_>>();
 
     replies_data.iter()
@@ -283,25 +289,25 @@ fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
                 .map(|(index, tr)| {
 
                     let tr_attrs = (&tr.attributes).borrow();
-                    let userid = tr_attrs.get("userid").unwrap();
-                    let username = tr_attrs.get("username").unwrap();
+                    let userid = tr_attrs.get("userid").expect("fail to parse show reply item, reason: 'userid' not found");
+                    let username = tr_attrs.get("username").expect("fail to parse show reply item, reason: 'userame' not found");
 
                     let content_elm = tr.as_node()
                                         .select(".repliers_right .ContentGrid")
-                                        .unwrap()
+                                        .ok().expect("fail to parse show reply item, reason: 'content_elm' not found")
                                         .next()
-                                        .unwrap(); // first
+                                        .expect("fail to parse show reply item, reason: 'content_elm' not found"); // first
 
                     let mut buff = Cursor::new(Vec::new());
                     let serialize_result = content_elm.as_node().serialize(&mut buff);
                     let vec = buff.into_inner();
-                    let content = String::from_utf8(vec).unwrap();
+                    let content = String::from_utf8(vec).expect("fail to parse show reply item, reason: 'content' invalid");
 
                     let datatime = tr.as_node()
                                      .select(".repliers_right span")
-                                     .unwrap()
+                                     .ok().expect("fail to parse show reply item, reason: 'datatime' not found")
                                      .last()
-                                     .unwrap()
+                                     .expect("fail to parse show reply item, reason: 'datatime' not found")
                                      .text_contents();
 
                     let mut vec: Vec<NodeType> = Vec::new();
@@ -320,9 +326,9 @@ fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
 }
 
 fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
-    let url = Url::parse(&url_str).unwrap();
-    let query = url.query().unwrap();
-    let re = Regex::new(r"(\\?|&)(?P<key>[^&=]+)=(?P<value>[^&]+)").unwrap();
+    let url = Url::parse(&url_str).expect("fail to parse url query item, reason: invalid url");
+    let query = url.query().expect("fail to parse url query item, reason: invalid url query");
+    let re = Regex::new(r"(\\?|&)(?P<key>[^&=]+)=(?P<value>[^&]+)").expect("fail to parse url query item, reason: invalid regex");
 
     let (channel, message) = {
 
@@ -339,8 +345,8 @@ fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
         }
 
         (
-            map.get("type").unwrap().to_string(),
-            map.get("message").unwrap().to_string()
+            map.get("type").expect("fail to parse url query item, reason: can not get value of 'type' attribute").to_string(),
+            map.get("message").expect("fail to parse url query item, reason: can not get value of 'message' attribute").to_string()
         )
     };
 
