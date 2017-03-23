@@ -292,7 +292,7 @@ fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
                                         .next()
                                         .expect("fail to parse show reply item, reason: 'content_elm' not found"); // first
 
-                    let mut buff = Cursor::new(Vec::new());
+                    let buff = Cursor::new(Vec::new());
                     let serialize_result = content_elm.as_node().serialize(&mut buff);
                     let vec = buff.into_inner();
                     let content = String::from_utf8(vec).expect("fail to parse show reply item, reason: 'content' invalid");
@@ -392,7 +392,7 @@ fn recursive(elm: &NodeRef) -> Vec<NodeType> {
                 let d = rc.clone();
                 let b = d.borrow();
 
-                let mut s = b.trim().to_string();
+                let s = b.trim().to_string();
 
                 if s == "\n" {
                     // s = "\\n".to_string()
