@@ -40,7 +40,7 @@ impl Index {
             self.selected_topic_index = self.body_height();
         }
 
-        let width = terminal_size().unwrap().0 as usize;
+        let width = terminal_size().expect("fail to get terminal size").0 as usize;
 
         print_header(stdout, width as usize, &self.title);
         print_body(stdout,
@@ -53,7 +53,7 @@ impl Index {
 
     pub fn body_height(&self) -> usize {
 
-        let h = terminal_size().unwrap().1;
+        let h = terminal_size().expect("fail to get terminal size").1;
 
         if h >= 3 {
             h as usize - 3
@@ -64,7 +64,7 @@ impl Index {
 
     pub fn body_width(&self) -> usize {
 
-        let w = terminal_size().unwrap().0;
+        let w = terminal_size().expect("fail to get terminal size").0;
 
         if w >= 2 {
             w as usize - 2

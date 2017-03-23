@@ -80,7 +80,7 @@ impl Show {
 
     fn print_header(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, text: &str) {
         let title_len = jks_len(text);
-        let w = terminal_size().unwrap().0 as usize;
+        let w = terminal_size().expect("fail to get terminal size").0 as usize;
         let padding = ((if w >= title_len {
             w - title_len
         } else {
@@ -218,7 +218,7 @@ impl Show {
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
         let separator_width = self.body_width();
-        let w = terminal_size().unwrap().0 as usize;
+        let w = terminal_size().expect("fail to get terminal size").0 as usize;
 
         let separator_padding_width = if w > separator_width {
             w - separator_width
@@ -283,7 +283,7 @@ impl Show {
 
     pub fn body_height(&self) -> usize {
 
-        let h = terminal_size().unwrap().1;
+        let h = terminal_size().expect("fail to get terminal size").1;
 
         if h >= 3 {
             h as usize - 3
@@ -294,7 +294,7 @@ impl Show {
 
     pub fn body_width(&self) -> usize {
 
-        let w = terminal_size().unwrap().0;
+        let w = terminal_size().expect("fail to get terminal size").0;
 
         if w >= 2 {
             w as usize - 2
