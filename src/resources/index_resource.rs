@@ -1,6 +1,5 @@
-extern crate cancellation;
-use self::cancellation::CancellationTokenSource;
-extern crate time;
+
+use ::cancellation::CancellationTokenSource;
 use net::*;
 use net::web_resource::*;
 use resources::common::*;
@@ -27,14 +26,14 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
 impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
-        let time_format = |t: time::Tm| {
+        let time_format = |t: ::time::Tm| {
             match t.strftime("%Y%m%d%H%M") {
                 Ok(s) => s.to_string(),
                 Err(e) => panic!(e)
             }
         };
 
-        let time = time_format(time::now());
+        let time = time_format(::time::now());
 
         let html_path = format!("data/cache/html/topics/");
         let file_name = format!("{time}.html", time = time);

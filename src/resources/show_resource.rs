@@ -1,6 +1,4 @@
-extern crate cancellation;
-use self::cancellation::CancellationTokenSource;
-extern crate time;
+use ::cancellation::CancellationTokenSource;
 use net::*;
 use net::web_resource::*;
 use resources::common::*;

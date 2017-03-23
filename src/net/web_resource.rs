@@ -1,8 +1,6 @@
-extern crate hyper;
-
 use std::io::Read;
-use self::hyper::Client;
-use self::hyper::header::Connection;
+use ::hyper::Client;
+use ::hyper::header::Connection;
 
 use std;
 use std::collections::HashMap;
@@ -12,7 +10,7 @@ use std::sync::Arc;
 use std::thread;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
-use self::hyper::header::{Headers, UserAgent};
+use ::hyper::header::{Headers, UserAgent};
 
 pub struct WebResource {
      pub pages: HashMap<String, String>,

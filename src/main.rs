@@ -3,10 +3,7 @@ extern crate termion;
 extern crate rustc_serialize;
 extern crate kuchiki;
 extern crate chrono;
-extern crate hyper;
 extern crate cancellation;
-extern crate time;
-extern crate url;
 
 use std::io::{stdout, stdin, Write};
 use std::thread;

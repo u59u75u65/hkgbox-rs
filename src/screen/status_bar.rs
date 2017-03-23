@@ -1,7 +1,5 @@
-extern crate termion;
 
 use screen_manager::*;
-use termion::{color, style};
 
 pub struct StatusBar {
     store: String,
@@ -24,11 +22,11 @@ impl StatusBar {
     pub fn print(&mut self, sm: &ScreenManager) {
         let h = sm.getHeight() as u16;
         print!("{}{}{}{}{}{}",
-                termion::cursor::Goto(1, h),
-                color::Fg(color::White),
-                style::Bold,
+                ::termion::cursor::Goto(1, h),
+                ::termion::color::Fg(::termion::color::White),
+                ::termion::style::Bold,
                 format!("{status}", status = self.store),
-                style::Reset,
-                termion::cursor::Hide);
+                ::termion::style::Reset,
+                ::termion::cursor::Hide);
     }
 }

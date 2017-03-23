@@ -1,15 +1,10 @@
-extern crate rustc_serialize;
-extern crate chrono;
-extern crate kuchiki;
-extern crate regex;
-extern crate url;
-
 use std::io::Cursor;
 use std::io::BufReader;
 
 use kuchiki::traits::*;
 use kuchiki::NodeRef;
 use kuchiki::NodeDataRef;
+use kuchiki::NodeData;
 use kuchiki::ElementData;
 
 use model::ListTopicItem;
@@ -38,7 +33,7 @@ impl Builder {
 impl Builder {
     pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> ShowItem {
         parse_show_item(&document, &url)
-    }    
+    }
     pub fn default_show_item(&self) -> ShowItem {
         default_show_item()
     }
@@ -357,7 +352,7 @@ fn parse_url_query_item(url_str: &str) -> UrlQueryItem {
 
 }
 
-fn recursive(elm: &kuchiki::NodeRef) -> Vec<NodeType> {
+fn recursive(elm: &NodeRef) -> Vec<NodeType> {
 
     let mut vec: Vec<NodeType> = Vec::new();
 
@@ -366,7 +361,7 @@ fn recursive(elm: &kuchiki::NodeRef) -> Vec<NodeType> {
         let node_data = child.data().clone();
 
         match node_data {
-            kuchiki::NodeData::Element(element_data) => {
+            NodeData::Element(element_data) => {
                 // println!("[{}] => [ELEMENT] => {:?}", index, element_data);
                 // println!("[{}] => [ELEMENT] => {:?}", index, child);
 
@@ -393,7 +388,7 @@ fn recursive(elm: &kuchiki::NodeRef) -> Vec<NodeType> {
                     vec.append(&mut subvec);
                 }
             }
-            kuchiki::NodeData::Text(rc) => {
+            NodeData::Text(rc) => {
                 // println!("[{}] => [TEXT] => {:?}", index, rc);
                 let d = rc.clone();
                 let b = d.borrow();

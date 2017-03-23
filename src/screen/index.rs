@@ -1,17 +1,9 @@
-extern crate termion;
-
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-use termion::{color, style};
-use termion::event::Key;
-use termion::terminal_size;
 use std::io::{Read, Write, Stdout, Stdin};
 use std::io::{stdout, stdin};
 use std;
 
 use utility::string::*;
 use model::ListTopicItem;
-
 
 pub struct Index {
     title: String,
@@ -34,13 +26,13 @@ impl Index {
         self.selected_topic_index
     }
 
-    pub fn print(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, collection: &Vec<ListTopicItem>) {
+    pub fn print(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, collection: &Vec<ListTopicItem>) {
 
         if self.selected_topic_index > self.body_height() {
             self.selected_topic_index = self.body_height();
         }
 
-        let width = terminal_size().expect("fail to get terminal size").0 as usize;
+        let width = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
 
         print_header(stdout, width as usize, &self.title);
         print_body(stdout,
@@ -53,7 +45,7 @@ impl Index {
 
     pub fn body_height(&self) -> usize {
 
-        let h = terminal_size().expect("fail to get terminal size").1;
+        let h = ::termion::terminal_size().expect("fail to get terminal size").1;
 
         if h >= 3 {
             h as usize - 3
@@ -64,7 +56,7 @@ impl Index {
 
     pub fn body_width(&self) -> usize {
 
-        let w = terminal_size().expect("fail to get terminal size").0;
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0;
 
         if w >= 2 {
             w as usize - 2
@@ -75,37 +67,37 @@ impl Index {
 
 }
 
-fn print_header(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str) {
+fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str) {
     // print header
     let padding = ((width - text.len()) / 2) as u16;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
     let header_top_padding = seq_str_gen(0, width, " ", "");
 
     write!(stdout, "{}{}{}{}{}",
-            termion::cursor::Goto(1, 1),
-            color::Fg(color::White),
+            ::termion::cursor::Goto(1, 1),
+            ::termion::color::Fg(::termion::color::White),
             header_top_padding,
-            style::Reset,
-            termion::cursor::Hide);
+            ::termion::style::Reset,
+           	::termion::cursor::Hide);
 
     write!(stdout, "{}{}{}{}{}{}",
-            termion::cursor::Goto(padding + 1, 1),
-            color::Fg(color::White),
-            style::Bold,
+            ::termion::cursor::Goto(padding + 1, 1),
+            ::termion::color::Fg(::termion::color::White),
+            ::termion::style::Bold,
             text,
-            style::Reset,
-            termion::cursor::Hide);
+            ::termion::style::Reset,
+            ::termion::cursor::Hide);
 
     write!(stdout, "{}{}{}{}{}{}",
-            termion::cursor::Goto(1, 2),
-            color::Fg(color::Yellow),
-            style::Bold,
+            ::termion::cursor::Goto(1, 2),
+            ::termion::color::Fg(::termion::color::Yellow),
+            ::termion::style::Bold,
             header_bottom,
-            style::Reset,
-            termion::cursor::Hide);
+            ::termion::style::Reset,
+            ::termion::cursor::Hide);
 }
 
-fn print_body(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>,
+fn print_body(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>,
     width: usize,
     offset_y: usize,
     rows: usize,
@@ -137,30 +129,30 @@ fn print_body(stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>,
 
         if selected_topic_index == i + 1 {
              write!(stdout, "{}{}{}{}{}{}",
-                     termion::cursor::Goto(1, (i + offset_y + 1) as u16),
-                     color::Fg(color::Black),
-                     color::Bg(color::Yellow),
+                     ::termion::cursor::Goto(1, (i + offset_y + 1) as u16),
+                     ::termion::color::Fg(::termion::color::Black),
+                     ::termion::color::Bg(::termion::color::Yellow),
                       format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
                               no = i + 1,
                               title = title,
                               title_spacing = title_spacing,
                               author = &author,
                               author_spacing = author_spacing),
-                      style::Reset,
-                      termion::cursor::Hide);
+                      ::termion::style::Reset,
+                      ::termion::cursor::Hide);
 
         } else {
              write!(stdout, "{}{}{}{}{}",
-                     termion::cursor::Goto(1, (i + offset_y + 1) as u16),
-                     color::Fg(color::White),
+                     ::termion::cursor::Goto(1, (i + offset_y + 1) as u16),
+                     ::termion::color::Fg(::termion::color::White),
                      format!("[{no:0>2}] {title}{title_spacing}| {author}{author_spacing}",
                               no = i + 1,
                               title = title,
                               title_spacing = title_spacing,
                               author = &author,
                               author_spacing = author_spacing),
-                     style::Reset,
-                     termion::cursor::Hide);
+                     ::termion::style::Reset,
+                     ::termion::cursor::Hide);
 
         }
 

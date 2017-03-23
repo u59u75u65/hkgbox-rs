@@ -1,7 +1,3 @@
-extern crate termion;
-extern crate rustc_serialize;
-extern crate hyper;
-
 use rustc_serialize::base64::{self, ToBase64};
 use rustc_serialize::hex::FromHex;
 
@@ -10,10 +6,8 @@ use std::fs;
 use std::io::{Error, ErrorKind};
 use std::io::Read;
 
-use termion::style;
-
-use self::hyper::Client;
-use self::hyper::header::Connection;
+use ::hyper::Client;
+use ::hyper::header::Connection;
 
 fn imgcat(buffer: Vec<u8>, size_key: &str, size_value: usize) -> String {
     let e = buffer.as_slice().to_base64(base64::STANDARD);
@@ -47,9 +41,9 @@ pub fn imgcatFromUrl(url: &str, height: usize) -> String {
 }
 
 pub fn reset_screen() {
-    print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+    print!("{}{}{}", ::termion::clear::All, ::termion::style::Reset, ::termion::cursor::Show);
 }
 
 pub fn clear_screen () {
-    print!("{}", termion::clear::All);
+    print!("{}", ::termion::clear::All);
 }

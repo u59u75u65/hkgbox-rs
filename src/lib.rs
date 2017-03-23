@@ -1,9 +1,16 @@
-extern crate rustc_serialize;
 extern crate termion;
-extern crate chrono;
+extern crate rustc_serialize;
 extern crate kuchiki;
-extern crate regex;
+extern crate chrono;
+extern crate hyper;
+extern crate cancellation;
+extern crate time;
 extern crate url;
+extern crate regex;
+
+#[macro_use]
+extern crate log;
+extern crate log4rs;
 
 pub mod net;
 pub mod caches;

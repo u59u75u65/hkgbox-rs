@@ -1,23 +1,19 @@
-extern crate cancellation;
-use self::cancellation::CancellationTokenSource;
-extern crate time;
+use ::cancellation::CancellationTokenSource;
 use net::*;
 use net::web_resource::*;
 use resources::common::*;
 use caches::common::*;
 use caches::file_cache::*;
 
-extern crate rustc_serialize;
 use rustc_serialize::base64::{self, ToBase64};
 
-extern crate hyper;
 use std::fs::File;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::io::Read;
 
-use self::hyper::Client;
-use self::hyper::header::Connection;
+use ::hyper::Client;
+use ::hyper::header::Connection;
 
 pub struct ImageResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,

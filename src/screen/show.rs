@@ -1,11 +1,3 @@
-extern crate termion;
-extern crate chrono;
-
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-use termion::{color, style};
-use termion::event::Key;
-use termion::terminal_size;
 use std::io::{Read, Write, Stdout, Stdin};
 use std::io::{stdout, stdin};
 use std;
@@ -40,7 +32,7 @@ impl Show {
             icon_collection: icon_collection
         }
     }
-    pub fn print(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
+    pub fn print(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
 
         self.y = 2;
         let title = self.title.clone();
@@ -52,7 +44,7 @@ impl Show {
         self.print_body(stdout, &item);
     }
 
-    fn print_separator_top(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, reply: &ShowReplyItem) {
+    fn print_separator_top(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, reply: &ShowReplyItem) {
         if self.can_print() {
             let (replier_name, time) = make_separator_content(&reply);
             let s = self.build_separator_top(&replier_name, &time);
@@ -60,27 +52,27 @@ impl Show {
         }
     }
 
-    fn print_separator_bottom(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>) {
+    fn print_separator_bottom(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>) {
         if self.can_print() {
             let s = self.build_separator_bottom();
             self.print_separator_line(stdout, &s);
         }
     }
 
-    fn print_separator_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
+    fn print_separator_line(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
 
         write!(stdout, "{}{}{}{}{}{}",
-                termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
-                color::Fg(color::Green),
-                style::Bold,
+                ::termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
+                ::termion::color::Fg(::termion::color::Green),
+                ::termion::style::Bold,
                 s,
-                style::Reset,
-                termion::cursor::Hide);
+                ::termion::style::Reset,
+                ::termion::cursor::Hide);
     }
 
-    fn print_header(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, text: &str) {
+    fn print_header(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, text: &str) {
         let title_len = jks_len(text);
-        let w = terminal_size().expect("fail to get terminal size").0 as usize;
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
         let padding = ((if w >= title_len {
             w - title_len
         } else {
@@ -90,22 +82,22 @@ impl Show {
         let header_bottom = seq_str_gen(0, w, "─", "");
 
         write!(stdout, "{}{}{}{}{}{}",
-                termion::cursor::Goto(padding + 1, 1),
-                color::Fg(color::White),
-                style::Bold,
-                text, style::Reset,
-                termion::cursor::Hide);
+                ::termion::cursor::Goto(padding + 1, 1),
+                ::termion::color::Fg(::termion::color::White),
+                ::termion::style::Bold,
+                text, ::termion::style::Reset,
+                ::termion::cursor::Hide);
 
         write!(stdout, "{}{}{}{}{}{}",
-                termion::cursor::Goto(1, 2),
-                color::Fg(color::Yellow),
-                style::Bold,
+                ::termion::cursor::Goto(1, 2),
+                ::termion::color::Fg(::termion::color::Yellow),
+                ::termion::style::Bold,
                 header_bottom,
-                style::Reset,
-                termion::cursor::Hide);
+                ::termion::style::Reset,
+                ::termion::cursor::Hide);
     }
 
-    pub fn print_body(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
+    pub fn print_body(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
         let width = self.body_width();
         let rows = self.body_height();
 
@@ -123,17 +115,17 @@ impl Show {
         self.is_scroll_to_end = self.scrolledY() < self.body_height();
     }
 
-    fn print_reply_line(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, s: String) {
+    fn print_reply_line(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, s: String) {
 
        write!(stdout, "{}{}{}{}{}",
-               termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
-               color::Fg(color::White),
+               ::termion::cursor::Goto(1, (self.scrolledY() + 1) as u16),
+               ::termion::color::Fg(::termion::color::White),
                s,
-               style::Reset,
-               termion::cursor::Hide);
+               ::termion::style::Reset,
+               ::termion::cursor::Hide);
     }
 
-    fn print_reply(&mut self, stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
+    fn print_reply(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
 
         let icon_width = 2;
         let img_height = 10;
@@ -218,7 +210,7 @@ impl Show {
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {
         let separator_width = self.body_width();
-        let w = terminal_size().expect("fail to get terminal size").0 as usize;
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
 
         let separator_padding_width = if w > separator_width {
             w - separator_width
@@ -283,7 +275,7 @@ impl Show {
 
     pub fn body_height(&self) -> usize {
 
-        let h = terminal_size().expect("fail to get terminal size").1;
+        let h = ::termion::terminal_size().expect("fail to get terminal size").1;
 
         if h >= 3 {
             h as usize - 3
@@ -294,7 +286,7 @@ impl Show {
 
     pub fn body_width(&self) -> usize {
 
-        let w = terminal_size().expect("fail to get terminal size").0;
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0;
 
         if w >= 2 {
             w as usize - 2
