@@ -82,116 +82,8 @@ fn main() {
 
     loop {
 
-        match app.rx_res.try_recv() {
-            Ok(item) => {
-                match item.extra {
-                    ChannelItemType::Show(extra) => {
-                        let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
-
-                        let posturl = get_posturl(&extra.postid, extra.page);
-                        app.show_item = app.builder.show_item(&document, &posturl);
-
-                        app.status_bar.append(&app.screen_manager, &format!("[{}-{}:ROK][{}]",
-                                 app.show_item.url_query.message,
-                                 app.show_item.page,
-                                 app.state_manager.isWebRequest()));
-
-                        // get all images links in an array, and send to background download
-                        let maps = app.show_item.replies.iter().flat_map(|reply|
-                            {
-                                 let f = reply.body.iter().filter(|node| {
-                                     let node2 = node.clone();
-                                     match *node2 {
-                                         hkg::reply_model::NodeType::Image(ref n) => (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") && n.alt.ends_with("[/img]"),
-                                         _ => false
-                                     }
-                                 }).collect::<Vec<_>>();
-                                 return f;
-                            }
-                        ).collect::<Vec<_>>();
-
-                        let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
-                        *count = maps.len();
-                        app.is_bg_request = true;
-                        app.status_bar.append(&app.screen_manager,
-                                                &format!("[SIMG:{count}]", count = *count ));
-
-                        for node in &maps {
-                            let node2 = node.clone();
-                            match *node2 {
-                                 hkg::reply_model::NodeType::Image(ref n) => {
-                                     let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
-                                     app.status_bar.append(&app.screen_manager,&status_message);
-                                 },
-                                 _ => {}
-                            }
-                        }
-
-                        app.show.resetY();
-                        hkg::screen::common::clear_screen();
-                        app.state_manager.updateState(Status::Show); //state = Status::Show;
-                        app.state_manager.setWebRequest(false); // is_web_requesting = false;
-                    },
-                    ChannelItemType::Index(_) => {
-                        let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
-
-                        app.list_topic_items.clear();
-                        for item in app.builder.list_topic_items(&document) {
-                            app.list_topic_items.push(item);
-                        }
-
-                        app.status_bar.append(&app.screen_manager,
-                                               &format!("[TOPICS:ROK]"));
-
-                        hkg::screen::common::clear_screen();
-
-                        app.state_manager.updateState(Status::List); // state = Status::List;
-                        app.state_manager.setWebRequest(false); // is_web_requesting = false;
-
-                    },
-                    ChannelItemType::Image(extra) => {
-                        match app.image_request_count_lock.lock() {
-                            Ok(mut count) => {
-                                if *count == 0 {
-                                    app.status_bar.append(&app.screen_manager,
-                                                           &format!("[RIMG:CERR]"));
-                                } else {
-                                    *count -= 1;
-                                    if (item.result != "") {
-                                        app.status_bar.append(&app.screen_manager,
-                                                           &format!("[RIMG:E-{count}-{error}]", count = *count, error = item.result ));
-                                    } else {
-                                        app.status_bar.append(&app.screen_manager,
-                                                           &format!("[RIMG:S-{count}]", count = *count ));
-                                    }
-                                }
-
-                                if *count <= 0 {
-                                    app.is_bg_request = false;
-                                    hkg::screen::common::clear_screen();
-                                    app.state_manager.setWebRequest(false); // is_web_requesting = false;
-                                }
-                            },
-                            Err(poisoned) => { app.status_bar.append(&app.screen_manager,
-                                                   &format!("[IMAGES:LOCKERR]")); }
-                        };
-                    }
-                }
-            }
-            Err(_) => {}
-        }
-
-        match app.state_manager.getState() {
-            Status::Startup => {
-
-            },
-            Status::List => {
-                app.index.print(&mut stdout, &app.list_topic_items);
-            }
-            Status::Show => {
-                app.show.print(&mut stdout, &app.show_item);
-            }
-        }
+        responser(&mut app);
+        print_screen(&mut app, &mut stdout);
 
         app.status_bar.print(&app.screen_manager);
 
@@ -208,129 +100,23 @@ fn main() {
                 }
 
                 match app.state_manager.getState() {
-                    Status::Startup => {},
+                    Status::Startup => {}
                     Status::List => {
-                        match c.ok().expect("fail to get stdin keys") {
-                            Key::Char('q') => {
-                                hkg::screen::common::reset_screen();
-                                return
-                            },
-                            Key::Char('\n') => {
-                                app.status_bar.append(&app.screen_manager, "ENTER");
-                                let i = app.index.get_selected_topic();
-                                if i > 0 {
-                                    let topic_item = &app.list_topic_items[i - 1];
-                                    let postid = &topic_item.title.url_query.message;
-                                    let page = 1;
-                                    let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
-
-                                    app.status_bar.append(&app.screen_manager,
-                                                           &get_show_page_status_message(postid, page, &status_message));
-                                }
-                                break
-                            },
-                            Key::PageUp => {
-                                app.status_bar.append(&app.screen_manager, "↑");
-                                let tmp = app.index.get_selected_topic();
-                                app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
-
-                                if tmp > 1 {
-                                    app.index.select_topic(tmp - 1);
-                                }
-                                break
-                            },
-                            Key::Up => {
-                                app.status_bar.append(&app.screen_manager, "↑");
-                                let tmp = app.index.get_selected_topic();
-                                app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
-
-                                if tmp > 1 {
-                                    app.index.select_topic(tmp - 1);
-                                }
-                                break
-                            },
-                            Key::Down => {
-                                app.status_bar.append(&app.screen_manager, "↓");
-                                let tmp = app.index.get_selected_topic();
-                                app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
-
-                                if tmp < app.index.body_height() {
-                                    app.index.select_topic(tmp + 1);
-                                }
-                                break
-                            },
-                            _ => {},
+                        match index_control(c.ok().expect("fail to get stdin keys"),
+                                            &mut app,
+                                            &mut stdout) {
+                            Some(i) => return if i == 0 { return } else { break },
+                            None => {}
                         }
-                    },
+                    }
                     Status::Show => {
-                            match c.ok().expect("fail to get stdin keys") {
-                                Key::Char('q') => {
-                                    hkg::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
-                                    return
-                                },
-                                Key::Left => {
-                                    app.status_bar.append(&app.screen_manager, &format!("←"));
-                                    if app.show_item.page > 1 {
-                                        let postid = &app.show_item.url_query.message;
-                                        let page = &app.show_item.page - 1;
-                                        let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
-
-                                        app.status_bar.append(&app.screen_manager,
-                                                               &get_show_page_status_message(postid, page, &status_message));
-                                    }
-                                    break
-                                }
-                                Key::Right => {
-                                    app.status_bar.append(&app.screen_manager, &format!("→"));
-                                    if app.show_item.max_page > app.show_item.page {
-                                        let postid = &app.show_item.url_query.message;
-                                        let page = &app.show_item.page + 1;
-                                        let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
-
-                                        app.status_bar.append(&app.screen_manager,
-                                                               &get_show_page_status_message(postid, page, &status_message));
-                                    }
-                                    break
-                                },
-                                Key::PageUp => {
-                                    app.status_bar.append(&app.screen_manager, "↑");
-                                    let bh = app.show.body_height();
-                                    if app.show.scrollUp(bh) {
-                                    hkg::screen::common::clear_screen();
-                                    }
-                                    break
-                                },
-                                Key::PageDown => {
-                                    app.status_bar.append(&app.screen_manager, "↓");
-                                    let bh = app.show.body_height();
-                                    if app.show.scrollDown(bh) {
-                                        hkg::screen::common::clear_screen();
-                                    }
-                                    break
-                                },
-                                Key::Up => {
-                                    app.status_bar.append(&app.screen_manager, "↑");
-                                    if app.show.scrollUp(2) {
-                                        hkg::screen::common::clear_screen();
-                                    }
-                                    break
-                                },
-                                Key::Down => {
-                                    app.status_bar.append(&app.screen_manager, "↓");
-                                    if app.show.scrollDown(2) {
-                                        hkg::screen::common::clear_screen();
-                                    }
-                                    break
-                                },
-                                Key::Backspace => {
-                                    app.status_bar.append(&app.screen_manager, "B");
-                                    app.state_manager.updateState(Status::List); // state = Status::List;
-                                    hkg::screen::common::clear_screen();
-                                    break
-                                },
-                                _ => {},
-                            }
+                        match show_control(c.ok().expect("fail to get stdin keys"),
+                                           &mut app,
+                                           &mut stdout) {
+                            Some(i) => return if i == 0 { return } else { break },
+                            None => {}
                         }
+                    }
                 }
 
 
@@ -351,7 +137,7 @@ fn get_posturl(postid: &String, page: usize) -> String {
 fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
-        extra: ChannelItemType::Index(ChannelIndexItem { }),
+        extra: ChannelItemType::Index(ChannelIndexItem {}),
         result: String::from(""),
     };
 
@@ -369,7 +155,10 @@ fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> 
 fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
-        extra: ChannelItemType::Show(ChannelShowItem { postid: postid.clone(), page: page }),
+        extra: ChannelItemType::Show(ChannelShowItem {
+                                         postid: postid.clone(),
+                                         page: page,
+                                     }),
         result: String::from(""),
     };
 
@@ -387,7 +176,10 @@ fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_
 fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
-        extra: ChannelItemType::Image(ChannelImageItem { url: url.to_string(), bytes: Vec::new() }),
+        extra: ChannelItemType::Image(ChannelImageItem {
+                                          url: url.to_string(),
+                                          bytes: Vec::new(),
+                                      }),
         result: String::from(""),
     };
 
@@ -404,4 +196,253 @@ fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender
 
 fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
+}
+
+
+fn responser(app: &mut hkg::App) {
+    match app.rx_res.try_recv() {
+        Ok(item) => {
+            match item.extra {
+                ChannelItemType::Show(extra) => {
+                    let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
+
+                    let posturl = get_posturl(&extra.postid, extra.page);
+                    app.show_item = app.builder.show_item(&document, &posturl);
+
+                    app.status_bar.append(&app.screen_manager,
+                                          &format!("[{}-{}:ROK][{}]",
+                                                   app.show_item.url_query.message,
+                                                   app.show_item.page,
+                                                   app.state_manager.isWebRequest()));
+
+                    // get all images links in an array, and send to background download
+                    let maps = app.show_item.replies.iter().flat_map(|reply| {
+                            let f = reply.body.iter().filter(|node| {
+                                    let node2 = node.clone();
+                                    match *node2 {
+                                        hkg::reply_model::NodeType::Image(ref n) => {
+                                            (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") &&
+                                            n.alt.ends_with("[/img]")
+                                        }
+                                        _ => false,
+                                    }
+                                }).collect::<Vec<_>>();
+                            f
+                        })
+                        .collect::<Vec<_>>();
+
+                    let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
+                    *count = maps.len();
+                    app.is_bg_request = true;
+                    app.status_bar.append(&app.screen_manager,
+                                          &format!("[SIMG:{count}]", count = *count));
+
+                    for node in &maps {
+                        let node2 = node.clone();
+                        match *node2 {
+                            hkg::reply_model::NodeType::Image(ref n) => {
+                                let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
+                                app.status_bar.append(&app.screen_manager, &status_message);
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    app.show.resetY();
+                    hkg::screen::common::clear_screen();
+                    app.state_manager.updateState(Status::Show); //state = Status::Show;
+                    app.state_manager.setWebRequest(false); // is_web_requesting = false;
+                }
+                ChannelItemType::Index(_) => {
+                    let document = kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
+
+                    app.list_topic_items.clear();
+                    for item in app.builder.list_topic_items(&document) {
+                        app.list_topic_items.push(item);
+                    }
+
+                    app.status_bar.append(&app.screen_manager, &format!("[TOPICS:ROK]"));
+
+                    hkg::screen::common::clear_screen();
+
+                    app.state_manager.updateState(Status::List); // state = Status::List;
+                    app.state_manager.setWebRequest(false); // is_web_requesting = false;
+
+                }
+                ChannelItemType::Image(extra) => {
+                    match app.image_request_count_lock.lock() {
+                        Ok(mut count) => {
+                            if *count == 0 {
+                                app.status_bar.append(&app.screen_manager, &format!("[RIMG:CERR]"));
+                            } else {
+                                *count -= 1;
+                                if (item.result != "") {
+                                    app.status_bar.append(&app.screen_manager,
+                                                          &format!("[RIMG:E-{count}-{error}]",
+                                                                   count = *count,
+                                                                   error = item.result));
+                                } else {
+                                    app.status_bar.append(&app.screen_manager,
+                                                          &format!("[RIMG:S-{count}]", count = *count));
+                                }
+                            }
+
+                            if *count <= 0 {
+                                app.is_bg_request = false;
+                                hkg::screen::common::clear_screen();
+                                app.state_manager.setWebRequest(false); // is_web_requesting = false;
+                            }
+                        }
+                        Err(poisoned) => {
+                            app.status_bar.append(&app.screen_manager, &format!("[IMAGES:LOCKERR]"));
+                        }
+                    };
+                }
+            }
+        }
+        Err(_) => {}
+    }
+}
+
+fn print_screen(app: &mut hkg::App, mut stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>) {
+    match app.state_manager.getState() {
+        Status::Startup => {}
+        Status::List => {
+            app.index.print(&mut stdout, &app.list_topic_items);
+        }
+        Status::Show => {
+            app.show.print(&mut stdout, &app.show_item);
+        }
+    }
+}
+
+fn show_control(c: termion::event::Key,
+                app: &mut hkg::App,
+                mut stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>)
+                -> Option<i32> {
+    match c {
+        Key::Char('q') => {
+            hkg::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+            Some(0)
+        }
+        Key::Left => {
+            app.status_bar.append(&app.screen_manager, &format!("←"));
+            if app.show_item.page > 1 {
+                let postid = &app.show_item.url_query.message;
+                let page = &app.show_item.page - 1;
+                let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
+
+                app.status_bar.append(&app.screen_manager,
+                                      &get_show_page_status_message(postid, page, &status_message));
+            }
+            Some(1)
+        }
+        Key::Right => {
+            app.status_bar.append(&app.screen_manager, &format!("→"));
+            if app.show_item.max_page > app.show_item.page {
+                let postid = &app.show_item.url_query.message;
+                let page = &app.show_item.page + 1;
+                let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
+
+                app.status_bar.append(&app.screen_manager,
+                                      &get_show_page_status_message(postid, page, &status_message));
+            }
+            Some(1)
+        }
+        Key::PageUp => {
+            app.status_bar.append(&app.screen_manager, "↑");
+            let bh = app.show.body_height();
+            if app.show.scrollUp(bh) {
+                hkg::screen::common::clear_screen();
+            }
+            Some(1)
+        }
+        Key::PageDown => {
+            app.status_bar.append(&app.screen_manager, "↓");
+            let bh = app.show.body_height();
+            if app.show.scrollDown(bh) {
+                hkg::screen::common::clear_screen();
+            }
+            Some(1)
+        }
+        Key::Up => {
+            app.status_bar.append(&app.screen_manager, "↑");
+            if app.show.scrollUp(2) {
+                hkg::screen::common::clear_screen();
+            }
+            Some(1)
+        }
+        Key::Down => {
+            app.status_bar.append(&app.screen_manager, "↓");
+            if app.show.scrollDown(2) {
+                hkg::screen::common::clear_screen();
+            }
+            Some(1)
+        }
+        Key::Backspace => {
+            app.status_bar.append(&app.screen_manager, "B");
+            app.state_manager.updateState(Status::List); // state = Status::List;
+            hkg::screen::common::clear_screen();
+            Some(1)
+        }
+        _ => None,
+    }
+}
+
+
+fn index_control(c: termion::event::Key,
+                 app: &mut hkg::App,
+                 mut stdout: &mut termion::raw::RawTerminal<std::io::StdoutLock>)
+                 -> Option<i32> {
+    match c {
+        Key::Char('q') => {
+            hkg::screen::common::reset_screen();
+            Some(0)
+        }
+        Key::Char('\n') => {
+            app.status_bar.append(&app.screen_manager, "ENTER");
+            let i = app.index.get_selected_topic();
+            if i > 0 {
+                let topic_item = &app.list_topic_items[i - 1];
+                let postid = &topic_item.title.url_query.message;
+                let page = 1;
+                let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
+
+                app.status_bar.append(&app.screen_manager,
+                                      &get_show_page_status_message(postid, page, &status_message));
+            }
+            Some(1)
+        }
+        Key::PageUp => {
+            app.status_bar.append(&app.screen_manager, "↑");
+            let tmp = app.index.get_selected_topic();
+            app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
+
+            if tmp > 1 {
+                app.index.select_topic(tmp - 1);
+            }
+            Some(1)
+        }
+        Key::Up => {
+            app.status_bar.append(&app.screen_manager, "↑");
+            let tmp = app.index.get_selected_topic();
+            app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
+
+            if tmp > 1 {
+                app.index.select_topic(tmp - 1);
+            }
+            Some(1)
+        }
+        Key::Down => {
+            app.status_bar.append(&app.screen_manager, "↓");
+            let tmp = app.index.get_selected_topic();
+            app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
+
+            if tmp < app.index.body_height() {
+                app.index.select_topic(tmp + 1);
+            }
+            Some(1)
+        }
+        _ => None,
+    }
 }
