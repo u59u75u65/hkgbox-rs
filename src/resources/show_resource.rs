@@ -20,7 +20,7 @@ impl<'a, T: 'a + Cache> ShowResource<'a, T> {
             wr: wr,
             ct: ct,
             cache: cache,
-            url: "http://forum1.hkgolden.com/topics_bw.htm"
+            url: "http://archive.hkgolden.com/topics.aspx?type=BW"
         }
     }
     fn postUrl(&self, postid: &String, page: usize) -> String {
