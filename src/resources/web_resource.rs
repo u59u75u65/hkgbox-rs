@@ -1,14 +1,8 @@
 use std::io::Read;
 use ::hyper::Client;
-use ::hyper::header::Connection;
 
-use std;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
-use std::cell::Cell;
-use std::sync::Arc;
-use std::thread;
-use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 use ::hyper::header::{Headers, UserAgent};
 

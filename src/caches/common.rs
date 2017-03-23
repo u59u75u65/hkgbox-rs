@@ -1,6 +1,4 @@
 use std::path::Path;
-use std::fs::File;
-use std::fs;
 
 pub trait Cache {
     fn read<P: AsRef<Path>, S: AsRef<Path>>(&self, cache_path: P,

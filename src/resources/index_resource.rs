@@ -5,11 +5,9 @@ use resources::*;
 use resources::web_resource::*;
 use resources::common::*;
 use caches::common::*;
-use caches::file_cache::*;
 
 pub struct IndexResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,
-    ct: &'a CancellationTokenSource,
     cache: &'a mut Box<T>,
     url: &'static str
 }

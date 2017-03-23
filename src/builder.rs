@@ -1,7 +1,5 @@
 use std::io::Cursor;
-use std::io::BufReader;
 
-use kuchiki::traits::*;
 use kuchiki::NodeRef;
 use kuchiki::NodeDataRef;
 use kuchiki::NodeData;

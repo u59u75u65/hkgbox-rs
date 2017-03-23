@@ -4,7 +4,6 @@ use resources::*;
 use resources::web_resource::*;
 use resources::common::*;
 use caches::common::*;
-use caches::file_cache::*;
 
 pub struct ShowResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,

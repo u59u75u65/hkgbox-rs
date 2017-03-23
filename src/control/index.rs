@@ -1,27 +1,8 @@
-
-use std::io::{stdout, stdin, Write};
-use std::thread;
-use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
-use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
-use kuchiki::traits::*;
-use rustc_serialize::json;
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
 use termion::event::Key;
 use status::*;
-use model::IconItem;
-use model::ListTopicItem;
 use state_manager::*;
-use screen_manager::*;
-use caches::file_cache::*;
 use resources::*;
-use resources::web_resource::*;
-use resources::common::*;
-use web::*;
-use responser::*;
-use log4rs::*;
 
 pub struct Index {
 

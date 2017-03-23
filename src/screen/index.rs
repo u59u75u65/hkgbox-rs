@@ -1,5 +1,4 @@
-use std::io::{Read, Write, Stdout, Stdin};
-use std::io::{stdout, stdin};
+use std::io::{Write, Stdout, Stdin};
 use std;
 
 use utility::string::*;

@@ -1,8 +1,6 @@
-use std::io::{stdout, stdin, Write};
 use std::thread;
-use std::sync::mpsc::{channel, Receiver, Sender};
-use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{Receiver, Sender};
+use cancellation::CancellationTokenSource;
 
 use caches::file_cache::*;
 use resources::*;

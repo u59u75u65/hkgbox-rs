@@ -10,28 +10,19 @@ extern crate log;
 extern crate log4rs;
 
 use std::io::{stdout, stdin, Write};
-use std::thread;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
-use cancellation::{CancellationToken, CancellationTokenSource, OperationCanceled};
-use kuchiki::traits::*;
 use rustc_serialize::json;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use termion::event::Key;
 use hkg::status::*;
 use hkg::model::IconItem;
-use hkg::model::ListTopicItem;
 use hkg::state_manager::*;
 use hkg::screen_manager::*;
-use hkg::caches::file_cache::*;
 use hkg::resources::*;
-use hkg::resources::web_resource::*;
-use hkg::resources::common::*;
 use hkg::web::*;
 use hkg::responser::*;
-use log4rs::*;
 
 fn main() {
 

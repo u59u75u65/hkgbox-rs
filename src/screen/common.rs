@@ -1,13 +1,7 @@
 use rustc_serialize::base64::{self, ToBase64};
-use rustc_serialize::hex::FromHex;
 
 use std::fs::File;
-use std::fs;
-use std::io::{Error, ErrorKind};
 use std::io::Read;
-
-use ::hyper::Client;
-use ::hyper::header::Connection;
 
 fn imgcat(buffer: Vec<u8>, size_key: &str, size_value: usize) -> String {
     let e = buffer.as_slice().to_base64(base64::STANDARD);
