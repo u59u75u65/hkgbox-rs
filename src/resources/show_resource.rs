@@ -59,7 +59,7 @@ impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
 
                 let result_item = ChannelItem {
                     extra: ChannelItemType::Show(ChannelShowItem { postid: postid, page: extra.page }),
-                    result: String::from_utf8(result).unwrap(),
+                    result: String::from_utf8(result).expect("fail to build result item, reason: invalid string"),
                 };
                 result_item
             },
