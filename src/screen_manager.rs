@@ -7,7 +7,7 @@ pub struct ScreenManager {
 
 impl ScreenManager {
     pub fn new () -> Self {
-        let w = terminal_size().unwrap().0 as usize;
+        let w = terminal_size().expect("fail to get terminal size").0 as usize;
         ScreenManager {
             current_width: w,
             prev_width: w,
@@ -17,7 +17,7 @@ impl ScreenManager {
         self.current_width
     }
     pub fn isWidthChanged(&mut self) -> bool {
-        let w = terminal_size().unwrap().0 as usize;
+        let w = terminal_size().expect("fail to get terminal size").0 as usize;
         if self.current_width != w {
             self.prev_width = self.current_width;
             self.current_width = w;
@@ -26,6 +26,6 @@ impl ScreenManager {
         return false
     }
     pub fn getHeight(&self) -> usize {
-        terminal_size().unwrap().1 as usize
+        terminal_size().expect("fail to get terminal size").1 as usize
     }
 }
