@@ -18,7 +18,6 @@ impl Responser {
                         let document = ::kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
                         let posturl = get_posturl(&extra.postid, extra.page);
-                        app.show_item = app.builder.show_item(&document, &posturl);
 
                         app.status_bar.append(&app.screen_manager,
                                               &format!("[{}-{}:ROK][{}]",
@@ -26,42 +25,49 @@ impl Responser {
                                                        app.show_item.page,
                                                        app.state_manager.is_web_request()));
 
-                        // get all images links in an array, and send to background download
-                        let maps = app.show_item.replies.iter().flat_map(|reply| {
-                                let f = reply.body.iter().filter(|node| {
-                                        let node2 = node.clone();
-                                        match *node2 {
-                                            ::reply_model::NodeType::Image(ref n) => {
-                                                (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") &&
-                                                n.alt.ends_with("[/img]")
-                                            }
-                                            _ => false,
+                        match app.builder.show_item(&document, &posturl) {
+                            Ok(item) => {
+                                app.show_item = item;
+
+                                // get all images links in an array, and send to background download
+                                let maps = app.show_item.replies.iter().flat_map(|reply| {
+                                        let f = reply.body.iter().filter(|node| {
+                                                let node2 = node.clone();
+                                                match *node2 {
+                                                    ::reply_model::NodeType::Image(ref n) => {
+                                                        (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") && n.alt.ends_with("[/img]")
+                                                    }
+                                                    _ => false,
+                                                }
+                                            }).collect::<Vec<_>>();
+                                        f
+                                    })
+                                    .collect::<Vec<_>>();
+
+                                let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
+                                *count = maps.len();
+                                // app.state_manager.set_bg_request(true);
+                                app.status_bar.append(&app.screen_manager,
+                                                      &format!("[SIMG:{count}]", count = *count));
+
+                                for node in &maps {
+                                    let node2 = node.clone();
+                                    match *node2 {
+                                        ::reply_model::NodeType::Image(ref n) => {
+                                            let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
+                                            app.status_bar.append(&app.screen_manager, &status_message);
                                         }
-                                    }).collect::<Vec<_>>();
-                                f
-                            })
-                            .collect::<Vec<_>>();
-
-                        let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
-                        *count = maps.len();
-                        app.state_manager.set_bg_request(true);
-                        app.status_bar.append(&app.screen_manager,
-                                              &format!("[SIMG:{count}]", count = *count));
-
-                        for node in &maps {
-                            let node2 = node.clone();
-                            match *node2 {
-                                ::reply_model::NodeType::Image(ref n) => {
-                                    let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
-                                    app.status_bar.append(&app.screen_manager, &status_message);
+                                        _ => {}
+                                    }
                                 }
-                                _ => {}
-                            }
-                        }
 
-                        app.show.reset_y();
-                        ::screen::common::clear_screen();
-                        app.state_manager.update_state(Status::Show); //state = Status::Show;
+                                app.show.reset_y();
+                                ::screen::common::clear_screen();
+                                app.state_manager.update_state(Status::Show); //state = Status::Show;
+                            },
+                            Err(e) => app.status_bar.append(&app.screen_manager, &"[SPFAIL]")
+                        };
+
                         app.state_manager.set_web_request(false); // is_web_requesting = false;
                     }
                     ChannelItemType::Index(_) => {

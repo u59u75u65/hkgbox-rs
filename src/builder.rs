@@ -30,8 +30,73 @@ impl Builder {
 }
 
 impl Builder {
-    pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> ShowItem {
-        parse_show_item(&document, &url)
+    pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> Result<ShowItem, &'static str> {
+        let url_query = parse_url_query_item(&url);
+
+        let (title, reply_count) = {
+            let repliers_tr = document.select(".repliers tr").ok().expect("fail to build title and reply_count, reason: 'repliers_tr' not found").next().expect("fail to build title and reply_count, reason: 'repliers_tr' not found");
+            let repliers_header = repliers_tr.as_node()
+                                             .select(".repliers_header")
+                                             .ok().expect("fail to build title and reply_count, reason: 'repliers_header' not found")
+                                             .last()
+                                             .expect("fail to build title and reply_count, reason: 'repliers_header' not found");
+            let divs = repliers_header.as_node().select("div").ok().expect("fail to build title and reply_count, reason: 'divs' not found").collect::<Vec<_>>();
+
+            let topic_data = divs.iter()
+                                 .enumerate()
+                                 .map(|(index, div)| {
+                                     let s_trimmed = div.text_contents().trim().to_string();
+                                     if index == 1 {
+                                         let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
+                                         let cap = re.captures(&s_trimmed).expect("fail to build title and reply_count, reason: 'cap' not found");
+                                         // String::from(cap.name("count").unwrap_or("0"))
+                                         cap.name("count").unwrap_or("0").to_string()
+                                     } else {
+                                         s_trimmed
+                                     }
+                                 })
+                                 .collect::<Vec<_>>();
+
+            if topic_data.len() < 2 {
+                panic!("length of topic_data is invalid.")
+            }
+
+            (topic_data.get(0).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string(), // return as title
+             topic_data.get(1).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string() /* return as reply_count */)
+        };
+
+        let (page, max_page) = {
+
+            let page_select = document.select("select[name='page']").ok().expect("fail to build page and max_page, reason: 'page_select' not found").last().expect("fail to build page and max_page, reason: 'page_select' not found");
+            let page_str = page_select.as_node()
+                                      .select("option[selected='selected']")
+                                      .ok().expect("fail to build page and max_page, reason: 'page_str' not found")
+                                      .next()
+                                      .expect("fail to build page and max_page, reason: 'page_str' not found");
+            let max_page_str = page_select.as_node().select("option").ok().expect("fail to build page and max_page, reason: 'max_page_str' not found").last().expect("fail to build page and max_page, reason: 'max_page_str' not found");
+
+            let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
+            let max_page = max_page_str.text_contents()
+                                       .trim()
+                                       .to_string()
+                                       .parse::<usize>()
+                                       .unwrap_or(0);
+
+            (page, max_page)
+        };
+
+        let replies = parse_show_reply_items(&document);
+
+        let show_item = ShowItem {
+            url_query: url_query,
+            replies: replies,
+            page: page,
+            max_page: max_page,
+            reply_count: String::from(reply_count),
+            title: String::from(title),
+        };
+
+        Ok(show_item)
     }
     pub fn default_show_item(&self) -> ShowItem {
         default_show_item()
@@ -201,74 +266,6 @@ fn parse_list_topic_author_item(item: &NodeDataRef<ElementData>) -> ListTopicAut
     ListTopicAuthorItem {
        url: url,
        name: name
-    }
-}
-
-fn parse_show_item(document: &NodeRef, url: &str) -> ShowItem {
-
-    let url_query = parse_url_query_item(&url);
-
-    let (title, reply_count) = {
-        let repliers_tr = document.select(".repliers tr").ok().expect("fail to build title and reply_count, reason: 'repliers_tr' not found").next().expect("fail to build title and reply_count, reason: 'repliers_tr' not found");
-        let repliers_header = repliers_tr.as_node()
-                                         .select(".repliers_header")
-                                         .ok().expect("fail to build title and reply_count, reason: 'repliers_header' not found")
-                                         .last()
-                                         .expect("fail to build title and reply_count, reason: 'repliers_header' not found");
-        let divs = repliers_header.as_node().select("div").ok().expect("fail to build title and reply_count, reason: 'divs' not found").collect::<Vec<_>>();
-
-        let topic_data = divs.iter()
-                             .enumerate()
-                             .map(|(index, div)| {
-                                 let s_trimmed = div.text_contents().trim().to_string();
-                                 if index == 1 {
-                                     let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
-                                     let cap = re.captures(&s_trimmed).expect("fail to build title and reply_count, reason: 'cap' not found");
-                                     // String::from(cap.name("count").unwrap_or("0"))
-                                     cap.name("count").unwrap_or("0").to_string()
-                                 } else {
-                                     s_trimmed
-                                 }
-                             })
-                             .collect::<Vec<_>>();
-
-        if topic_data.len() < 2 {
-            panic!("length of topic_data is invalid.")
-        }
-
-        (topic_data.get(0).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string(), // return as title
-         topic_data.get(1).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string() /* return as reply_count */)
-    };
-
-    let (page, max_page) = {
-
-        let page_select = document.select("select[name='page']").ok().expect("fail to build page and max_page, reason: 'page_select' not found").last().expect("fail to build page and max_page, reason: 'page_select' not found");
-        let page_str = page_select.as_node()
-                                  .select("option[selected='selected']")
-                                  .ok().expect("fail to build page and max_page, reason: 'page_str' not found")
-                                  .next()
-                                  .expect("fail to build page and max_page, reason: 'page_str' not found");
-        let max_page_str = page_select.as_node().select("option").ok().expect("fail to build page and max_page, reason: 'max_page_str' not found").last().expect("fail to build page and max_page, reason: 'max_page_str' not found");
-
-        let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
-        let max_page = max_page_str.text_contents()
-                                   .trim()
-                                   .to_string()
-                                   .parse::<usize>()
-                                   .unwrap_or(0);
-
-        (page, max_page)
-    };
-
-    let replies = parse_show_reply_items(&document);
-
-    ShowItem {
-        url_query: url_query,
-        replies: replies,
-        page: page,
-        max_page: max_page,
-        reply_count: String::from(reply_count),
-        title: String::from(title),
     }
 }
 
