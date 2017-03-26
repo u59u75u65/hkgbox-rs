@@ -31,38 +31,12 @@ impl Builder {
 
 impl Builder {
     pub fn show_item(&mut self, document: &NodeRef,  url: &str) -> Result<ShowItem, &'static str> {
+
         let url_query = parse_url_query_item(&url);
 
-        let (title, reply_count) = {
-            let repliers_tr = document.select(".repliers tr").ok().expect("fail to build title and reply_count, reason: 'repliers_tr' not found").next().expect("fail to build title and reply_count, reason: 'repliers_tr' not found");
-            let repliers_header = repliers_tr.as_node()
-                                             .select(".repliers_header")
-                                             .ok().expect("fail to build title and reply_count, reason: 'repliers_header' not found")
-                                             .last()
-                                             .expect("fail to build title and reply_count, reason: 'repliers_header' not found");
-            let divs = repliers_header.as_node().select("div").ok().expect("fail to build title and reply_count, reason: 'divs' not found").collect::<Vec<_>>();
-
-            let topic_data = divs.iter()
-                                 .enumerate()
-                                 .map(|(index, div)| {
-                                     let s_trimmed = div.text_contents().trim().to_string();
-                                     if index == 1 {
-                                         let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
-                                         let cap = re.captures(&s_trimmed).expect("fail to build title and reply_count, reason: 'cap' not found");
-                                         // String::from(cap.name("count").unwrap_or("0"))
-                                         cap.name("count").unwrap_or("0").to_string()
-                                     } else {
-                                         s_trimmed
-                                     }
-                                 })
-                                 .collect::<Vec<_>>();
-
-            if topic_data.len() < 2 {
-                panic!("length of topic_data is invalid.")
-            }
-
-            (topic_data.get(0).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string(), // return as title
-             topic_data.get(1).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string() /* return as reply_count */)
+        let (title, reply_count) = match parse_title_and_reply_count(&document, &url) {
+            Ok((title,reply_count)) => (title, reply_count),
+            Err(e) =>  { return Err(e) }
         };
 
         let (page, max_page) = {
@@ -269,6 +243,52 @@ fn parse_list_topic_author_item(item: &NodeDataRef<ElementData>) -> ListTopicAut
     }
 }
 
+// Show Item
+fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(String, String), &'static str> {
+
+    return match document.select(".repliers tr") {
+        Ok(mut trs) => {
+            return match trs.next()  {
+                Some(repliers_tr) => {
+                    let repliers_header = repliers_tr.as_node()
+                                                     .select(".repliers_header")
+                                                     .ok().expect("fail to build title and reply_count, reason: 'repliers_header' not found")
+                                                     .last()
+                                                     .expect("fail to build title and reply_count, reason: 'repliers_header' not found");
+                    let divs = repliers_header.as_node().select("div").ok().expect("fail to build title and reply_count, reason: 'divs' not found").collect::<Vec<_>>();
+
+                    let topic_data = divs.iter()
+                                         .enumerate()
+                                         .map(|(index, div)| {
+                                             let s_trimmed = div.text_contents().trim().to_string();
+                                             if index == 1 {
+                                                 let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
+                                                 let cap = re.captures(&s_trimmed).expect("fail to build title and reply_count, reason: 'cap' not found");
+                                                 // String::from(cap.name("count").unwrap_or("0"))
+                                                 cap.name("count").unwrap_or("0").to_string()
+                                             } else {
+                                                 s_trimmed
+                                             }
+                                         })
+                                         .collect::<Vec<_>>();
+
+                    if topic_data.len() < 2 {
+                        Err(&"length of topic_data is invalid.")
+                    } else {
+                        Ok(
+                            (topic_data.get(0).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string(), // return as title
+                            topic_data.get(1).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string() /* return as reply_count */)
+                        )
+                    }
+                },
+                None => Err(&"fail to build title and reply_count, reason: 'repliers_tr' not found")
+            }
+        },
+        Err(e) =>  Err("fail to build title and reply_count, reason: 'repliers_tr' not found")
+    };
+
+}
+
 fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
 
     let replies_data = document.select(".repliers tr[userid][username]")
@@ -289,7 +309,7 @@ fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
                                         .next()
                                         .expect("fail to parse show reply item, reason: 'content_elm' not found"); // first
 
-                    let buff = Cursor::new(Vec::new());
+                    let mut buff = Cursor::new(Vec::new());
                     let serialize_result = content_elm.as_node().serialize(&mut buff);
                     let vec = buff.into_inner();
                     let content = String::from_utf8(vec).expect("fail to parse show reply item, reason: 'content' invalid");
