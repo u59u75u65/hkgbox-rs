@@ -250,16 +250,20 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
         Ok(mut trs) => {
             return match trs.next()  {
                 Some(repliers_tr) => {
-                    let repliers_header = repliers_tr.as_node()
-                                                     .select(".repliers_header")
-                                                     .ok().expect("fail to build title and reply_count, reason: 'repliers_header' not found")
-                                                     .last()
-                                                     .expect("fail to build title and reply_count, reason: 'repliers_header' not found");
-                    let divs = repliers_header.as_node().select("div").ok().expect("fail to build title and reply_count, reason: 'divs' not found").collect::<Vec<_>>();
 
-                    let topic_data = divs.iter()
-                                         .enumerate()
-                                         .map(|(index, div)| {
+                    let repliers_header_option = repliers_tr.as_node().select(".repliers_header").ok().map_or(None, |x| x.last() );
+
+                    let repliers_header = match repliers_header_option {
+                        Some(x) => x,
+                        None => { return Err("fail to build title and reply_count, reason: 'repliers_header' not found"); }
+                    };
+
+                    let divs = match repliers_header.as_node().select("div").ok() {
+                        Some(x) => x.collect::<Vec<_>>(),
+                        None => { return Err("fail to build title and reply_count, reason: 'divs' not found"); }
+                    };
+
+                    let topic_data = divs.iter().enumerate().map(|(index, div)| {
                                              let s_trimmed = div.text_contents().trim().to_string();
                                              if index == 1 {
                                                  let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
