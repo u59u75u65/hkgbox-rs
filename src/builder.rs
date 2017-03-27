@@ -36,7 +36,10 @@ impl Builder {
 
         let (title, reply_count) = match parse_title_and_reply_count(&document, &url) {
             Ok((title,reply_count)) => (title, reply_count),
-            Err(e) =>  { return Err(e) }
+            Err(e) =>  {
+                error!("{}", e);
+                return Err(e)
+            }
         };
 
         let (page, max_page) = {
@@ -253,10 +256,11 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
 
                     let repliers_header_option = repliers_tr.as_node().select(".repliers_header").ok().map_or(None, |x| x.last() );
 
-                    let repliers_header = match repliers_header_option {
-                        Some(x) => x,
-                        None => { return Err("fail to build title and reply_count, reason: 'repliers_header' not found"); }
-                    };
+                    if repliers_header_option.is_none() {
+                        return Err("fail to build title and reply_count, reason: 'repliers_header' not found");
+                    }
+
+                    let repliers_header = repliers_header_option.unwrap();
 
                     let divs_option = repliers_header.as_node().select("div").ok().map_or(None, |x| Some(x.collect::<Vec<_>>()));
 
@@ -265,8 +269,6 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
                     }
 
                     let divs = divs_option.unwrap();
-
-                    let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
 
                     let mut divs_enumerator = divs.iter().enumerate();
 
@@ -287,6 +289,7 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
                     let reply_count = match divs_enumerator.clone().filter(|&(i, _)| i == 1).map(|(i, e)| (i,e)).next() {
                         Some((i, div)) => {
                             info!("{} => {:?}", i, div.text_contents());
+                            let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
                             let s_trimmed = div.text_contents().trim().to_string();
                             let cap_option = re.captures(&s_trimmed);
                             if cap_option.is_none() {
