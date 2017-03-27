@@ -271,7 +271,7 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
                     let mut divs_enumerator = divs.iter().enumerate();
 
                     let count = divs_enumerator.clone().count();
-                    if  count != 2 {
+                    if  count < 2 {
                         error!("length of topic_data is invalid. length: {}", count);
                         return Err(&"length of topic_data is invalid.");
                     }
