@@ -258,45 +258,56 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
                         None => { return Err("fail to build title and reply_count, reason: 'repliers_header' not found"); }
                     };
 
-                    let divs = match repliers_header.as_node().select("div").ok() {
-                        Some(x) => x.collect::<Vec<_>>(),
-                        None => { return Err("fail to build title and reply_count, reason: 'divs' not found"); }
-                    };
+                    let divs_option = repliers_header.as_node().select("div").ok().map_or(None, |x| Some(x.collect::<Vec<_>>()));
+
+                    if divs_option.is_none() {
+                        return Err("fail to build title and reply_count, reason: 'divs' not found");
+                    }
+
+                    let divs = divs_option.unwrap();
 
                     let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
-                    let topic_data = divs.iter().enumerate().map(|(index, div)| {
-                                             let s_trimmed = div.text_contents().trim().to_string();
-                                             if index == 1 {
-                                                let cap_option = re.captures(&s_trimmed);
-                                                if cap_option.is_none() {
-                                                    None // return Err("fail to build title and reply_count, reason: 'cap' not found");
-                                                } else {
-                                                    Some(cap_option.unwrap().name("count").unwrap_or("0").to_string())
-                                                }
-                                             } else {
-                                                 Some(s_trimmed)
-                                             }
-                                         })
-                                         .collect::<Vec<_>>();
 
-                    if topic_data.len() != 2 {
-                        Err(&"length of topic_data is invalid.")
-                    } else {
+                    let mut divs_enumerator = divs.iter().enumerate();
 
-                        let title = topic_data.get(0).map_or(None, |x| x.clone());
-                        let reply_count = topic_data.get(1).map_or(None, |x| x.clone());
-
-                        if title.is_none() || reply_count.is_none() {
-                            return Err(&"fail to build title and reply_count, reason: 'topic_data' not found");
-                        }
-
-                        Ok(
-                            (
-                                title.unwrap().to_string(), // return as title
-                                reply_count.unwrap().to_string() /* return as reply_count */
-                            )
-                        )
+                    let count = divs_enumerator.clone().count();
+                    if  count != 2 {
+                        error!("length of topic_data is invalid. length: {}", count);
+                        return Err(&"length of topic_data is invalid.");
                     }
+
+                    let title_option = match divs_enumerator.clone().filter(|&(i, _)| i == 0).map(|(i, e)| (i,e)).next() {
+                        Some((i, div)) => {
+                            info!("{} => {:?}", i, div.text_contents());
+                            Some(div.text_contents().trim().to_string())
+                        },
+                        None => None
+                    };
+
+                    let reply_count = match divs_enumerator.clone().filter(|&(i, _)| i == 1).map(|(i, e)| (i,e)).next() {
+                        Some((i, div)) => {
+                            info!("{} => {:?}", i, div.text_contents());
+                            let s_trimmed = div.text_contents().trim().to_string();
+                            let cap_option = re.captures(&s_trimmed);
+                            if cap_option.is_none() {
+                                None
+                            } else {
+                                Some(cap_option.unwrap().name("count").unwrap_or("0").to_string())
+                            }
+                        },
+                        None => None
+                    };
+
+                    if  title_option.is_none() || reply_count.is_none() {
+                        return Err(&"fail to build title and reply_count, reason: 'topic_data' not found");
+                    }
+
+                    Ok(
+                        (
+                            title_option.unwrap().to_string(),
+                            reply_count.unwrap().to_string()
+                        )
+                    )
                 },
                 None => Err(&"fail to build title and reply_count, reason: 'repliers_tr' not found")
             }
