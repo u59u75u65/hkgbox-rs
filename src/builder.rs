@@ -263,25 +263,38 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
                         None => { return Err("fail to build title and reply_count, reason: 'divs' not found"); }
                     };
 
+                    let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
                     let topic_data = divs.iter().enumerate().map(|(index, div)| {
                                              let s_trimmed = div.text_contents().trim().to_string();
                                              if index == 1 {
-                                                 let re = Regex::new(r"^(?P<count>\d+)個回應$").expect("fail to build title and reply_count, reason: invalid regex");
-                                                 let cap = re.captures(&s_trimmed).expect("fail to build title and reply_count, reason: 'cap' not found");
-                                                 // String::from(cap.name("count").unwrap_or("0"))
-                                                 cap.name("count").unwrap_or("0").to_string()
+                                                let cap_option = re.captures(&s_trimmed);
+                                                if cap_option.is_none() {
+                                                    None // return Err("fail to build title and reply_count, reason: 'cap' not found");
+                                                } else {
+                                                    Some(cap_option.unwrap().name("count").unwrap_or("0").to_string())
+                                                }
                                              } else {
-                                                 s_trimmed
+                                                 Some(s_trimmed)
                                              }
                                          })
                                          .collect::<Vec<_>>();
 
-                    if topic_data.len() < 2 {
+                    if topic_data.len() != 2 {
                         Err(&"length of topic_data is invalid.")
                     } else {
+
+                        let title = topic_data.get(0).map_or(None, |x| x.clone());
+                        let reply_count = topic_data.get(1).map_or(None, |x| x.clone());
+
+                        if title.is_none() || reply_count.is_none() {
+                            return Err(&"fail to build title and reply_count, reason: 'topic_data' not found");
+                        }
+
                         Ok(
-                            (topic_data.get(0).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string(), // return as title
-                            topic_data.get(1).expect("fail to build title and reply_count, reason: 'topic_data' not found").to_string() /* return as reply_count */)
+                            (
+                                title.unwrap().to_string(), // return as title
+                                reply_count.unwrap().to_string() /* return as reply_count */
+                            )
                         )
                     }
                 },
