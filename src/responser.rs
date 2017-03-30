@@ -74,16 +74,22 @@ impl Responser {
                         let document = ::kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
                         app.list_topic_items.clear();
-                        for item in app.index_builder.build(&document) {
-                            app.list_topic_items.push(item);
+
+                        match app.index_builder.build(&document) {
+                            Ok(items) => {
+                                for item in items {
+                                    app.list_topic_items.push(item);
+                                }
+
+                                app.status_bar.append(&app.screen_manager, &format!("[TOPICS:ROK]"));
+
+                                ::screen::common::clear_screen();
+
+                                app.state_manager.update_state(Status::List); // state = Status::List;
+                                app.state_manager.set_web_request(false); // is_web_requesting = false;
+                            },
+                            Err(e) => app.status_bar.append(&app.screen_manager, &"[IPFAIL]")
                         }
-
-                        app.status_bar.append(&app.screen_manager, &format!("[TOPICS:ROK]"));
-
-                        ::screen::common::clear_screen();
-
-                        app.state_manager.update_state(Status::List); // state = Status::List;
-                        app.state_manager.set_web_request(false); // is_web_requesting = false;
 
                     }
                     ChannelItemType::Image(extra) => {

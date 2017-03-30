@@ -3,6 +3,7 @@ use reply_model::*;
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Clone)]
 #[derive(Default)]
 pub struct ListTopicTitleItem {
     pub url: String,
@@ -14,6 +15,7 @@ pub struct ListTopicTitleItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Clone)]
 #[derive(Default)]
 pub struct ListTopicAuthorItem {
     pub url: String,
@@ -23,6 +25,7 @@ pub struct ListTopicAuthorItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Clone)]
 #[derive(Default)]
 pub struct ListTopicItem {
     pub title: ListTopicTitleItem,
@@ -63,6 +66,7 @@ pub struct ShowReplyItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Clone)]
 #[derive(Default)]
 pub struct UrlQueryItem {
     pub channel: String,
