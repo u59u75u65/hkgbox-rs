@@ -51,12 +51,13 @@ fn main() {
 
         hkg::App {
             builder: hkg::builders::Builder::new(),
+            show_builder: hkg::builders::show::Show::new(),
             state_manager: StateManager::new(),
             screen_manager: ScreenManager::new(),
 
             // initialize empty page
             list_topic_items: vec![],
-            show_item: hkg::builders::Builder::new().default_show_item(),
+            show_item: hkg::builders::show::Show::new().default(),
 
             status_bar: hkg::screen::status_bar::StatusBar::new(),
             index: hkg::screen::index::Index::new(),

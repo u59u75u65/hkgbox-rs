@@ -25,7 +25,7 @@ impl Responser {
                                                        app.show_item.page,
                                                        app.state_manager.is_web_request()));
 
-                        match app.builder.show_item(&document, &posturl) {
+                        match app.show_builder.build(&document, &posturl) {
                             Ok(item) => {
                                 app.show_item = item;
 

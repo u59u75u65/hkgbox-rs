@@ -32,6 +32,7 @@ use std::sync::{Arc, Mutex};
 
 pub struct App <'a>{
     pub builder: builders::Builder,
+    pub show_builder: builders::show::Show,
     pub state_manager: state_manager::StateManager,
     pub screen_manager: screen_manager::ScreenManager,
     // pub icon_collection: &'a Box<Vec<model::IconItem>>,
