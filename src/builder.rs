@@ -44,13 +44,29 @@ impl Builder {
 
         let (page, max_page) = {
 
-            let page_select = document.select("select[name='page']").ok().expect("fail to build page and max_page, reason: 'page_select' not found").last().expect("fail to build page and max_page, reason: 'page_select' not found");
-            let page_str = page_select.as_node()
-                                      .select("option[selected='selected']")
-                                      .ok().expect("fail to build page and max_page, reason: 'page_str' not found")
-                                      .next()
-                                      .expect("fail to build page and max_page, reason: 'page_str' not found");
-            let max_page_str = page_select.as_node().select("option").ok().expect("fail to build page and max_page, reason: 'max_page_str' not found").last().expect("fail to build page and max_page, reason: 'max_page_str' not found");
+            let page_select_option = document.select("select[name='page']").ok().map_or(None, |x| x.last());
+
+            if page_select_option.is_none() {
+                return Err("fail to build page and max_page, reason: 'page_select' not found");
+            }
+
+            let page_select = page_select_option.unwrap();
+
+            let page_str_option = page_select.as_node().select("option[selected='selected']").ok().map_or(None, |mut x| x.next());
+
+            if page_str_option.is_none() {
+                return Err("fail to build page and max_page, reason: 'page_str' not found");
+            }
+
+            let page_str = page_str_option.unwrap();
+
+            let max_page_str_option = page_select.as_node().select("option").ok().map_or(None, |x| x.last());
+
+            if max_page_str_option.is_none() {
+                return Err("fail to build page and max_page, reason: 'max_page_str' not found");
+            }
+
+            let max_page_str = max_page_str_option.unwrap();
 
             let page = page_str.text_contents().trim().to_string().parse::<usize>().unwrap_or(0);
             let max_page = max_page_str.text_contents()
@@ -62,7 +78,17 @@ impl Builder {
             (page, max_page)
         };
 
-        let replies = parse_show_reply_items(&document);
+        let replies = {
+            let replies_option = parse_show_reply_items(&document);
+
+            if replies_option.is_err() {
+                let e = replies_option.err().unwrap();
+                error!("{:?}", e);
+                return Err(e);
+            }
+
+            replies_option.unwrap()
+        };
 
         let show_item = ShowItem {
             url_query: url_query,
@@ -320,51 +346,88 @@ fn parse_title_and_reply_count (document: &NodeRef,  url: &str) -> Result<(Strin
 
 }
 
-fn parse_show_reply_items(document: &NodeRef) -> Vec<ShowReplyItem> {
+fn reply_items_handler((index,tr): (usize, &::kuchiki::NodeDataRef<::kuchiki::ElementData>)) -> Result<ShowReplyItem, &'static str> {
+    let tr_attrs = (&tr.attributes).borrow();
+    let userid_option = tr_attrs.get("userid");
 
-    let replies_data = document.select(".repliers tr[userid][username]")
-                               .ok().expect("fail to parse show reply items, reason: 'replies_data' not found")
-                               .collect::<Vec<_>>();
+    if userid_option.is_none() {
+        return Err("fail to parse show reply item, reason: 'userid' not found");
+    }
 
-    replies_data.iter()
-                .enumerate()
-                .map(|(index, tr)| {
+    let userid = userid_option.unwrap();
 
-                    let tr_attrs = (&tr.attributes).borrow();
-                    let userid = tr_attrs.get("userid").expect("fail to parse show reply item, reason: 'userid' not found");
-                    let username = tr_attrs.get("username").expect("fail to parse show reply item, reason: 'userame' not found");
+    let username_option = tr_attrs.get("username");
 
-                    let content_elm = tr.as_node()
-                                        .select(".repliers_right .ContentGrid")
-                                        .ok().expect("fail to parse show reply item, reason: 'content_elm' not found")
-                                        .next()
-                                        .expect("fail to parse show reply item, reason: 'content_elm' not found"); // first
+    if username_option.is_none() {
+        return Err("fail to parse show reply item, reason: 'userame' not found");
+    }
 
-                    let mut buff = Cursor::new(Vec::new());
-                    let serialize_result = content_elm.as_node().serialize(&mut buff);
-                    let vec = buff.into_inner();
-                    let content = String::from_utf8(vec).expect("fail to parse show reply item, reason: 'content' invalid");
+    let username = username_option.unwrap();
 
-                    let datatime = tr.as_node()
-                                     .select(".repliers_right span")
-                                     .ok().expect("fail to parse show reply item, reason: 'datatime' not found")
-                                     .last()
-                                     .expect("fail to parse show reply item, reason: 'datatime' not found")
-                                     .text_contents();
+    let content_elm_option = tr.as_node().select(".repliers_right .ContentGrid").ok().map_or(None, |mut x| x.next());
 
-                    let mut vec: Vec<NodeType> = Vec::new();
+    if content_elm_option.is_none() {
+        return Err("fail to parse show reply item, reason: 'content_elm' not found");
+    }
+    let content_elm = content_elm_option.unwrap();
 
-                    vec = recursive(content_elm.as_node());
+    let mut buff = Cursor::new(Vec::new());
+    let serialize_result = content_elm.as_node().serialize(&mut buff);
+    let vec = buff.into_inner();
+    let content_result = String::from_utf8(vec);
 
-                    ShowReplyItem {
-                        userid: String::from(userid),
-                        username: String::from(username),
-                        content: String::from(content),
-                        body: vec,
-                        published_at: String::from(datatime),
-                    }
-                })
-                .collect::<Vec<_>>()
+    if content_result.is_err() {
+        return Err("fail to parse show reply item, reason: 'content' invalid");
+    }
+
+    let content = content_result.unwrap();
+
+    let datatime_option = tr.as_node().select(".repliers_right span").ok()
+                    .map_or(None, |mut x| x.last() )
+                    .map_or(None, |mut x| Some(x.text_contents()));
+
+    if datatime_option.is_none() {
+        return Err("fail to parse show reply item, reason: 'datatime' not found");
+    }
+
+    let datatime = datatime_option.unwrap();
+
+    let mut vec: Vec<NodeType> = Vec::new();
+
+    vec = recursive(content_elm.as_node());
+
+    Ok(
+        ShowReplyItem {
+            userid: String::from(userid),
+            username: String::from(username),
+            content: String::from(content),
+            body: vec,
+            published_at: String::from(datatime),
+        }
+    )
+}
+
+fn parse_show_reply_items(document: &NodeRef) -> Result<Vec<ShowReplyItem>, &'static str>  {
+
+    let replies_data_option = document.select(".repliers tr[userid][username]").ok().map_or(None, |x| Some(x.collect::<Vec<_>>()) );
+
+    if replies_data_option.is_none() {
+        return Err(&"fail to parse show reply items, reason: 'replies_data' not found");
+    }
+
+    let replies_data = replies_data_option.unwrap();
+
+    let show_replies = replies_data.iter().enumerate().map(reply_items_handler).collect::<Vec<_>>();
+
+    let err_show_reply_option = show_replies.iter().filter(|x| x.is_err()).next();
+
+    if err_show_reply_option.is_some() {
+        return Err(&"fail to parse show reply items, reason: 'error show reply item' was found");
+    }
+
+    let result = show_replies.iter().map(|x| x.clone().unwrap() ).collect::<Vec<_>>();
+
+    Ok(result)
 }
 
 fn parse_url_query_item(url_str: &str) -> UrlQueryItem {

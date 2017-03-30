@@ -46,6 +46,7 @@ pub struct ShowItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Clone)]
 pub struct ShowReplyItem {
     pub userid: String,
     pub username: String,
