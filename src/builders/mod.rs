@@ -35,31 +35,6 @@ impl Builder {
     pub fn list_topic_items(&mut self, document: &NodeRef) -> Vec<ListTopicItem> {
         parse_list_topic_items(&document)
     }
-    pub fn default_list_item(&self) -> ListTopicItem {
-        default_list_item()
-    }
-}
-
-fn default_list_item() -> ListTopicItem {
-    ListTopicItem {
-        title: ListTopicTitleItem {
-            url: "".to_string(),
-            url_query: UrlQueryItem {
-                channel: "".to_string(),
-                message: "".to_string()
-            },
-            text: "".to_string(),
-            num_of_pages: 0
-        },
-        author: ListTopicAuthorItem {
-            url: "".to_string(),
-            name: "".to_string()
-        },
-        last_replied_date: "".to_string(),
-        last_replied_time: "".to_string(),
-        reply_count: "".to_string(),
-        rating: "".to_string()
-    }
 }
 
 fn parse_list_topic_items(document: &NodeRef) -> Vec<ListTopicItem>{
@@ -74,7 +49,7 @@ fn parse_list_topic_items(document: &NodeRef) -> Vec<ListTopicItem>{
             Ok(items) => items,
             Err(e) => panic!("{:?}", e)
         };
-        let mut result = default_list_item();
+        let mut result: ListTopicItem = Default::default();
 
         for (j, item) in items.enumerate().filter(|&(j, _)| j > 0 && j < 6) {
             match j {

@@ -56,8 +56,8 @@ fn main() {
             screen_manager: ScreenManager::new(),
 
             // initialize empty page
-            list_topic_items: vec![],
-            show_item: hkg::builders::show::Show::new().default(),
+            list_topic_items: Default::default(),
+            show_item: Default::default(),
 
             status_bar: hkg::screen::status_bar::StatusBar::new(),
             index: hkg::screen::index::Index::new(),

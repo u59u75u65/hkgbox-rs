@@ -3,6 +3,7 @@ use reply_model::*;
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Default)]
 pub struct ListTopicTitleItem {
     pub url: String,
     pub url_query: UrlQueryItem,
@@ -13,6 +14,7 @@ pub struct ListTopicTitleItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Default)]
 pub struct ListTopicAuthorItem {
     pub url: String,
     pub name: String,
@@ -21,6 +23,7 @@ pub struct ListTopicAuthorItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Default)]
 pub struct ListTopicItem {
     pub title: ListTopicTitleItem,
     pub author: ListTopicAuthorItem,
@@ -34,6 +37,7 @@ pub struct ListTopicItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Default)]
 pub struct ShowItem {
     pub url_query: UrlQueryItem,
     pub title: String,
@@ -47,6 +51,7 @@ pub struct ShowItem {
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
 #[derive(Clone)]
+#[derive(Default)]
 pub struct ShowReplyItem {
     pub userid: String,
     pub username: String,
@@ -58,6 +63,7 @@ pub struct ShowReplyItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Default)]
 pub struct UrlQueryItem {
     pub channel: String,
     pub message: String
@@ -66,6 +72,7 @@ pub struct UrlQueryItem {
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 #[derive(RustcEncodable)]
+#[derive(Default)]
 pub struct IconItem {
     pub src: String,
     pub alt: String

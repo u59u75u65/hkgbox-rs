@@ -24,16 +24,6 @@ impl Show {
     pub fn new() -> Self {
         Show {}
     }
-    pub fn default(&self) -> ShowItem {
-        ShowItem {
-            url_query: UrlQueryItem { channel: "".to_string(), message: String::from("") },
-            replies: vec![],
-            page: 0,
-            max_page: 0,
-            reply_count: String::from(""),
-            title: String::from(""),
-        }
-    }
 
     pub fn build(&mut self, document: &NodeRef,  url: &str) -> Result<ShowItem, &'static str> {
 
