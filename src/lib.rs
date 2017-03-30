@@ -23,7 +23,7 @@ pub mod reply_model;
 pub mod model;
 pub mod web;
 pub mod responser;
-pub mod builder;
+pub mod builders;
 pub mod screen;
 pub mod control;
 
@@ -31,7 +31,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
 pub struct App <'a>{
-    pub builder: builder::Builder,
+    pub builder: builders::Builder,
     pub state_manager: state_manager::StateManager,
     pub screen_manager: screen_manager::ScreenManager,
     // pub icon_collection: &'a Box<Vec<model::IconItem>>,
