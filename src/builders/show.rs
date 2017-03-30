@@ -27,7 +27,13 @@ impl Show {
 
     pub fn build(&mut self, document: &NodeRef,  url: &str) -> Result<ShowItem, &'static str> {
 
-        let url_query = self.parse_url_query_item(&url);
+        let url_query = match self.parse_url_query_item(&url) {
+            Ok(url_query) => url_query,
+            Err(e) =>  {
+                error!("{}", e);
+                return Err(e)
+            }
+        };
 
         let (title, reply_count) = match self.parse_title_and_reply_count(&document, &url) {
             Ok((title,reply_count)) => (title, reply_count),
@@ -102,9 +108,20 @@ impl Show {
 
 impl Show {
 
-    fn parse_url_query_item(&self, url_str: &str) -> UrlQueryItem {
-        let url = Url::parse(&url_str).expect("fail to parse url query item, reason: invalid url");
-        let query = url.query().expect("fail to parse url query item, reason: invalid url query");
+    fn parse_url_query_item(&self, url_str: &str) -> Result<UrlQueryItem, &'static str> {
+
+        let url_option = Url::parse(&url_str);
+        if url_option.is_err() {
+            return Err("fail to parse url query item, reason: invalid url");
+        }
+        let url = url_option.unwrap();
+
+        let query_option = url.query();
+        if query_option.is_none() {
+            return Err("fail to parse url query item, reason: invalid url query");
+        }
+        let query = query_option.unwrap();
+
         let re = Regex::new(r"(\\?|&)(?P<key>[^&=]+)=(?P<value>[^&]+)").expect("fail to parse url query item, reason: invalid regex");
 
         let (channel, message) = {
@@ -117,20 +134,34 @@ impl Show {
                 map.entry(key).or_insert(value);
             }
 
-            if map.len() < 2 {
-                panic!("length of map is invalid.")
+            let count = map.len();
+            if count < 2 {
+                error!("length of map is invalid. length: {}", count);
+                return Err(&"length of map is invalid.");
+            }
+
+            let type_option = map.get("type");
+            if type_option.is_none() {
+                return Err(&"fail to parse url query item, reason: can not get value of 'type' attribute");
+            }
+
+            let message_option = map.get("message");
+            if message_option.is_none() {
+                return Err(&"fail to parse url query item, reason: can not get value of 'message' attribute");
             }
 
             (
-                map.get("type").expect("fail to parse url query item, reason: can not get value of 'type' attribute").to_string(),
-                map.get("message").expect("fail to parse url query item, reason: can not get value of 'message' attribute").to_string()
+                type_option.unwrap().to_string(),
+                message_option.unwrap().to_string()
             )
         };
 
-        UrlQueryItem {
-            channel: String::from(channel),
-            message: String::from(message)
-        }
+        Ok(
+            UrlQueryItem {
+                channel: String::from(channel),
+                message: String::from(message)
+            }
+        )
     }
 
     fn parse_title_and_reply_count (&self, document: &NodeRef,  url: &str) -> Result<(String, String), &'static str> {
