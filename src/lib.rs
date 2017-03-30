@@ -31,7 +31,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
 
 pub struct App <'a>{
-    pub builder: builders::Builder,
+    pub index_builder: builders::index::Index,
     pub show_builder: builders::show::Show,
     pub state_manager: state_manager::StateManager,
     pub screen_manager: screen_manager::ScreenManager,

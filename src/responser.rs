@@ -74,7 +74,7 @@ impl Responser {
                         let document = ::kuchiki::parse_html().from_utf8().one(item.result.as_bytes());
 
                         app.list_topic_items.clear();
-                        for item in app.builder.list_topic_items(&document) {
+                        for item in app.index_builder.build(&document) {
                             app.list_topic_items.push(item);
                         }
 

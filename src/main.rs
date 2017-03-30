@@ -50,7 +50,7 @@ fn main() {
         };
 
         hkg::App {
-            builder: hkg::builders::Builder::new(),
+            index_builder: hkg::builders::index::Index::new(),
             show_builder: hkg::builders::show::Show::new(),
             state_manager: StateManager::new(),
             screen_manager: ScreenManager::new(),
