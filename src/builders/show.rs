@@ -5,9 +5,6 @@ use kuchiki::NodeDataRef;
 use kuchiki::NodeData;
 use kuchiki::ElementData;
 
-use model::ListTopicItem;
-use model::ListTopicTitleItem;
-use model::ListTopicAuthorItem;
 use model::ShowItem;
 use model::ShowReplyItem;
 use model::UrlQueryItem;
