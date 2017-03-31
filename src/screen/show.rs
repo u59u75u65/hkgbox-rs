@@ -299,7 +299,7 @@ impl Show {
     }
 
     fn scrolled_y(&self) -> usize {
-        self.y - self.scroll_y
+        if self.y >= self.scroll_y { (self.y - self.scroll_y) } else { 0 }
     }
 
 }
