@@ -10,6 +10,7 @@ extern crate log;
 extern crate log4rs;
 
 use std::io::{stdout, stdin, Write};
+use std::io::{self, Read};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -23,6 +24,7 @@ use hkg::screen_manager::*;
 use hkg::resources::*;
 use hkg::web::*;
 use hkg::responser::*;
+use std::thread;
 
 fn main() {
 
@@ -67,7 +69,7 @@ fn main() {
             tx_req: &tx_req,
             rx_res: &rx_res,
 
-            stdout: stdout
+            stdout: stdout,
         }
     };
 
@@ -82,41 +84,74 @@ fn main() {
     let status_message = list_page(&mut app.state_manager, &tx_req);
     app.status_bar.append(&app.screen_manager, &status_message);
 
-    loop {
 
-        respsoner.try_recv(&mut app);
+    let (tx_in, rx_in) = channel::<::termion::event::Key>();
 
-        print_screen(&mut app);
-
-        if !app.state_manager.is_web_request() {
+    thread::spawn(move || {
+        loop {
 
             let stdin = stdin();
 
             for c in stdin.keys() {
-
-                if app.screen_manager.is_width_changed() {
-                    hkg::screen::common::clear_screen();
-                }
-
-                match app.state_manager.get_state() {
-                    Status::Startup => {}
-                    Status::List => {
-                        match index_control.handle(c.ok().expect("fail to get stdin keys"), &mut app) {
-                            Some(i) => if i == 0 { return } else { break },
-                            None => {}
-                        }
-                    }
-                    Status::Show => {
-                        match show_control.handle(c.ok().expect("fail to get stdin keys"), &mut app) {
-                            Some(i) => if i == 0 { return } else { break },
-                            None => {}
-                        }
-                    }
-                }
-
+                // println!("{:?}", c);
+                tx_in.send(c.ok().unwrap()).unwrap();
 
             }
         }
+    });
+
+    loop {
+
+        respsoner.try_recv(&mut app);
+
+        match rx_in.try_recv() {
+            Ok(c) => {
+                info!("receive input!!! {:?}", c);
+                if !app.state_manager.is_web_request() {
+
+                    match app.state_manager.get_state() {
+                        Status::Startup => {}
+                        Status::List => {
+                            match index_control.handle(c, &mut app) {
+                                Some(i) => {
+                                    if i == 0 {
+                                        return;
+                                    }
+                                }
+                                None => {}
+                            }
+                        }
+                        Status::Show => {
+                            match show_control.handle(c, &mut app) {
+                                Some(i) => {
+                                    if i == 0 {
+                                        return;
+                                    }
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {}
+        };
+
+        if app.screen_manager.is_width_changed() {
+            hkg::screen::common::clear_screen();
+        }
+
+        match app.state_manager.get_state() {
+            Status::Startup => {}
+            Status::List => {
+                print_screen(&mut app);
+            }
+            Status::Show => {
+                print_screen(&mut app);
+            }
+        }
+
+        thread::sleep(std::time::Duration::from_millis(50));
     }
 }
 
