@@ -41,6 +41,7 @@ fn main() {
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
 
+    let (tx_state, rx_state) = channel::<(Status,Status)>();
 
     let working = Arc::new(AtomicBool::new(true));
     let control = Arc::downgrade(&working);
@@ -59,7 +60,7 @@ fn main() {
         hkg::App {
             index_builder: hkg::builders::index::Index::new(),
             show_builder: hkg::builders::show::Show::new(),
-            state_manager: StateManager::new(),
+            state_manager: StateManager::new(tx_state),
             screen_manager: ScreenManager::new(),
 
             // initialize empty page
@@ -152,21 +153,20 @@ fn main() {
                     }
                 }
             }
-            Err(e) => {}
+            Err(e) => {
+                match rx_state.try_recv() {
+                    Ok((prev_state, current_state)) => {
+                        info!("receive state change");
+                        print_screen(&mut app);
+                    }
+                    Err(_) => { }
+                };
+            }
         };
 
         if app.screen_manager.is_width_changed() {
             hkg::screen::common::clear_screen();
-        }
-
-        match app.state_manager.get_state() {
-            Status::Startup => {}
-            Status::List => {
-                print_screen(&mut app);
-            }
-            Status::Show => {
-                print_screen(&mut app);
-            }
+            print_screen(&mut app);
         }
 
         thread::sleep(std::time::Duration::from_millis(50));
