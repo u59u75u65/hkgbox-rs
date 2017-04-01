@@ -115,7 +115,7 @@ fn main() {
 
         match rx_in.try_recv() {
             Ok(c) => {
-                info!("receive input!!! {:?}", c);
+                info!("receive input: {:?}", c);
                 if !app.state_manager.is_web_request() {
 
                     match app.state_manager.get_state() {
