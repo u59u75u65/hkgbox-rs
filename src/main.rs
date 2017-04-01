@@ -14,6 +14,7 @@ use std::io::{self, Read};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 use rustc_serialize::json;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -39,6 +40,10 @@ fn main() {
     // web background services
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
+
+
+    let working = Arc::new(AtomicBool::new(true));
+    let control = Arc::downgrade(&working);
 
     let mut app = {
 
@@ -73,7 +78,7 @@ fn main() {
         }
     };
 
-    Requester::new(rx_req, tx_res);
+    Requester::new(rx_req, tx_res, working.clone());
 
     let respsoner = Responser::new();
 
@@ -87,8 +92,11 @@ fn main() {
 
     let (tx_in, rx_in) = channel::<::termion::event::Key>();
 
+    let working1 = working.clone();
+    let working2 = working.clone();
+
     thread::spawn(move || {
-        loop {
+        while (*working1).load(Ordering::Relaxed) {
 
             let stdin = stdin();
 
@@ -100,7 +108,7 @@ fn main() {
         }
     });
 
-    loop {
+    while (*working2).load(Ordering::Relaxed) {
 
         respsoner.try_recv(&mut app);
 
@@ -115,7 +123,12 @@ fn main() {
                             match index_control.handle(c, &mut app) {
                                 Some(i) => {
                                     if i == 0 {
-                                        return;
+                                        match control.upgrade() {
+                                            Some(working) => (*working).store(false, Ordering::Relaxed),
+                                            None => {}
+                                        }
+                                    } else {
+                                        print_screen(&mut app);
                                     }
                                 }
                                 None => {}
@@ -125,7 +138,12 @@ fn main() {
                             match show_control.handle(c, &mut app) {
                                 Some(i) => {
                                     if i == 0 {
-                                        return;
+                                        match control.upgrade() {
+                                            Some(working) => (*working).store(false, Ordering::Relaxed),
+                                            None => {}
+                                        }
+                                    } else {
+                                        print_screen(&mut app);
                                     }
                                 }
                                 None => {}

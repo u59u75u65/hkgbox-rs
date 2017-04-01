@@ -10,10 +10,13 @@ use resources::show_resource::*;
 use resources::image_resource::*;
 use resources::web_resource::*;
 
+use std::sync::{Arc};
+use std::sync::atomic::{AtomicBool, Ordering};
+
 pub struct Requester {}
 
 impl Requester {
-    pub fn new(rx_req: Receiver<ChannelItem>, tx_res: Sender<ChannelItem>) -> Self {
+    pub fn new(rx_req: Receiver<ChannelItem>, tx_res: Sender<ChannelItem>, working: Arc<AtomicBool>) -> Self {
 
         // web client
         thread::spawn(move || {
@@ -21,7 +24,7 @@ impl Requester {
             let mut fc = Box::new(FileCache::new());
             let ct = CancellationTokenSource::new();
             ct.cancel_after(::std::time::Duration::new(10, 0));
-            loop {
+            while (*working).load(Ordering::Relaxed) {
                 match rx_req.recv() {
                     Ok(item) => {
 
