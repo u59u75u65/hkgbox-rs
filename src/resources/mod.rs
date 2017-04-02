@@ -7,6 +7,7 @@ pub mod web_resource;
 
 use std::default::Default;
 
+#[derive(Debug)]
 #[derive(Clone)]
 pub enum ChannelItemType {
     Show(ChannelShowItem),
@@ -14,10 +15,12 @@ pub enum ChannelItemType {
     Image(ChannelImageItem)
 }
 
+#[derive(Debug)]
 #[derive(Clone)]
 #[derive(Default)]
 pub struct ChannelIndexItem { }
 
+#[derive(Debug)]
 #[derive(Clone)]
 #[derive(Default)]
 pub struct ChannelShowItem {
@@ -25,12 +28,14 @@ pub struct ChannelShowItem {
     pub page: usize,
 }
 
+#[derive(Debug)]
 #[derive(Default)]
 pub struct ChannelItem {
     pub extra: Option<ChannelItemType>,
     pub result: String
 }
 
+#[derive(Debug)]
 #[derive(Clone)]
 #[derive(Default)]
 pub struct ChannelImageItem {
