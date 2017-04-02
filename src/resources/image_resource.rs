@@ -26,6 +26,7 @@ use crossbeam::*;
 
 use std::thread::park_timeout;
 use std::time::{Instant, Duration};
+use std::sync::RwLock;
 
 pub struct ImageResource<'a, T: 'a + Cache + Send> {
     cache: &'a mut Box<T>,
@@ -76,16 +77,16 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                 let beginning_park = Instant::now();
                                 let timeout = Duration::from_secs(2);
 
-                                let mut is_done = Arc::new(AtomicBool::new(false));
+                                let mut is_done = Arc::new(RwLock::new(AtomicBool::new(false)));
                                 let mut is_done2 = is_done.clone();
                                 ::crossbeam::scope(|scope| {
                                     scope.spawn(move ||{
                                         let th = thread::current();
 
-                                        let client = Client::with_connector(connector);
+                                        let mut client = Client::with_connector(connector);
                                         match client.get(&url3).headers(headers).send() {
                                             Ok(mut resp) => {
-                                                    is_done.store(true, Ordering::Relaxed);
+                                                    is_done.write().unwrap().store(true, Ordering::Relaxed);
                                                     info!("image resource - http request success url:  {}", url3.clone());
                                                     let mut buffer = Vec::new();
                                                     resp.read_to_end(&mut buffer).expect("fail to read buffer from the http response");
@@ -93,7 +94,7 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                                     tx_req.send(None);
                                                 }
                                             Err(e) => {
-                                                is_done.store(true, Ordering::Relaxed);
+                                                is_done.write().unwrap().store(true, Ordering::Relaxed);
                                                 info!("image resource - http request fail url:  {}", url3.clone());
                                                 tx_req.send( Some( (false, Vec::new(), e.to_string()) ) );
                                             }
@@ -104,22 +105,31 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                             let timeout = timeout - beginning_park.elapsed();
                                             park_timeout(timeout);
                                         }
-                                        match Arc::try_unwrap(is_done2) {
-                                            Ok(o) => {
-                                                let is_done_flag = o.load(Ordering::Relaxed);
-                                                warn!("is done flag: {} url: {}", is_done_flag, url4.clone());
-                                                if !is_done_flag {
-                                                    warn!("image request {} is canceled!", url4.clone());
-                                                    thread::park_timeout(::std::time::Duration::from_secs(0));
-                                                    tx_req2.send(None);
+
+                                        let mut i = 3;
+                                        while i > 0  {
+                                            let mut is_done3 = is_done2.clone();
+                                            match Arc::try_unwrap(is_done3) {
+                                                Ok(o) => {
+                                                    let is_done_flag = o.read().unwrap().load(Ordering::Relaxed);
+                                                    warn!("is done flag: {} url: {}", is_done_flag, url4.clone());
+                                                    if !is_done_flag {
+                                                        warn!("image request {} is canceled!", url4.clone());
+                                                        thread::park_timeout(::std::time::Duration::from_secs(0));
+                                                        tx_req2.send(None);
+                                                        break;
+                                                    }
+                                                }
+                                                Err(_) => {
+                                                    error!("fail to read is done flag, url: {}, retry: {}", url4.clone(), i);
+                                                    thread::sleep(::std::time::Duration::from_secs(1));
+                                                    i -= 1;
+                                                    if i == 0 {
+                                                        tx_req2.send(None);
+                                                    }
                                                 }
                                             }
-                                            Err(e) => {
-                                                error!("fail to read is done flag, url: {}, reason: {:?}", url4.clone(), e);
-                                                tx_req2.send(None);
-                                            }
                                         }
-
                                     })
                                 });
 
