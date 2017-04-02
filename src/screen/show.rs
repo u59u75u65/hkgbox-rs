@@ -111,6 +111,8 @@ impl Show {
             self.y += 1;
         }
 
+        info!("[print_body] y: {} scroll_y: {} body_height: {}", self.y, self.scroll_y,  self.body_height());
+
         self.is_scroll_to_end = self.scrolled_y() < self.body_height();
     }
 
@@ -315,12 +317,12 @@ impl Show {
     }
 
     fn can_still_print(&self, i: usize) -> bool {
-        info!("[can_still_print] y: {} lower bound: {} upper bound: {}", self.y + i , self.scroll_y, self.scroll_y + self.body_height());
+        // info!("[can_still_print] y: {} lower bound: {} upper bound: {}", self.y + i , self.scroll_y, self.scroll_y + self.body_height());
         self.y + i > self.scroll_y && self.y + i < self.scroll_y + self.body_height()
     }
 
     fn scrolled_y(&self) -> usize {
-        info!("[scrolled_y] y: {} scroll_y: {} body_height: {}", self.y, self.scroll_y,  self.body_height());
+        // info!("[scrolled_y] y: {} scroll_y: {} body_height: {}", self.y, self.scroll_y,  self.body_height());
         if self.y >= self.scroll_y { (self.y - self.scroll_y) } else { 0 }
     }
 
