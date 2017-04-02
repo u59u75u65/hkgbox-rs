@@ -8,6 +8,7 @@ extern crate cancellation;
 extern crate time;
 extern crate url;
 extern crate regex;
+extern crate crossbeam;
 
 #[macro_use]
 extern crate log;

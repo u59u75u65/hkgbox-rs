@@ -4,6 +4,7 @@ extern crate rustc_serialize;
 extern crate kuchiki;
 extern crate chrono;
 extern crate cancellation;
+extern crate crossbeam;
 
 #[macro_use]
 extern crate log;
