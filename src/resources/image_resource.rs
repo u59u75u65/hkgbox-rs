@@ -21,23 +21,15 @@ use std::sync::{Arc};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use caches::file_cache::*;
-pub struct ImageResource<'a, T: 'a + Cache + Send> {
-    cache: &'a mut Box<T>,
-    client: Client
-}
+pub struct ImageResource { }
 
-impl<'a, T: 'a + Cache + Send> ImageResource<'a, T> {
-    pub fn new(cache: &'a mut Box<T>) -> Self {
-        let ssl = NativeTlsClient::new().unwrap();
-        let connector = HttpsConnector::new(ssl);
-        ImageResource {
-            cache: cache,
-            client: Client::with_connector(connector)
-        }
+impl ImageResource {
+    pub fn new() -> Self {
+        ImageResource {}
     }
 }
 
-impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
+impl Resource for ImageResource {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
         match item.extra.clone() {
             Some(o) => {
@@ -49,7 +41,8 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                         let img_file_name = url.into_bytes().as_slice().to_base64(base64::URL_SAFE);
 
                         info!("image resource - before find in cache. url: {}", url2.clone());
-                        let (from_cache, result, reason) = match self.cache.read(&img_path, &img_file_name) {
+                        let mut cache = Box::new(FileCache::new());
+                        let (from_cache, result, reason) = match cache.read(&img_path, &img_file_name) {
                             Ok(result) => {
                                 info!("image resource - find in cache success. url:  {}", url2.clone());
                                 (true, result, "".to_string())
@@ -58,7 +51,7 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                 info!("image resource - find in cache fail. url:  {}", url2.clone());
 
                                 let ct = CancellationTokenSource::new();
-                                ct.cancel_after(::std::time::Duration::new(10, 0));
+                                ct.cancel_after(::std::time::Duration::new(1, 0));
 
                                 let (tx_req, rx_req) = channel::<Option<(bool, Vec<u8>, String)>>();
 
@@ -78,7 +71,7 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                                     info!("image resource - http request success url:  {}", url3.clone());
                                                     let mut buffer = Vec::new();
                                                     resp.read_to_end(&mut buffer).expect("fail to read buffer from the http response");
-                                                    Box::new(FileCache::new()).write(&img_path, &img_file_name, buffer.clone()).expect("fail to write cache");
+                                                    cache.write(&img_path, &img_file_name, buffer.clone()).expect("fail to write cache");
                                                     tx_req.send(Some( (false, buffer, "".to_string()) ) );
                                                 }
                                             Err(e) => {
