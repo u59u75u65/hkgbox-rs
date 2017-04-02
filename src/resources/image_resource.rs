@@ -84,6 +84,8 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                         let th = thread::current();
 
                                         let mut client = Client::with_connector(connector);
+                                        client.set_read_timeout(Some(::std::time::Duration::from_secs(5)));
+                                        client.set_write_timeout(Some(::std::time::Duration::from_secs(5)));
                                         match client.get(&url3).headers(headers).send() {
                                             Ok(mut resp) => {
                                                     is_done.write().unwrap().store(true, Ordering::Relaxed);

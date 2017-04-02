@@ -36,8 +36,10 @@ impl WebResource {
         info!("web resource #fetch");
         let mut headers = Headers::new();
         headers.set(UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36".to_owned()));
-
-        match self.client.get(url).headers(headers).send() {
+        let mut client = Client::new();
+        client.set_read_timeout(Some(::std::time::Duration::from_secs(5)));
+        client.set_write_timeout(Some(::std::time::Duration::from_secs(5)));
+        match client.get(url).headers(headers).send() {
             Ok(mut resp) => {
                 let mut s = String::new();
                 match resp.read_to_string(&mut s) {
