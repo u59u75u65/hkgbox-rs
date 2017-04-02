@@ -13,6 +13,7 @@ impl Responser {
     pub fn try_recv (&self, mut app: &mut ::App) {
         match app.rx_res.try_recv() {
             Ok(item) => {
+                info!("respsoner receive item");
                 match item.extra {
                     Some(o) => {
                         match o {
@@ -46,12 +47,9 @@ impl Responser {
                                             })
                                             .collect::<Vec<_>>();
 
-                                        let mut count = app.image_request_count_lock.lock().expect("fail to lock image request count");
-                                        *count += maps.len();
-                                        // let count = maps.len();
-                                        app.state_manager.set_bg_request(true);
+                                        let count = maps.len();
                                         app.status_bar.append(&app.screen_manager,
-                                                              &format!("[SIMG:{count}]", count = *count));
+                                                              &format!("[SIMG:{count}]", count = count));
 
                                         for node in &maps {
                                             let node2 = node.clone();
@@ -97,35 +95,12 @@ impl Responser {
                             }
                             ChannelItemType::Image(extra) => {
 
-                                match app.image_request_count_lock.lock() {
-                                    Ok(mut count) => {
-                                        if *count == 0 {
-                                            app.status_bar.append(&app.screen_manager, &format!("[RIMG:CERR]"));
-                                        } else {
-                                            *count -= 1;
-                                            if item.result != "" {
-                                                app.status_bar.append(&app.screen_manager,
-                                                                      &format!("[RIMG:E-{count}-{error}]",
-                                                                               count = *count,
-                                                                               error = item.result));
-                                            } else {
-                                                app.status_bar.append(&app.screen_manager,
-                                                                      &format!("[RIMG:S-{count}]", count = *count));
-                                            }
-                                        }
-
-                                        ::screen::common::clear_screen();
-
-                                        if *count <= 0 {
-                                            app.state_manager.set_bg_request(false);
-                                            ::screen::common::clear_screen();
-                                            app.state_manager.set_web_request(false); // is_web_requesting = false;
-                                        }
-                                    }
-                                    Err(poisoned) => {
-                                        app.status_bar.append(&app.screen_manager, &format!("[IMAGES:LOCKERR]"));
-                                    }
-                                };
+                                if item.result != "" {
+                                    app.status_bar.append(&app.screen_manager,
+                                                          &format!("[RIMG:E-{error}]", error = item.result));
+                                } else {
+                                    app.status_bar.append(&app.screen_manager, "[RIMG:S]");
+                                }                            
                             }
                         }
                     }
@@ -150,6 +125,9 @@ fn get_posturl(postid: &String, page: usize) -> String {
 
 fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
+    let url2 = url.clone();
+
+    info!("image_request - url: {}", url2);
     let ci = ChannelItem {
         extra: Some(ChannelItemType::Image(ChannelImageItem {
                                   url: url.to_string(),
@@ -160,7 +138,6 @@ fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {
-            state_manager.set_web_request(true); // *is_web_requesting = true;
             "SOK".to_string()
         }
         Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
