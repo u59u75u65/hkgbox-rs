@@ -150,8 +150,13 @@ impl Show {
                                     Some(icon_reference) => line = format!("{}{}", line, imgcat_from_path(&icon_reference, icon_width)),
                                     // URL IMAGE
                                     None => {
-                                        line = format!("{}{}", line, imgcat_from_url(&n.data, img_height));
-                                        img_offset += img_height;
+                                        if self.can_still_print(img_offset + img_height) {
+                                            img_offset += img_height;
+                                            line = format!("{}{}", line, imgcat_from_url(&n.data, img_height));
+                                        } else {
+                                            img_offset += 1;
+                                            line = format!("{}\n[-]", line);
+                                        }
                                     }
                                 }
                             } else {
@@ -161,12 +166,14 @@ impl Show {
                     }
                 }
                 NodeType::BlockQuote(n) => {
-                    self.print_reply(stdout, &n.data, depth + 1);
+                    if self.can_still_print(img_offset) {
+                        self.print_reply(stdout, &n.data, depth + 1);
+                    }
                     is_first = false;
                 }
                 NodeType::Br(n) => {
                     if !line.is_empty() {
-                        if self.can_print() {
+                        if self.can_print() && self.can_still_print(img_offset) {
                             self.print_reply_line(stdout, format!(" {}{}", padding, line));
                         }
                         line = String::new();
@@ -296,6 +303,11 @@ impl Show {
 
     fn can_print(&self) -> bool {
         self.y > self.scroll_y + 1 && self.y < self.scroll_y + 1 + self.body_height()
+    }
+
+    fn can_still_print(&self, i: usize) -> bool {
+        info!("y: {} lower bound: {} upper bound: {}", self.y + i , self.scroll_y, self.scroll_y + self.body_height());
+        self.y + i > self.scroll_y && self.y + i < self.scroll_y + self.body_height()
     }
 
     fn scrolled_y(&self) -> usize {
