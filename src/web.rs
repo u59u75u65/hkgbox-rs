@@ -41,7 +41,7 @@ impl Requester {
                                         tx_res.send(show_resource.fetch(&item)).expect("[web client] fail to send show request");
                                     }
                                     ChannelItemType::Image(_) => {
-                                        let mut image_resource = ImageResource::new();
+                                        let mut image_resource = ImageResource::new(&mut fc);
                                         tx_res.send(image_resource.fetch(&item)).expect("[web client] fail to send image request");
                                     }
                                 }
