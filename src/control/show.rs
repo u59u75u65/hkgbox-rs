@@ -86,12 +86,13 @@ impl Show {
 fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
-        extra: ChannelItemType::Show(ChannelShowItem {
+        extra: Some(ChannelItemType::Show(ChannelShowItem {
                                          postid: postid.clone(),
                                          page: page,
-                                     }),
+                                     })),
         result: String::from(""),
     };
+
 
     let status_message = match tx_req.send(ci) {
         Ok(()) => {

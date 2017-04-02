@@ -30,18 +30,23 @@ impl Requester {
 
                         let th = thread::current();
                         ct.run(|| { th.unpark(); }, || match item.extra.clone() {
-                            ChannelItemType::Index(_) => {
-                                let mut index_resource = IndexResource::new(&mut wr, &mut fc);
-                                tx_res.send(index_resource.fetch(&item)).expect("[web client] fail to send index request");
+                            Some(o) => {
+                                match o {
+                                    ChannelItemType::Index(_) => {
+                                        let mut index_resource = IndexResource::new(&mut wr, &mut fc);
+                                        tx_res.send(index_resource.fetch(&item)).expect("[web client] fail to send index request");
+                                    }
+                                    ChannelItemType::Show(_) => {
+                                        let mut show_resource = ShowResource::new(&mut wr, &mut fc);
+                                        tx_res.send(show_resource.fetch(&item)).expect("[web client] fail to send show request");
+                                    }
+                                    ChannelItemType::Image(_) => {
+                                        let mut image_resource = ImageResource::new(&mut fc);
+                                        tx_res.send(image_resource.fetch(&item)).expect("[web client] fail to send image request");
+                                    }
+                                }
                             }
-                            ChannelItemType::Show(_) => {
-                                let mut show_resource = ShowResource::new(&mut wr, &mut fc);
-                                tx_res.send(show_resource.fetch(&item)).expect("[web client] fail to send show request");
-                            }
-                            ChannelItemType::Image(_) => {
-                                let mut image_resource = ImageResource::new(&mut fc);
-                                tx_res.send(image_resource.fetch(&item)).expect("[web client] fail to send image request");
-                            }
+                            None => { }
                         });
 
                         if ct.is_canceled() {

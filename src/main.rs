@@ -176,8 +176,8 @@ fn main() {
 fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
-        extra: ChannelItemType::Index(ChannelIndexItem {}),
-        result: String::from(""),
+        extra: Some(ChannelItemType::Index(Default::default())),
+        result: Default::default()
     };
 
     let status_message = match tx_req.send(ci) {

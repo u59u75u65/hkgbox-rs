@@ -3,6 +3,8 @@ use termion::event::Key;
 use state_manager::*;
 use resources::*;
 
+use std::default::Default;
+
 pub struct Index {
 
 }
@@ -69,11 +71,11 @@ impl Index {
 fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
-        extra: ChannelItemType::Show(ChannelShowItem {
+        extra: Some( ChannelItemType::Show(ChannelShowItem {
                                          postid: postid.clone(),
                                          page: page,
-                                     }),
-        result: String::from(""),
+                                     })),
+        result: Default::default(),
     };
 
     let status_message = match tx_req.send(ci) {

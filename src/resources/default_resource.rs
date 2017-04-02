@@ -12,9 +12,6 @@ impl DefaultResource {
 
 impl Resource for DefaultResource {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
-        ChannelItem {
-            extra: ChannelItemType::Index(ChannelIndexItem { }),
-            result: "".to_string()
-        }
+        Default::default()
     }
 }

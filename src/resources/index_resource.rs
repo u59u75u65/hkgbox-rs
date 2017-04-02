@@ -48,7 +48,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
         }
 
         let result_item = ChannelItem {
-            extra: ChannelItemType::Index(ChannelIndexItem { }),
+            extra: Some( ChannelItemType::Index(ChannelIndexItem { }) ),
             result: String::from_utf8(result).expect("fail to build result item, reason: invalid string"),
         };
         result_item
