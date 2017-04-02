@@ -33,7 +33,7 @@ impl WebResource {
     //
 
     pub fn fetch(&mut self, url: &String) -> Result<String, Error> {
-
+        info!("web resource #fetch");
         let mut headers = Headers::new();
         headers.set(UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36".to_owned()));
 

@@ -66,7 +66,10 @@ impl Responser {
                                         ::screen::common::clear_screen();
                                         app.state_manager.update_state(Status::Show); //state = Status::Show;
                                     },
-                                    Err(e) => app.status_bar.append(&app.screen_manager, &"[SPFAIL]")
+                                    Err(e) => {
+                                        error!("show item failed to build. reason: {:?}", e);
+                                        app.status_bar.append(&app.screen_manager, &"[SPFAIL]");
+                                    }
                                 };
 
                                 app.state_manager.set_web_request(false); // is_web_requesting = false;
@@ -89,18 +92,21 @@ impl Responser {
                                         app.state_manager.update_state(Status::List); // state = Status::List;
                                         app.state_manager.set_web_request(false); // is_web_requesting = false;
                                     },
-                                    Err(e) => app.status_bar.append(&app.screen_manager, &"[IPFAIL]")
+                                    Err(e) => {
+                                        error!("index item failed to build. reason: {:?}", e);
+                                        app.status_bar.append(&app.screen_manager, &"[IPFAIL]");
+                                    }
                                 }
 
                             }
                             ChannelItemType::Image(extra) => {
-
                                 if item.result != "" {
+                                    error!("image item failed to build.");
                                     app.status_bar.append(&app.screen_manager,
                                                           &format!("[RIMG:E-{error}]", error = item.result));
                                 } else {
                                     app.status_bar.append(&app.screen_manager, "[RIMG:S]");
-                                }                            
+                                }
                             }
                         }
                     }

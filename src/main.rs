@@ -118,6 +118,7 @@ fn main() {
             Ok(c) => {
                 info!("receive input: {:?}", c);
                 if !app.state_manager.is_web_request() {
+                info!("current state: {:?}", app.state_manager.get_state() );
 
                     match app.state_manager.get_state() {
                         Status::Startup => {}
@@ -133,7 +134,7 @@ fn main() {
                                         print_screen(&mut app);
                                     }
                                 }
-                                None => {}
+                                None => error!("index_control handle receive none.")
                             }
                         }
                         Status::Show => {
@@ -148,11 +149,11 @@ fn main() {
                                         print_screen(&mut app);
                                     }
                                 }
-                                None => {}
+                                None => error!("show_control handle receive none.")
                             }
                         }
                     }
-                }
+                // }
             }
             Err(e) => {
                 match rx_state.try_recv() {

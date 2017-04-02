@@ -28,6 +28,7 @@ impl<'a, T: 'a + Cache> ShowResource<'a, T> {
 
 impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
+        info!("show resource #fetch");
         match item.extra.clone() {
             Some(o) => {
                 match o {

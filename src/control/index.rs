@@ -22,6 +22,7 @@ impl Index {
                 app.status_bar.append(&app.screen_manager, "ENTER");
                 let i = app.index.get_selected_topic();
                 if i > 0 {
+                    info!("select topic: {}", i);
                     let topic_item = &app.list_topic_items[i - 1];
                     let postid = &topic_item.title.url_query.message;
                     let page = 1;

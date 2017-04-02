@@ -31,6 +31,7 @@ impl Requester {
                         let th = thread::current();
                         ct.run(|| { th.unpark(); }, || match item.extra.clone() {
                             Some(o) => {
+                                info!("request: {:?}", o);
                                 match o {
                                     ChannelItemType::Index(_) => {
                                         let mut index_resource = IndexResource::new(&mut wr, &mut fc);
