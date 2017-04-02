@@ -151,7 +151,10 @@ fn get_posturl(postid: &String, page: usize) -> String {
 fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
-        extra: Some(ChannelItemType::Image(Default::default())),
+        extra: Some(ChannelItemType::Image(ChannelImageItem {
+                                  url: url.to_string(),
+                                  bytes: Default::default(),
+                              })),
         result: Default::default(),
     };
 
