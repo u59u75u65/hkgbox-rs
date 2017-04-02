@@ -50,7 +50,11 @@ impl<'a, T: 'a + Cache> Resource for ImageResource<'a, T> {
                                 let mut headers = Headers::new();
                                 headers.set(UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36".to_owned()));
 
-                                match self.client.get(&url2).headers(headers).send() {
+                                let ssl = NativeTlsClient::new().unwrap();
+                                let connector = HttpsConnector::new(ssl);
+
+                                let client = Client::with_connector(connector);
+                                match client.get(&url2).headers(headers).send() {
                                     Ok(mut resp) => {
                                             info!("image resource - http request success url:  {}", url2.clone());
                                             let mut buffer = Vec::new();
