@@ -19,23 +19,21 @@ pub fn imgcat_from_path(path: &str, width: usize) -> String {
     return imgcat(buffer, &"width", width);
 }
 
-pub fn imgcat_from_url(url: &str, height: usize) -> String {
+pub fn imgcat_from_url(url: &str, height: usize) -> Result<String, String> {
     let key = url.to_string().into_bytes().to_base64(base64::URL_SAFE);
     let path = format!("data/cache/img/{file_name}", file_name = key);
 
     let path2 = path.clone();
 
     return match File::open(path) {
-        // Err(why) => String::from(format!("[{url}]", url = url)),
         Err(why) => {
-            let e = String::from("[x]");
             error!("[imgcat from url error] url: {}, path: {}, reason: {}", url, path2, why);
-            e
+            Err(format!("{:?}", why))
         },
         Ok(mut file) => {
             let mut buffer = Vec::new();
             file.read_to_end(&mut buffer).expect("fail to read image");
-            return imgcat(buffer, &"height", height);
+            Ok(imgcat(buffer, &"height", height))
         },
     };
 }

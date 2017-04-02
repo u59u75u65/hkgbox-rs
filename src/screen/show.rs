@@ -151,8 +151,17 @@ impl Show {
                                     // URL IMAGE
                                     None => {
                                         if self.can_still_print(img_offset + img_height) {
-                                            img_offset += img_height;
-                                            line = format!("{}{}", line, imgcat_from_url(&n.data, img_height));
+                                            match imgcat_from_url(&n.data, img_height) {
+                                                Ok(img) => {
+                                                    img_offset += img_height;
+                                                    line = format!("{}{}", line, img);
+                                                }
+                                                Err(e) => {
+                                                    img_offset += 1;
+                                                    line = format!("{}\n[x]", line);
+                                                }
+                                            }
+
                                         } else {
                                             img_offset += 1;
                                             line = format!("{}\n[-]", line);
