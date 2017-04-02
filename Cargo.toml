@@ -16,6 +16,7 @@ time = "0.1"
 log = "*"
 log4rs = "0.6"
 hyper-native-tls = { github = "git@github.com:sfackler/hyper-native-tls.git" }
+crossbeam = "0.2"
 
 [dependencies.url]
 git = "https://github.com/servo/rust-url"
@@ -27,6 +28,10 @@ libc = "0.2.8"
 # name = "hkg"
 # path = "src/lib.rs"
 #
-# [[bin]]
-# name = "hkg"
-# path = "src/main.rs"
+[[bin]]
+name = "stdin_stdout_thread"
+path = "src/examples/stdin_stdout_thread.rs"
+
+[[bin]]
+name = "hkg"
+path = "src/main.rs"

@@ -4,6 +4,7 @@ version = "0.0.1"
 dependencies = [
  "cancellation 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.10.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper-native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "kuchiki 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
