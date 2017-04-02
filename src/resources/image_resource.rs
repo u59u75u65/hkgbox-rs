@@ -55,14 +55,13 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                         let img_file_name = url.into_bytes().as_slice().to_base64(base64::URL_SAFE);
 
                         info!("image resource - before find in cache. url: {}", url2.clone());
-                        let (from_cache, result, reason) = match self.cache.read(&img_path, &img_file_name) {
+                        let read_result: Option<(bool, Vec<u8>, String)> = match self.cache.read(&img_path, &img_file_name) {
                             Ok(result) => {
                                 info!("image resource - find in cache success. url:  {}", url2.clone());
-                                (true, result, "".to_string())
+                                Some( (true, result, Default::default()) )
                             }
                             Err(_) => {
                                 info!("image resource - find in cache fail. url:  {}", url2.clone());
-
 
                                 let (tx_req, rx_req) = channel::<Option<(bool, Vec<u8>, String)>>();
                                 let tx_req2 = tx_req.clone();
@@ -91,7 +90,7 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                                     let mut buffer = Vec::new();
                                                     resp.read_to_end(&mut buffer).expect("fail to read buffer from the http response");
                                                     self.cache.write(&img_path, &img_file_name, buffer.clone()).expect("fail to write cache");
-                                                    tx_req.send(Some( (false, buffer, "".to_string()) ) );
+                                                    tx_req.send(None);
                                                 }
                                             Err(e) => {
                                                 is_done.store(true, Ordering::Relaxed);
@@ -125,24 +124,29 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                 });
 
                                 match rx_req.recv() {
-                                    Ok(o) => {
-                                        match o {
-                                            Some((from_cache, result, reason)) => (from_cache, result, reason),
-                                            None => (false, Vec::new(), "".to_string())
-                                        }
-                                    }
-                                    Err(e) => { (false, Vec::new(), e.to_string()) }
+                                    Ok(o) => o,
+                                    Err(e) => None
                                 }
                             }
                         };
 
-                        let url5 = url2.clone();
-                        info!("image url: {} reason: {}", url5, reason);
-                        let result_item = ChannelItem {
-                            extra: Some(ChannelItemType::Image(ChannelImageItem { url: url2, bytes: result })),
-                            result: reason,
-                        };
-                        result_item
+                        match read_result {
+                            Some((from_cache, result, reason)) => {
+                                let url5 = url2.clone();
+                                info!("image url: {} reason: {}", url5, reason);
+                                let result_item = ChannelItem {
+                                    extra: Some(ChannelItemType::Image(ChannelImageItem { url: url2, bytes: result })),
+                                    result: reason,
+                                };
+                                result_item
+                            },
+                            None => {
+                                ChannelItem {
+                                    extra: Some(ChannelItemType::Image(Default::default())),
+                                    result: Default::default(),
+                                }
+                            }
+                        }
                     },
                     _ => {
                         ChannelItem {
