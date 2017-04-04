@@ -166,7 +166,7 @@ fn main() {
             }
         };
 
-        if app.screen_manager.is_width_changed() {
+        if app.screen_manager.is_width_changed() || app.screen_manager.is_height_changed() {
             hkg::screen::common::clear_screen();
             print_screen(&mut app);
         }
