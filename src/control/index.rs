@@ -18,6 +18,11 @@ impl Index {
                 ::screen::common::reset_screen();
                 Some(0)
             }
+            Key::Char('r') => {
+                ::screen::common::clear_screen();
+                app.status_bar.append(&app.screen_manager, &format!("r"));
+                Some(1)
+            }
             Key::Char('\n') => {
                 if !app.state_manager.is_web_request() {
                     app.status_bar.append(&app.screen_manager, "[ENTER]");

@@ -17,6 +17,11 @@ impl Show {
                 ::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
                 Some(0)
             }
+            Key::Char('r') => {
+                ::screen::common::clear_screen();
+                app.status_bar.append(&app.screen_manager, &format!("r"));
+                Some(1)
+            }
             Key::Left => {
                 app.status_bar.append(&app.screen_manager, &format!("←"));
                 if app.show_item.page > 1 {
