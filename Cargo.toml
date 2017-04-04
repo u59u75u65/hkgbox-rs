@@ -24,14 +24,6 @@ git = "https://github.com/servo/rust-url"
 [target.'cfg(unix)'.dependencies]
 libc = "0.2.8"
 
-# [lib]
-# name = "hkg"
-# path = "src/lib.rs"
-#
-[[bin]]
-name = "stdin_stdout_thread"
-path = "src/examples/stdin_stdout_thread.rs"
-
 [[bin]]
 name = "hkg"
 path = "src/main.rs"
