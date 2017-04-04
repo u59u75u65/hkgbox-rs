@@ -103,7 +103,7 @@ impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
                                 let url5 = url2.clone();
                                 info!("image url: {} reason: {}", url5, reason);
                                 let result_item = ChannelItem {
-                                    extra: Some(ChannelItemType::Image(ChannelImageItem { url: url2, bytes: result })),
+                                    extra: Some(ChannelItemType::Image(ChannelImageItem { url: url2, bytes: result, from_cache: from_cache })),
                                     result: reason,
                                 };
                                 result_item

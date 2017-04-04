@@ -40,5 +40,6 @@ pub struct ChannelItem {
 #[derive(Default)]
 pub struct ChannelImageItem {
     pub url: String,
-    pub bytes: Vec<u8>
+    pub bytes: Vec<u8>,
+    pub from_cache: bool
 }

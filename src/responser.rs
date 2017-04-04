@@ -138,6 +138,7 @@ fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender
         extra: Some(ChannelItemType::Image(ChannelImageItem {
                                   url: url.to_string(),
                                   bytes: Default::default(),
+                                  from_cache: Default::default()
                               })),
         result: Default::default(),
     };
