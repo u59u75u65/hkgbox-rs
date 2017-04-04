@@ -19,17 +19,21 @@ impl Index {
                 Some(0)
             }
             Key::Char('\n') => {
-                app.status_bar.append(&app.screen_manager, "ENTER");
-                let i = app.index.get_selected_topic();
-                if i > 0 {
-                    info!("select topic: {}", i);
-                    let topic_item = &app.list_topic_items[i - 1];
-                    let postid = &topic_item.title.url_query.message;
-                    let page = 1;
-                    let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
+                if !app.state_manager.is_web_request() {
+                    app.status_bar.append(&app.screen_manager, "[ENTER]");
+                    let i = app.index.get_selected_topic();
+                    if i > 0 {
+                        info!("select topic: {}", i);
+                        let topic_item = &app.list_topic_items[i - 1];
+                        let postid = &topic_item.title.url_query.message;
+                        let page = 1;
+                        let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
 
-                    app.status_bar.append(&app.screen_manager,
-                                          &get_show_page_status_message(postid, page, &status_message));
+                        app.status_bar.append(&app.screen_manager,
+                                              &get_show_page_status_message(postid, page, &status_message));
+                    }
+                } else {
+                    app.status_bar.append(&app.screen_manager, "[ENTER][BUSY]");
                 }
                 Some(1)
             }

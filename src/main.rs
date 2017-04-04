@@ -117,43 +117,41 @@ fn main() {
         match rx_in.try_recv() {
             Ok(c) => {
                 info!("receive input: {:?}", c);
-                if !app.state_manager.is_web_request() {
                 info!("current state: {:?}", app.state_manager.get_state() );
 
-                    match app.state_manager.get_state() {
-                        Status::Startup => {}
-                        Status::List => {
-                            match index_control.handle(c, &mut app) {
-                                Some(i) => {
-                                    if i == 0 {
-                                        match control.upgrade() {
-                                            Some(working) => (*working).store(false, Ordering::Relaxed),
-                                            None => {}
-                                        }
-                                    } else {
-                                        print_screen(&mut app);
+                match app.state_manager.get_state() {
+                    Status::Startup => {}
+                    Status::List => {
+                        match index_control.handle(c, &mut app) {
+                            Some(i) => {
+                                if i == 0 {
+                                    match control.upgrade() {
+                                        Some(working) => (*working).store(false, Ordering::Relaxed),
+                                        None => {}
                                     }
+                                } else {
+                                    print_screen(&mut app);
                                 }
-                                None => error!("index_control handle receive none.")
                             }
-                        }
-                        Status::Show => {
-                            match show_control.handle(c, &mut app) {
-                                Some(i) => {
-                                    if i == 0 {
-                                        match control.upgrade() {
-                                            Some(working) => (*working).store(false, Ordering::Relaxed),
-                                            None => {}
-                                        }
-                                    } else {
-                                        print_screen(&mut app);
-                                    }
-                                }
-                                None => error!("show_control handle receive none.")
-                            }
+                            None => error!("index_control handle receive none.")
                         }
                     }
-                // }
+                    Status::Show => {
+                        match show_control.handle(c, &mut app) {
+                            Some(i) => {
+                                if i == 0 {
+                                    match control.upgrade() {
+                                        Some(working) => (*working).store(false, Ordering::Relaxed),
+                                        None => {}
+                                    }
+                                } else {
+                                    print_screen(&mut app);
+                                }
+                            }
+                            None => error!("show_control handle receive none.")
+                        }
+                    }
+                }
             }
             Err(e) => {
                 match rx_state.try_recv() {
