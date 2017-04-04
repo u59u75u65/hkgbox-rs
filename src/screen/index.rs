@@ -72,6 +72,8 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
     let header_top_padding = seq_str_gen(0, width, " ", "");
 
+    let title_right_padding = (0..if padding > 11 { padding - 11 } else { 0 } ).map(|_| " ").collect::<Vec<_>>().join("");
+
     write!(stdout, "{}{}{}{}{}",
             ::termion::cursor::Goto(1, 1),
             ::termion::color::Fg(::termion::color::White),
@@ -79,13 +81,18 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::style::Reset,
            	::termion::cursor::Hide).expect("fail to write to shell");
 
-    write!(stdout, "{}{}{}{}{}{}",
+    write!(stdout, "{}{}{}{}{}{}{}{}u59u75u65{}{}",
             ::termion::cursor::Goto(padding + 1, 1),
             ::termion::color::Fg(::termion::color::White),
             ::termion::style::Bold,
             text,
             ::termion::style::Reset,
-            ::termion::cursor::Hide).expect("fail to write to shell");;
+            ::termion::cursor::Hide,
+            title_right_padding,
+            ::termion::style::Bold,
+            ::termion::style::Reset,
+            ::termion::cursor::Hide,
+            ).expect("fail to write to shell");
 
     write!(stdout, "{}{}{}{}{}{}",
             ::termion::cursor::Goto(1, 2),
