@@ -136,11 +136,17 @@ impl Show {
 
         let vec_clean = clean_reply_body(vec);
         let mut img_offset = 0;
+        let mut text_y_offset = 0;
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
+
         for (j, node) in vec_clean.iter().enumerate() {
             match node.clone() {
                 NodeType::Text(n) => {
                     if n.data != "" {
-                        line = format!("{}{}", line, n.data);
+                        let text = &n.data;
+                        let len = jks_len(&text);
+                        text_y_offset = (if w > 0 { len / w } else { 0 }) + 1;
+                        line = format!("{}{}", line, text);
                     }
                 }
                 NodeType::Image(n) => {
@@ -152,7 +158,7 @@ impl Show {
                                     Some(icon_reference) => line = format!("{}{}", line, imgcat_from_path(&icon_reference, icon_width)),
                                     // URL IMAGE
                                     None => {
-                                        if self.can_still_print(img_offset + img_height) {
+                                        if self.can_still_print(img_offset + text_y_offset + img_height) {
                                             match imgcat_from_url(&n.data, img_height) {
                                                 Ok(img) => {
                                                     img_offset += img_height;
@@ -177,18 +183,23 @@ impl Show {
                     }
                 }
                 NodeType::BlockQuote(n) => {
-                    if self.can_still_print(img_offset) {
+                    if self.can_still_print(img_offset + text_y_offset) {
                         self.print_reply(stdout, &n.data, depth + 1);
                     }
                     is_first = false;
                 }
                 NodeType::Br(n) => {
                     if !line.is_empty() {
-                        if self.can_print() && self.can_still_print(img_offset) {
+                        if self.can_print() {
                             self.print_reply_line(stdout, format!(" {}{}", padding, line));
                         }
                         line = String::new();
                         is_first = false;
+
+                        if text_y_offset > 0 {
+                            self.y += text_y_offset;
+                            text_y_offset = 0;
+                        }
 
                         if img_offset > 0 {
                             self.y += img_offset;
@@ -206,13 +217,21 @@ impl Show {
         }
 
         if !line.is_empty() {
+
             if self.can_print() {
                 self.print_reply_line(stdout, format!(" {}{}", padding, line));
+
+                if text_y_offset > 0 {
+                    self.y += text_y_offset;
+                    text_y_offset = 0;
+                }
+
                 if img_offset > 0 {
                     self.y += img_offset;
                     img_offset = 0;
                 }
             }
+
             line = String::new();
             self.y += 1;
         }
