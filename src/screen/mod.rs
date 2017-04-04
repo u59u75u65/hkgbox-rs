@@ -1,3 +1,4 @@
 pub mod common;
-pub mod list;
+pub mod status_bar;
+pub mod index;
 pub mod show;

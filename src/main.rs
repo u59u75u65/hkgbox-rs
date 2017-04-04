@@ -1,330 +1,210 @@
 extern crate hkg;
-extern crate rustbox;
+extern crate termion;
 extern crate rustc_serialize;
+extern crate kuchiki;
 extern crate chrono;
+extern crate cancellation;
+extern crate crossbeam;
 
-use std::default::Default;
+#[macro_use]
+extern crate log;
+extern crate log4rs;
 
-use rustbox::{Color, RustBox, Key};
+use std::io::{stdout, stdin, Write};
+use std::io::{self, Read};
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 use rustc_serialize::json;
-use rustc_serialize::json::Json;
-
-use chrono::*;
-
-use hkg::utility::cache;
-use hkg::model::ListTopicItem;
-use hkg::model::ShowItem;
-use hkg::model::UrlQueryItem;
-
-use std::path::Path;
-
-#[derive(PartialEq, Eq, Copy, Clone)]
-enum Status {
-    List,
-    Show,
-}
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use hkg::status::*;
+use hkg::model::IconItem;
+use hkg::state_manager::*;
+use hkg::screen_manager::*;
+use hkg::resources::*;
+use hkg::web::*;
+use hkg::responser::*;
+use std::thread;
 
 fn main() {
 
-    // GUI init
-    let rustbox = match RustBox::init(Default::default()) {
-        Result::Ok(v) => v,
-        Result::Err(e) => panic!("{}", e),
+    // Initialize
+    log4rs::init_file("config/log4rs.yaml", Default::default()).expect("fail to init log4rs");
+
+    info!("app start");
+
+    // Clear the screen.
+    hkg::screen::common::clear_screen();
+
+    let _stdout = stdout();
+
+    // web background services
+    let (tx_req, rx_req) = channel::<ChannelItem>();
+    let (tx_res, rx_res) = channel::<ChannelItem>();
+
+    let (tx_state, rx_state) = channel::<(Status,Status)>();
+
+    let working = Arc::new(AtomicBool::new(true));
+    let control = Arc::downgrade(&working);
+
+    let mut app = {
+
+        let stdout = {
+            Box::new(_stdout.lock().into_raw_mode().expect("fail to lock stdout"))
+        };
+
+        let icon_collection: Box<Vec<IconItem>> = {
+            let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
+            Box::new(json::decode(&icon_manifest_string).expect("fail to lock stdout"))
+        };
+
+        hkg::App {
+            index_builder: hkg::builders::index::Index::new(),
+            show_builder: hkg::builders::show::Show::new(),
+            state_manager: StateManager::new(tx_state),
+            screen_manager: ScreenManager::new(),
+
+            // initialize empty page
+            list_topic_items: Default::default(),
+            show_item: Default::default(),
+
+            status_bar: hkg::screen::status_bar::StatusBar::new(),
+            index: hkg::screen::index::Index::new(),
+            show: hkg::screen::show::Show::new(icon_collection),
+
+            image_request_count_lock: Arc::new(Mutex::new(0)),
+            tx_req: &tx_req,
+            rx_res: &rx_res,
+
+            stdout: stdout,
+        }
     };
 
-    let title = String::from("高登");
-    let s = cache::readfile(String::from("data/topics.json"));
-    let collection: Vec<ListTopicItem> = json::decode(&s).unwrap();
+    Requester::new(rx_req, tx_res, working.clone());
 
-    // initialize show with empty page
-    let mut show_file;
-    let mut show_item = ShowItem {
-        url_query: UrlQueryItem { message: String::from("") },
-        replies: vec![],
-        page: 0,
-        max_page: 0,
-        reply_count: String::from(""),
-        title: String::from(""),
-    };
+    let respsoner = Responser::new();
 
-    let mut status = String::from("> ");
+    let mut index_control = hkg::control::index::Index::new();
+    let mut show_control = hkg::control::show::Show::new();
 
-    let mut state = Status::List;
-    let mut prev_state = state;
-    let mut prev_width = rustbox.width();
+    // topics request
+    let status_message = list_page(&mut app.state_manager, &tx_req);
+    app.status_bar.append(&app.screen_manager, &status_message);
 
-    let mut list = hkg::screen::list::List::new(&rustbox);
-    let mut show = hkg::screen::show::Show::new(&rustbox);
 
-    loop {
+    let (tx_in, rx_in) = channel::<::termion::event::Key>();
 
-        // show UI
-        if prev_state != state {
-            hkg::screen::common::clear(&rustbox); // clear screen when switching state
-            prev_state = state;
-        }
+    let working1 = working.clone();
+    let working2 = working.clone();
 
-        match state {
-            Status::List => {
-                list.print(&title, &collection);
-            }
-            Status::Show => {
-                show.print(&title, &show_item);
+    thread::spawn(move || {
+        while (*working1).load(Ordering::Relaxed) {
+
+            let stdin = stdin();
+
+            for c in stdin.keys() {
+                // println!("{:?}", c);
+                tx_in.send(c.ok().unwrap()).unwrap();
+
             }
         }
+    });
 
-        print_status(&rustbox, &status);
+    while (*working2).load(Ordering::Relaxed) {
 
-        rustbox.present();
+        respsoner.try_recv(&mut app);
 
-        match rustbox.poll_event(false) {
-            Ok(rustbox::Event::KeyEvent(key)) => {
+        match rx_in.try_recv() {
+            Ok(c) => {
+                info!("receive input: {:?}", c);
+                info!("current state: {:?}", app.state_manager.get_state() );
 
-                if prev_width != rustbox.width() {
-                    hkg::screen::common::clear(&rustbox);
-                    prev_width = rustbox.width();
-                }
-
-                match key {
-                    Key::Char('q') => {
-                        break;
-                    }
-                    Key::PageUp => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, " PU");
-
-                        match state {
-                            Status::List => {
-
-                            }
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollUp(bh) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::PageDown => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, " PD");
-
-                        match state {
-                            Status::List => {
-
-                            }
-                            Status::Show => {
-                                let bh = show.body_height();
-                                if show.scrollDown(bh) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Up => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "U");
-
-                        match state {
-                            Status::List => {
-                                let tmp = list.get_selected_topic();
-                                if tmp > 1 {
-                                    list.select_topic(tmp - 1);
-                                }
-                            }
-                            Status::Show => {
-                                if show.scrollUp(2) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-
-                    }
-                    Key::Down => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "D");
-
-                        match state {
-                            Status::List => {
-                                let tmp = list.get_selected_topic();
-                                if tmp < list.body_height() {
-                                    list.select_topic(tmp + 1);
-                                }
-                            }
-                            Status::Show => {
-                                if show.scrollDown(2) {
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Left => {
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.page > 1 {
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = show_item.url_query
-                                                                                   .message,
-                                                                 page = show_item.page - 1);
-
-                                    show_file = cache::readfile(String::from(show_file_path));
-                                    show_item = json::decode(&show_file).unwrap();
-                                    show.resetY();
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Right => {
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                if show_item.max_page > show_item.page {
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = show_item.url_query
-                                                                                   .message,
-                                                                 page = show_item.page + 1);
-
-                                    show_file = cache::readfile(String::from(show_file_path));
-                                    show_item = json::decode(&show_file).unwrap();
-                                    show.resetY();
-                                    hkg::screen::common::clear(&rustbox);
-                                }
-                            }
-                        }
-                    }
-                    Key::Enter => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "E");
-                        match state {
-                            Status::List => {
-
-                                let index = list.get_selected_topic();
-                                if index > 0 {
-                                    let topic_item = &collection[index - 1];
-
-                                    let postid = &topic_item.title.url_query.message;
-
-                                    let show_file_path = format!("data/{postid}/show_{page}.json",
-                                                                 postid = postid,
-                                                                 page = 1);
-
-                                    if Path::new(&show_file_path).exists() {
-                                        show_file = cache::readfile(String::from(show_file_path));
-                                        show_item = json::decode(&show_file).unwrap();
-                                        show.resetY();
-                                        hkg::screen::common::clear(&rustbox);
-                                        state = Status::Show;
-                                    } else {
-                                        let w = rustbox.width();
-                                        status = format_status(status,
-                                                               w,
-                                                               &format!(" postid {} not found.",
-                                                                        postid));
+                match app.state_manager.get_state() {
+                    Status::Startup => {}
+                    Status::List => {
+                        match index_control.handle(c, &mut app) {
+                            Some(i) => {
+                                if i == 0 {
+                                    match control.upgrade() {
+                                        Some(working) => (*working).store(false, Ordering::Relaxed),
+                                        None => {}
                                     }
+                                } else {
+                                    print_screen(&mut app);
                                 }
                             }
-                            Status::Show => {}
+                            None => error!("index_control handle receive none.")
                         }
                     }
-                    Key::Backspace => {
-                        let w = rustbox.width();
-                        status = format_status(status, w, "B");
-                        match state {
-                            Status::List => {}
-                            Status::Show => {
-                                state = Status::List;
+                    Status::Show => {
+                        match show_control.handle(c, &mut app) {
+                            Some(i) => {
+                                if i == 0 {
+                                    match control.upgrade() {
+                                        Some(working) => (*working).store(false, Ordering::Relaxed),
+                                        None => {}
+                                    }
+                                } else {
+                                    print_screen(&mut app);
+                                }
                             }
+                            None => error!("show_control handle receive none.")
                         }
                     }
-
-                    _ => {}
                 }
             }
-            Err(e) => panic!("{}", e),
-            _ => {}
+            Err(e) => {
+                match rx_state.try_recv() {
+                    Ok((prev_state, current_state)) => {
+                        info!("receive state change");
+                        print_screen(&mut app);
+                    }
+                    Err(_) => { }
+                };
+            }
+        };
+
+        if app.screen_manager.is_width_changed() || app.screen_manager.is_height_changed() {
+            hkg::screen::common::clear_screen();
+            print_screen(&mut app);
+        }
+
+        thread::sleep(std::time::Duration::from_millis(50));
+    }
+}
+
+fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+
+    let ci = ChannelItem {
+        extra: Some(ChannelItemType::Index(Default::default())),
+        result: Default::default()
+    };
+
+    let status_message = match tx_req.send(ci) {
+        Ok(()) => {
+            state_manager.set_web_request(true);    // *is_web_requesting = true;
+            "SOK".to_string()
+        }
+        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+    };
+
+    status_message
+}
+
+fn print_screen(app: &mut hkg::App) {
+    match app.state_manager.get_state() {
+        Status::Startup => {}
+        Status::List => {
+            app.index.print(&mut app.stdout, &app.list_topic_items);
+        }
+        Status::Show => {
+            app.show.print(&mut app.stdout, &app.show_item);
         }
     }
+
+    app.status_bar.print(&app.screen_manager);
+
+    app.stdout.flush().expect("fail to flush the stdout");
 }
-
-fn print_status(rustbox: &rustbox::RustBox, status: &str) {
-    // for status bar only
-    let w = rustbox.width();
-    let h = rustbox.height();
-
-    let status_width = if w > status.len() {
-        w - status.len()
-    } else {
-        0
-    };
-    let status_spacing = (0..status_width).map(|_| " ").collect::<Vec<_>>().join("");
-
-    rustbox.print(0,
-                  h - 1,
-                  rustbox::RB_BOLD,
-                  Color::White,
-                  Color::Black,
-                  &format!("{status}{status_spacing}",
-                           status = status,
-                           status_spacing = status_spacing));
-
-}
-
-fn format_status(status: String, w: usize, s: &str) -> String {
-    if status.len() >= w {
-        String::from(format!("{}{}", &"> ", s))
-    } else {
-        String::from(format!("{}{}", &status, s))
-    }
-}
-
-// fn date_operation_example(rustbox: &rustbox::RustBox) {
-//     let now = Local::now();
-//
-//     let dt1 = match Local.datetime_from_str("30/4/2016 9:22", "%d/%m/%Y %H:%M") {
-//         Ok(v) => v,
-//         Err(e) => Local::now(),
-//     };
-//
-//     let dt2 = now.checked_sub(Duration::seconds(46)).unwrap();
-//     let dt3 = now.checked_sub(Duration::minutes(6)).unwrap();
-//     let dt4 = now.checked_sub(Duration::days(17)).unwrap();
-//     let dt5 = now.checked_sub(Duration::weeks(9)).unwrap();
-//
-//     rustbox.print(0,
-//                   0,
-//                   rustbox::RB_BOLD,
-//                   Color::White,
-//                   Color::Black,
-//                   &format!("{} {} {} {}",
-//                    duration_format(&(now - dt2)),
-//                    duration_format(&(now - dt3)),
-//                    duration_format(&(now - dt4)),
-//                    duration_format(&(now - dt5))
-//               ));
-//
-// }
-
-// fn debug_load_and_print_topics() {
-//     let s = cache::readfile(String::from("topics.json"));
-//     let collection: Vec<TopicItem> = json::decode(&s).unwrap();
-//
-//     println!("topics {:?}", collection.len());
-//     debug_print_topics(collection);
-// }
-//
-// fn debug_print_topics(collection: Vec<TopicItem>) {
-//     for (i, item) in collection.iter().enumerate() {
-//
-//         println!("item[{}]= {title} {author_name} {last_replied_date} {last_replied_time} \
-//                   {reply_count} {rating}",
-//                  i,
-//                  title = item.titles[0].text,
-//                  author_name = item.author.name,
-//                  last_replied_date = item.last_replied_date,
-//                  last_replied_time = item.last_replied_time,
-//                  reply_count = item.reply_count,
-//                  rating = item.rating);
-//     }
-// }

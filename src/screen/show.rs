@@ -1,190 +1,415 @@
-extern crate rustbox;
-extern crate chrono;
+use std::io::Write;
+use std;
 
-use rustbox::*;
 use chrono::*;
-
-use screen::common::*;
 use utility::string::*;
+use model::IconItem;
+use model::ShowReplyItem;
 use model::ShowItem;
+use reply_model::*;
+use screen::common::*;
 
-
-pub struct Show<'a> {
-    rustbox: &'a rustbox::RustBox,
-    scrollY: usize,
+pub struct Show {
+    title: String,
+    scroll_y: usize,
+    y: usize,
+    replier_max_width: usize,
+    time_max_width: usize,
+    is_scroll_to_end: bool,
+    icon_collection: Box<Vec<IconItem>>
 }
 
-impl<'a> Show<'a> {
-    pub fn new(rustbox: &'a rustbox::RustBox) -> Self {
+impl Show {
+    pub fn new (icon_collection: Box<Vec<IconItem>>) -> Self {
         Show {
-            rustbox: &rustbox,
-            scrollY: 0,
+            title: String::from("高登"),
+            scroll_y: 0,
+            y: 0,
+            replier_max_width: 14,
+            time_max_width: 5,
+            is_scroll_to_end: false,
+            icon_collection: icon_collection
         }
     }
-    pub fn print(&mut self, title: &str, item: &ShowItem) {
+    pub fn print(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
 
-        print_header(&self.rustbox,
-                     self.rustbox.width(),
-                     &format!("{} - {} [{}/{}]", item.title, title, item.page, item.max_page));
-        print_body(&self.rustbox,
-                   self.body_width(),
-                   2,
-                   self.body_height(),
-                   &item,
-                   self.scrollY);
+        self.y = 2;
+        let title = self.title.clone();
+        self.print_header(stdout, &format!("{} - {} [{}/{}]",
+                                   item.title,
+                                   title,
+                                   item.page,
+                                   item.max_page));
+        self.print_body(stdout, &item);
     }
 
-    pub fn resetY(&mut self) {
-        self.scrollY = 0;
+    fn print_separator_top(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, reply: &ShowReplyItem) {
+        if self.can_print() {
+            let (replier_name, time) = make_separator_content(&reply);
+            let s = self.build_separator_top(&replier_name, &time);
+            self.print_separator_line(stdout, &s);
+        }
     }
 
-    pub fn scrollUp(&mut self, value: usize) -> bool {
-        let tmp = self.scrollY;
+    fn print_separator_bottom(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>) {
+        if self.can_print() {
+            let s = self.build_separator_bottom();
+            self.print_separator_line(stdout, &s);
+        }
+    }
+
+    fn print_separator_line(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, s: &str) {
+
+        write!(stdout, "{}{}{}{}{}{}",
+                ::termion::cursor::Goto(1, (self.scrolled_y() + 1) as u16),
+                ::termion::color::Fg(::termion::color::Green),
+                ::termion::style::Bold,
+                s,
+                ::termion::style::Reset,
+                ::termion::cursor::Hide).expect("fail to write to shell");
+    }
+
+    fn print_header(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, text: &str) {
+        let title_len = jks_len(text);
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
+        let padding = ((if w >= title_len {
+            w - title_len
+        } else {
+            0
+        }) / 2) as u16;
+
+        let header_bottom = seq_str_gen(0, w, "─", "");
+
+        write!(stdout, "{}{}{}{}{}{}",
+                ::termion::cursor::Goto(padding + 1, 1),
+                ::termion::color::Fg(::termion::color::White),
+                ::termion::style::Bold,
+                text, ::termion::style::Reset,
+                ::termion::cursor::Hide).expect("fail to write to shell");
+
+        write!(stdout, "{}{}{}{}{}{}",
+                ::termion::cursor::Goto(1, 2),
+                ::termion::color::Fg(::termion::color::Yellow),
+                ::termion::style::Bold,
+                header_bottom,
+                ::termion::style::Reset,
+                ::termion::cursor::Hide).expect("fail to write to shell");
+    }
+
+    pub fn print_body(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
+        let width = self.body_width();
+        let rows = self.body_height();
+
+        for (i, reply) in item.replies.iter().take(rows).enumerate() {
+
+            self.print_reply(stdout, &reply.body, 0);
+
+            self.print_separator_top(stdout, &reply);
+            self.y += 1;
+
+            self.print_separator_bottom(stdout);
+            self.y += 1;
+        }
+
+        info!("[print_body] y: {} scroll_y: {} body_height: {}", self.y, self.scroll_y,  self.body_height());
+
+        self.is_scroll_to_end = self.scrolled_y() < self.body_height();
+    }
+
+    fn print_reply_line(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, s: String) {
+
+       write!(stdout, "{}{}{}{}{}",
+               ::termion::cursor::Goto(1, (self.scrolled_y() + 1) as u16),
+               ::termion::color::Fg(::termion::color::White),
+               s,
+               ::termion::style::Reset,
+               ::termion::cursor::Hide).expect("fail to write to shell");
+    }
+
+    fn print_reply(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, vec: &Vec<NodeType>, depth: usize) {
+
+        let icon_width = 2;
+        let img_height = 10;
+        let padding = seq_str_gen(0, depth, "├─", "");
+        let mut line = String::new();
+        let mut is_first = true;
+
+        let vec_clean = clean_reply_body(vec);
+        let mut img_offset = 0;
+        let mut text_y_offset = 0;
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
+
+        for (j, node) in vec_clean.iter().enumerate() {
+            match node.clone() {
+                NodeType::Text(n) => {
+                    if n.data != "" {
+                        let text = &n.data;
+                        let len = jks_len(&text);
+                        text_y_offset = (if w > 0 { len / w } else { 0 }) + 1;
+                        line = format!("{}{}", line, text);
+                    }
+                }
+                NodeType::Image(n) => {
+                    if n.data != "" {
+                        if self.can_print() {
+                            if n.alt != "" {
+                                match self.get_icon_reference(&n.alt) {
+                                    // ICON
+                                    Some(icon_reference) => line = format!("{}{}", line, imgcat_from_path(&icon_reference, icon_width)),
+                                    // URL IMAGE
+                                    None => {
+                                        if self.can_still_print(img_offset + text_y_offset + img_height) {
+                                            match imgcat_from_url(&n.data, img_height) {
+                                                Ok(img) => {
+                                                    img_offset += img_height;
+                                                    line = format!("{}{}", line, img);
+                                                }
+                                                Err(e) => {
+                                                    img_offset += 1;
+                                                    line = format!("{}\n[x]", line);
+                                                }
+                                            }
+
+                                        } else {
+                                            img_offset += 1;
+                                            line = format!("{}\n[-]", line);
+                                        }
+                                    }
+                                }
+                            } else {
+                                line = format!("{}{}", line, format!("[{}]", n.data));
+                            }
+                        }
+                    }
+                }
+                NodeType::BlockQuote(n) => {
+                    if self.can_still_print(img_offset + text_y_offset) {
+                        self.print_reply(stdout, &n.data, depth + 1);
+                    }
+                    is_first = false;
+                }
+                NodeType::Br(n) => {
+                    if !line.is_empty() {
+                        if self.can_print() {
+                            self.print_reply_line(stdout, format!(" {}{}", padding, line));
+                        }
+                        line = String::new();
+                        is_first = false;
+
+                        if text_y_offset > 0 {
+                            self.y += text_y_offset;
+                            text_y_offset = 0;
+                        }
+
+                        if img_offset > 0 {
+                            self.y += img_offset;
+                            img_offset = 0;
+                        }
+                    }
+
+                    // prevent first line empty
+                    if !is_first {
+                        self.y += 1;
+                    }
+
+                }
+            }
+        }
+
+        if !line.is_empty() {
+
+            if self.can_print() {
+                self.print_reply_line(stdout, format!(" {}{}", padding, line));
+
+                if text_y_offset > 0 {
+                    self.y += text_y_offset;
+                    text_y_offset = 0;
+                }
+
+                if img_offset > 0 {
+                    self.y += img_offset;
+                    img_offset = 0;
+                }
+            }
+
+            line = String::new();
+            self.y += 1;
+        }
+    }
+
+    fn get_icon_reference(&mut self, alt: &str) -> Option<String> {
+        match self.icon_collection.iter().find(|icon_item| icon_item.alt.contains(&alt) ) {
+            Some(item) => Some(format!("data/icon/{}", &item.src)),
+            None => None
+        }
+    }
+
+    fn build_separator_arguments(&mut self) -> (usize, usize, String) {
+        let separator_width = self.body_width();
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
+
+        let separator_padding_width = if w > separator_width {
+            w - separator_width
+        } else {
+            0
+        } / 2;
+
+        let separator_padding = seq_str_gen(0, separator_padding_width, " ", "");
+
+        (separator_width, separator_padding_width, separator_padding)
+    }
+
+    fn build_separator_top(&mut self, replier_name: &str, time: &str) -> String {
+        let (separator_width, separator_padding_width, separator_padding) =
+            self.build_separator_arguments();
+        make_separator_top(separator_width,
+                           &separator_padding,
+                           self.replier_max_width,
+                           &replier_name,
+                           self.time_max_width,
+                           &time)
+    }
+
+    fn build_separator_bottom(&mut self) -> String {
+        let (separator_width, separator_padding_width, separator_padding) =
+            self.build_separator_arguments();
+        make_separator_bottom(separator_width, &separator_padding)
+    }
+
+    pub fn reset_y(&mut self) {
+        self.scroll_y = 0;
+    }
+
+    pub fn scroll_up(&mut self, value: usize) -> bool {
+        let tmp = self.scroll_y;
         if tmp > value {
-            self.scrollY = tmp - value;
+            self.scroll_y = tmp - value;
             true
         } else if tmp != 0 {
-            self.scrollY = 0;
+            self.scroll_y = 0;
             true
         } else {
             false
         }
     }
 
-    pub fn scrollDown(&mut self, value: usize) -> bool {
-        let tmp = self.scrollY;
-        if tmp < 10000 {
-            self.scrollY = tmp + value;
-            return true;
+    pub fn scroll_down(&mut self, value: usize) -> bool {
+
+        if !self.is_scroll_to_end {
+            let min_to_scroll = self.scroll_y + self.body_height();
+            if self.y >= min_to_scroll + value {
+                self.scroll_y += value;
+                return true;
+            } else if self.y >= min_to_scroll {
+                self.scroll_y += self.y - min_to_scroll;
+                return true;
+            }
         }
+
         false
     }
-    
+
     pub fn body_height(&self) -> usize {
-        if self.rustbox.height() >= 3 {
-            self.rustbox.height() - 3
+
+        let h = ::termion::terminal_size().expect("fail to get terminal size").1;
+
+        if h >= 3 {
+            h as usize - 3
         } else {
             0
         }
     }
 
     pub fn body_width(&self) -> usize {
-        if self.rustbox.width() >= 2 {
-            self.rustbox.width() - 2
+
+        let w = ::termion::terminal_size().expect("fail to get terminal size").0;
+
+        if w >= 2 {
+            w as usize - 2
         } else {
             0
         }
     }
+
+    fn can_print(&self) -> bool {
+        self.y > self.scroll_y + 1 && self.y < self.scroll_y + 1 + self.body_height()
+    }
+
+    fn can_still_print(&self, i: usize) -> bool {
+        // info!("[can_still_print] y: {} lower bound: {} upper bound: {}", self.y + i , self.scroll_y, self.scroll_y + self.body_height());
+        self.y + i > self.scroll_y && self.y + i < self.scroll_y + self.body_height()
+    }
+
+    fn scrolled_y(&self) -> usize {
+        // info!("[scrolled_y] y: {} scroll_y: {} body_height: {}", self.y, self.scroll_y,  self.body_height());
+        if self.y >= self.scroll_y { (self.y - self.scroll_y) } else { 0 }
+    }
+
 }
 
-fn print_header(rustbox: &rustbox::RustBox, width: usize, text: &str) {
-    let title_len = jks_len(text);
-    let padding = (if width >= title_len {
-        width - title_len
-    } else {
-        0
-    }) / 2;
 
-    let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
 
-    clearline(&rustbox, width, 0, 0);
-    rustbox.print(padding,
-                  0,
-                  rustbox::RB_BOLD,
-                  Color::White,
-                  Color::Black,
-                  text);
-    rustbox.print(0,
-                  1,
-                  rustbox::RB_BOLD,
-                  Color::Yellow,
-                  Color::Black,
-                  &header_bottom);
-}
-
-fn print_body(rustbox: &rustbox::RustBox,
-              width: usize,
-              offset_y: usize,
-              rows: usize,
-              item: &ShowItem,
-              scrollY: usize) {
-
-    let mut y = offset_y;
-    let replier_max_width = 14;
-    let time_max_width = 5;
+fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
     let now = Local::now();
 
-    let separator_width = if rustbox.width() >= 2 {
-        rustbox.width() - 2
-    } else {
-        0
+    let replier_name = reply.username.clone();
+
+    let published_at = reply.published_at.clone();
+
+    let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
+        Ok(v) => v,
+        Err(e) => now,
     };
-    let separator_padding_width = if rustbox.width() > separator_width {
-        rustbox.width() - separator_width
-    } else {
-        0
-    } / 2;
+    let time = published_at_format(&(now - published_at_dt));
+    (replier_name, time)
+}
 
-    let separator_padding = (0..separator_padding_width).map(|_| " ").collect::<Vec<_>>().join("");
+fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType> {
+    // clean up lines (end)
+    let vec2 = {
+        let vec_length = vec.len();
+        let vec_check_cleanup = vec.clone();
 
-    let separator_bottom = make_separator_bottom(separator_width, &separator_padding);
+        // check if last 4 elements match the EMPTY PATTERN
+        let is_last4_empty = vec_check_cleanup.iter()
+                                              .rev()
+                                              .take(4)
+                                              .enumerate()
+                                              .all(|(j, node)| match node.clone() {
+                                                  NodeType::Br(n) => j == 1 || j == 2 || j == 3,
+                                                  NodeType::Text(n) => j == 0 && n.data.is_empty(),
+                                                  _ => false,
+                                              });
 
-    for (i, reply) in item.replies.iter().take(rows).enumerate() {
-        let contents: Vec<&str> = reply.content.split("\n").collect();
+        let vec_short_length = if vec_length > 4 && is_last4_empty {
+            vec_length - 4
+        } else {
+            vec_length
+        };
 
-        let mut m = 0;
+        vec.iter().take(vec_short_length)
+    };
 
-        for (j, content) in contents.iter().enumerate() {
-            if scrollY + 1 < y + m {
-                rustbox.print(0,
-                              j + y - scrollY,
-                              rustbox::RB_NORMAL,
-                              Color::White,
-                              Color::Black,
-                              &format!(" {}", content));
+    // clean up lines (start)
+    let vec3 = {
+        let vec2_cloned = vec2.clone();
+        let mut result: Vec<NodeType> = Vec::new();
+        for (j, node) in vec2_cloned.enumerate() {
+            let node2 = node.clone();
+            let node3 = node.clone();
+            match node2 {
+                NodeType::Br(n) => {
+                    if !result.is_empty() {
+                        result.push(node3);
+                    }
+                }
+                _ => result.push(node3),
             }
-            m += 1;
         }
+        result.clone()
+    };
 
-        if scrollY + 1 < y + m {
-
-            let replier_name = reply.username.clone();
-
-            let published_at = reply.published_at.clone();
-
-            let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
-                Ok(v) => v,
-                Err(e) => now,
-            };
-            let time = published_at_format(&(now - published_at_dt));
-
-            let separator_top = make_separator_top(separator_width,
-                                                   &separator_padding,
-                                                   replier_max_width,
-                                                   &replier_name,
-                                                   time_max_width,
-                                                   &time);
-
-            rustbox.print(0,
-                          m + y - scrollY,
-                          rustbox::RB_NORMAL,
-                          Color::Green,
-                          Color::Black,
-                          &separator_top);
-        }
-        m += 1;
-
-        if scrollY + 1 < y + m {
-            rustbox.print(0,
-                          m + y - scrollY,
-                          rustbox::RB_NORMAL,
-                          Color::Green,
-                          Color::Black,
-                          &separator_bottom);
-        }
-        m += 1;
-        y += m;
-    }
+    vec3
 }
 
 fn make_separator_replier_name(separator_width: usize,
@@ -202,15 +427,8 @@ fn make_separator_replier_name(separator_width: usize,
         replier_name_right_spacing_width
     };
 
-    let replier_name_left_spacing = (0..replier_name_left_spacing_width)
-                                        .map(|_| "─")
-                                        .collect::<Vec<_>>()
-                                        .join("");
-
-    let replier_name_right_spacing = (0..replier_name_right_spacing_width)
-                                         .map(|_| "─")
-                                         .collect::<Vec<_>>()
-                                         .join("");
+    let replier_name_left_spacing = seq_str_gen(0, replier_name_left_spacing_width, "─", "");
+    let replier_name_right_spacing = seq_str_gen(0, replier_name_right_spacing_width, "─", "");
 
     let separator_replier = format!("{}{}{}{}{}",
                                     "╭",
@@ -242,15 +460,8 @@ fn make_separator_time(separator_width: usize,
         time_right_spacing_width
     };
 
-    let time_left_spacing = (0..time_left_spacing_width)
-                                .map(|_| "─")
-                                .collect::<Vec<_>>()
-                                .join("");
-
-    let time_right_spacing = (0..time_right_spacing_width)
-                                 .map(|_| "─")
-                                 .collect::<Vec<_>>()
-                                 .join("");
+    let time_left_spacing = seq_str_gen(0, time_left_spacing_width, "─", "");
+    let time_right_spacing = seq_str_gen(0, time_right_spacing_width, "─", "");
 
     let separator_time = format!("{}{}{}{}{}",
                                  "",
@@ -292,11 +503,7 @@ fn make_separator_top(separator_width: usize,
         0
     };
 
-    let separator_top_middle = (0..separator_top_middle_width)
-                                   .map(|_| " ")
-                                   .collect::<Vec<_>>()
-                                   .join("");
-
+    let separator_top_middle = seq_str_gen(0, separator_top_middle_width, " ", "");
     let separator_top = format!("{}{}{}{}{}",
                                 separator_padding,
                                 separator_top_middle,
@@ -313,10 +520,8 @@ fn make_separator_bottom(separator_width: usize, separator_padding: &str) -> Str
     } else {
         0
     };
-    let separator_bottom_middle = (0..separator_bottom_middle_width)
-                                      .map(|_| "─")
-                                      .collect::<Vec<_>>()
-                                      .join("");
+    let separator_bottom_middle = seq_str_gen(0, separator_bottom_middle_width, "─", "");
+
     let separator_bottom = format!("{}{}{}{}",
                                    separator_padding,
                                    separator_bottom_middle,
@@ -343,4 +548,8 @@ fn published_at_format(duration: &Duration) -> String {
     } else {
         String::from("1m")
     }
+}
+
+fn seq_str_gen(start: usize, end: usize, sym: &str, join_sym: &str) -> String {
+    (start..end).map(|_| sym.clone()).collect::<Vec<_>>().join(&join_sym)
 }
