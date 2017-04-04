@@ -2,13 +2,33 @@ refresh_rate: 30 seconds
 appenders:
   stdout:
     kind: console
-  main:
+  normal:
     kind: file
-    path: "log/main.log"
+    path: "log/app.log"
+    append: true
+    filters:
+      -
+        kind: threshold
+        level: info
     encoder:
-      pattern: "{d} - {m}{n}"
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} [{l}] - {M} - {m}{n}"
+  critical:
+    kind: file
+    path: "log/app.err"
+    append: true
+    filters:
+      -
+        kind: threshold
+        level: warn
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)} [{l}] - {M} - {m}{n}"
 root:
   level: info
   appenders:
     - main
 loggers:
+  hkg:
+    level: info
+    appenders:
+      - normal
+      - critical

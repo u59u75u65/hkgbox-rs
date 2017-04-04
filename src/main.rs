@@ -33,6 +33,8 @@ fn main() {
     // Initialize
     log4rs::init_file("config/log4rs.yaml", Default::default()).expect("fail to init log4rs");
 
+    info!("app start");
+
     // Clear the screen.
     hkg::screen::common::clear_screen();
 

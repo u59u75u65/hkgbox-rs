@@ -14,7 +14,7 @@ cancellation = "0.1"
 termion = "1.0"
 time = "0.1"
 log = "*"
-log4rs = "0.6"
+log4rs = { version= "0.6", features = ["threshold_filter"] }
 hyper-native-tls = { github = "git@github.com:sfackler/hyper-native-tls.git" }
 crossbeam = "0.2"
 

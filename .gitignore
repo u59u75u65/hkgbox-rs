@@ -1,3 +1,4 @@
 target/*
 data/cache/**
 log/**/*.log
+log/**/*.err
