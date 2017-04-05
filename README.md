@@ -10,8 +10,8 @@ download executable binaries:
 
 | Key | Meaning |
 | --- | ------- |
-| <kbd>↑</kbd> | Scroll up |
-| <kbd>↓</kbd> | Scroll down |
+| <kbd>↑</kbd> | Move cursor up, Scroll up |
+| <kbd>↓</kbd> | Move cursor down, Scroll down |
 | <kbd>←</kbd> | Previous page |
 | <kbd>→</kbd> | Next page |
 | <kbd>↵</kbd> | Enter the post |
