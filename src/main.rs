@@ -155,21 +155,13 @@ fn main() {
                     }
                 }
             }
-            Err(e) => {
-                match rx_state.try_recv() {
-                    Ok((prev_state, current_state)) => {
-                        info!("receive state change");
-                        print_screen(&mut app);
-                    }
-                    Err(_) => {
-                        if app.state_manager.is_to_print_screen() {
-                            print_screen(&mut app);
-                            app.state_manager.set_to_print_screen(false);
-                        }
-                    }
-                };
-            }
+            Err(e) => {}
         };
+
+        if app.state_manager.is_to_print_screen() {
+            print_screen(&mut app);
+            app.state_manager.set_to_print_screen(false);
+        }
 
         if app.screen_manager.is_width_changed() || app.screen_manager.is_height_changed() {
             hkg::screen::common::clear_screen();

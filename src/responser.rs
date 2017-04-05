@@ -88,15 +88,15 @@ impl Responser {
                                         app.status_bar.append(&app.screen_manager, &format!("[TOPICS:ROK]"));
 
                                         ::screen::common::clear_screen();
-
                                         app.state_manager.update_state(Status::List); // state = Status::List;
-                                        app.state_manager.set_web_request(false); // is_web_requesting = false;
                                     },
                                     Err(e) => {
                                         error!("index item failed to build. reason: {:?}", e);
                                         app.status_bar.append(&app.screen_manager, &"[IPFAIL]");
                                     }
                                 }
+                                app.state_manager.set_to_print_screen(true);
+                                app.state_manager.set_web_request(false); // is_web_requesting = false;
 
                             }
                             ChannelItemType::Image(extra) => {
