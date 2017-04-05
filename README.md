@@ -4,7 +4,7 @@ A hkgolden shell client, written in rust
 ![alt overview](https://github.com/u59u75u65/hkgbox-rs/blob/master/overview.gif?raw=true)
 
 download executable binaries:
-* [v1.0.0](https://github.com/u59u75u65/hkgbox-rs/releases/tag/v1.0.0)
+* [v1.0.1](https://github.com/u59u75u65/hkgbox-rs/releases/tag/v1.0.1)
 
 ## Usage
 
