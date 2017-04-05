@@ -161,7 +161,12 @@ fn main() {
                         info!("receive state change");
                         print_screen(&mut app);
                     }
-                    Err(_) => { }
+                    Err(_) => {
+                        if app.state_manager.is_to_print_screen() {
+                            print_screen(&mut app);
+                            app.state_manager.set_to_print_screen(false);
+                        }
+                    }
                 };
             }
         };

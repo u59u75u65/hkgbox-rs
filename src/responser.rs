@@ -71,7 +71,7 @@ impl Responser {
                                         app.status_bar.append(&app.screen_manager, &"[SPFAIL]");
                                     }
                                 };
-
+                                app.state_manager.set_to_print_screen(true);
                                 app.state_manager.set_web_request(false); // is_web_requesting = false;
                             }
                             ChannelItemType::Index(_) => {
