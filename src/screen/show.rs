@@ -234,8 +234,6 @@ impl Show {
                 }
             }
 
-            line = String::new();
-            self.y += 1;
         }
     }
 
