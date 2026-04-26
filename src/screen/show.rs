@@ -101,6 +101,18 @@ impl Show {
         let width = self.body_width();
         let rows = self.body_height();
 
+        // Print main content first if exists
+        if let Some(main_content) = &item.main_content {
+            self.print_reply(stdout, &main_content.body, 0);
+
+            self.print_separator_top(stdout, &main_content);
+            self.y += 1;
+
+            self.print_separator_bottom(stdout);
+            self.y += 1;
+        }
+
+        // Then print replies
         for (i, reply) in item.replies.iter().take(rows).enumerate() {
 
             self.print_reply(stdout, &reply.body, 0);
@@ -152,7 +164,13 @@ impl Show {
                 }
                 NodeType::Image(n) => {
                     if n.data != "" {
-                        if n.alt.starts_with("[img]") && n.alt.ends_with("[/img]") {
+                        info!("Processing image: url={}, alt={}, is_external={}",
+                              n.data, n.alt, n.data.starts_with("http") || n.data.starts_with("https"));
+
+                        // Check if this is an external image (HTTP/HTTPS URL) or local emotion icon
+                        let is_external_image = n.data.starts_with("http") || n.data.starts_with("https");
+
+                        if is_external_image {
                             if self.can_still_print(img_offset + text_y_offset + img_height) {
                                 if self.can_print() {
                                     match imgcat_from_url(&n.data, img_height) {
@@ -161,6 +179,7 @@ impl Show {
                                             line = format!("{}\n\r {}{}", line, padding, img);
                                         }
                                         Err(e) => {
+                                            error!("Failed to load image: URL={}, Error={}", n.data, e);
                                             img_offset += img_height;
                                             line = format!("{}\n\r {}[x]", line, padding);
                                         }
@@ -174,6 +193,7 @@ impl Show {
                                 line = format!("{}\n\r {}[-]", padding, line);
                             }
                         } else {
+                            // Local emotion icon
                             match self.get_icon_reference(&n.alt) {
                                 Some(icon_reference) => {
                                     if line.is_empty() {
@@ -181,7 +201,10 @@ impl Show {
                                     }
                                     line = format!("{}{}", line, imgcat_from_path(&icon_reference, icon_width));
                                 },
-                                None => { line = format!("{}[:(]", line); }
+                                None => {
+                                    error!("Local icon not found: alt={}, url={}", n.alt, n.data);
+                                    line = format!("{}[:(]", line);
+                                }
                             }
                         }
                     }

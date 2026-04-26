@@ -26,13 +26,14 @@ pub struct ListTopicItem {
 }
 
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ShowItem {
     pub url_query: UrlQueryItem,
     pub title: String,
     pub reply_count: String,
     pub page: usize,
     pub max_page: usize,
+    pub main_content: Option<ShowReplyItem>, // Main thread content
     pub replies: Vec<ShowReplyItem>
 }
 

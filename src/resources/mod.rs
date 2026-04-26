@@ -1,10 +1,13 @@
 pub mod common;
 pub mod index_resource;
+pub mod index_resource_api;
 pub mod show_resource;
+pub mod show_resource_api;
 pub mod image_resource;
 pub mod default_resource;
 pub mod web_resource;
 
+use crate::model::*;
 use std::default::Default;
 
 #[derive(Debug)]
@@ -12,7 +15,9 @@ use std::default::Default;
 pub enum ChannelItemType {
     Show(ChannelShowItem),
     Index(ChannelIndexItem),
-    Image(ChannelImageItem)
+    Image(ChannelImageItem),
+    IndexWithData(Vec<crate::model::ListTopicItem>),
+    ShowWithData(crate::model::ShowItem),
 }
 
 #[derive(Debug)]
