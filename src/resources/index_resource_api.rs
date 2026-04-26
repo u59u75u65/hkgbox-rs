@@ -12,6 +12,7 @@ pub struct IndexResource<'a, T: 'a + Cache> {
     _cache: &'a mut Box<T>,
     forum: String,
     page: usize,
+    page_count: usize,
     max_page: usize,
     pub list_items: Vec<ListTopicItem>,
 }
@@ -23,6 +24,7 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
             _cache: cache,
             forum: "BW".to_string(),  // Default forum
             page: 1,
+            page_count: 1,
             max_page: 1,
             list_items: Vec::new(),
         }
@@ -38,6 +40,10 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
         self.page = page;
     }
 
+    pub fn set_page_count(&mut self, page_count: usize) {
+        self.page_count = page_count;
+    }
+
     pub fn get_page(&self) -> usize {
         self.page
     }
@@ -49,44 +55,72 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
 impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
     fn fetch(&mut self, _item: &ChannelItem) -> ChannelItem {
-        log::info!("[IndexResource] Starting fetch for forum: {}, page: {}", self.forum, self.page);
+        log::info!("[IndexResource] Starting fetch for forum: {}, page: {}, page_count: {}",
+                  self.forum, self.page, self.page_count);
 
-        // Call API instead of scraping HTML
-        match self.client.fetch_topics(&self.forum, self.page as i32) {
-            Ok(response) => {
-                log::info!("[IndexResource] Got {} topics from API", response.data.list.len());
+        self.list_items.clear();
+        let mut current_api_page = self.page;
+        let mut fetched_pages = 0;
+        let mut max_page_from_api = 0;
 
-                // Update max_page from API response
-                self.max_page = response.data.max_page as usize;
+        // Fetch multiple pages if page_count > 1
+        while fetched_pages < self.page_count {
+            match self.client.fetch_topics(&self.forum, current_api_page as i32) {
+                Ok(response) => {
+                    log::info!("[IndexResource] Got {} topics from API page {}",
+                             response.data.list.len(), current_api_page);
 
-                // Convert API topics to existing ListTopicItem format
-                self.list_items = response.data.list
-                    .into_iter()
-                    .map(|api_topic| self.convert_to_list_item(api_topic))
-                    .collect();
+                    // Update max_page from first API response
+                    if fetched_pages == 0 {
+                        max_page_from_api = response.data.max_page as usize;
+                        self.max_page = max_page_from_api;
+                    }
 
-                log::info!("[IndexResource] Converted {} topics", self.list_items.len());
+                    // Convert and append topics
+                    let page_items: Vec<ListTopicItem> = response.data.list
+                        .into_iter()
+                        .map(|api_topic| self.convert_to_list_item(api_topic))
+                        .collect();
 
-                ChannelItem {
-                    extra: Some(ChannelItemType::IndexWithPageData(
-                        self.list_items.clone(),
-                        self.page,
-                        self.max_page,
-                        self.forum.clone()
-                    )),
-                    result: String::new(),
+                    self.list_items.extend(page_items);
+                    fetched_pages += 1;
+                    current_api_page += 1;
+
+                    // Stop if we've reached the last page
+                    if current_api_page > max_page_from_api {
+                        log::info!("[IndexResource] Reached max API page {}", max_page_from_api);
+                        break;
+                    }
+                }
+                Err(e) => {
+                    log::error!("[IndexResource] API error on page {}: {}", current_api_page, e);
+                    // Return what we have so far, or error if we have nothing
+                    if self.list_items.is_empty() {
+                        return ChannelItem {
+                            extra: Some(ChannelItemType::Index(ChannelIndexItem {
+                                page: self.page,
+                                channel: self.forum.clone(),
+                                page_count: self.page_count,
+                            })),
+                            result: format!("Error: {}", e),
+                        };
+                    }
+                    break;
                 }
             }
-            Err(e) => {
-                log::error!("[IndexResource] API error: {}", e);
-                ChannelItem {
-                    extra: Some(ChannelItemType::Index(ChannelIndexItem {
-                        page: self.page,
-                        channel: self.forum.clone(),
-                    })),
-                    result: format!("Error: {}", e),
-                }
-            }
+        }
+
+        log::info!("[IndexResource] Total fetched {} topics from {} API pages (requested {} pages)",
+                 self.list_items.len(), fetched_pages, self.page_count);
+
+        ChannelItem {
+            extra: Some(ChannelItemType::IndexWithPageData(
+                self.list_items.clone(),
+                self.page,
+                self.max_page,
+                self.forum.clone()
+            )),
+            result: String::new(),
         }
     }
 }

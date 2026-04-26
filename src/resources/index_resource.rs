@@ -47,6 +47,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
             extra: Some(ChannelItemType::Index(ChannelIndexItem {
                 page: 1,
                 channel: "BW".to_string(),
+                page_count: 1,
             })),
             result: String::new(),
         };

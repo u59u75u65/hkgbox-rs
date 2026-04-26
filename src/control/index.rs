@@ -78,7 +78,9 @@ impl Index {
                 let tmp = app.index.get_selected_topic();
                 app.status_bar.append(&app.screen_manager, &format!("{}", tmp));
 
-                if tmp < app.index.body_height() {
+                let body_height = app.index.body_height();
+                let max_items = body_height.min(app.list_topic_items.len());
+                if tmp < max_items {
                     app.index.select_topic(tmp + 1);
                 }
                 Some(1)
@@ -89,7 +91,15 @@ impl Index {
                     let new_page = app.index_page - 1;
                     app.index_page = new_page;
                     app.index.select_topic(1);
-                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req, &app.current_channel);
+                    let body_height = app.index.body_height();
+                    let page_count = calculate_page_count(body_height);
+                    let status_message = control_common::send_index_page_request_with_count(
+                        new_page,
+                        page_count,
+                        &mut app.state_manager,
+                        &app.tx_req,
+                        &app.current_channel
+                    );
                     app.status_bar.append(&app.screen_manager,
                                           &control_common::format_index_page_status(new_page, &status_message));
                 }
@@ -101,7 +111,15 @@ impl Index {
                     let new_page = app.index_page + 1;
                     app.index_page = new_page;
                     app.index.select_topic(1);
-                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req, &app.current_channel);
+                    let body_height = app.index.body_height();
+                    let page_count = calculate_page_count(body_height);
+                    let status_message = control_common::send_index_page_request_with_count(
+                        new_page,
+                        page_count,
+                        &mut app.state_manager,
+                        &app.tx_req,
+                        &app.current_channel
+                    );
                     app.status_bar.append(&app.screen_manager,
                                           &control_common::format_index_page_status(new_page, &status_message));
                 }
@@ -111,5 +129,16 @@ impl Index {
         }
     }
 
+}
+
+/// Calculate how many API pages to fetch based on display capacity
+/// API returns max 30 items per page
+fn calculate_page_count(body_height: usize) -> usize {
+    const API_MAX_PER_PAGE: usize = 30;
+    if body_height <= API_MAX_PER_PAGE {
+        1
+    } else {
+        (body_height + API_MAX_PER_PAGE - 1) / API_MAX_PER_PAGE
+    }
 }
 

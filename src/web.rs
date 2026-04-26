@@ -32,10 +32,12 @@ impl Requester {
                                 info!("request: {:?}", o);
                                 match o {
                                     ChannelItemType::Index(index_item) => {
-                                        info!("[requester] creating IndexResource with page {} and channel {}", index_item.page, index_item.channel);
+                                        info!("[requester] creating IndexResource with page {}, page_count {} and channel {}",
+                                              index_item.page, index_item.page_count, index_item.channel);
                                         let mut index_resource = IndexResource::new(&mut fc);
                                         index_resource.set_forum(index_item.channel.clone());
                                         index_resource.set_page(index_item.page);
+                                        index_resource.set_page_count(index_item.page_count);
                                         info!("[requester] fetching from IndexResource");
                                         let result = index_resource.fetch(&item);
                                         info!("[requester] sending index response");

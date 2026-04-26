@@ -41,10 +41,22 @@ pub fn send_index_page_request(
     tx_req: &Sender<ChannelItem>,
     channel: &str,
 ) -> String {
+    send_index_page_request_with_count(page, 1, state_manager, tx_req, channel)
+}
+
+/// Send an index page request with page count to the background worker
+pub fn send_index_page_request_with_count(
+    page: usize,
+    page_count: usize,
+    state_manager: &mut StateManager,
+    tx_req: &Sender<ChannelItem>,
+    channel: &str,
+) -> String {
     let ci = ChannelItem {
         extra: Some(ChannelItemType::Index(ChannelIndexItem {
             page,
             channel: channel.to_string(),
+            page_count,
         })),
         result: String::from(""),
     };

@@ -26,6 +26,7 @@ pub enum ChannelItemType {
 pub struct ChannelIndexItem {
     pub page: usize,
     pub channel: String,
+    pub page_count: usize,  // Number of API pages to fetch (for multi-page fetching)
 }
 
 #[derive(Debug)]

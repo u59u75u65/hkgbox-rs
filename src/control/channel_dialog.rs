@@ -92,8 +92,18 @@ impl ChannelDialog {
             app.channel_dialog.hide();
 
             // Request topics from new channel
-            let status_message = control_common::send_index_page_request(
+            // Calculate how many API pages to fetch based on terminal height
+            const API_MAX_PER_PAGE: usize = 30;
+            let body_height = app.index.body_height();
+            let page_count = if body_height <= API_MAX_PER_PAGE {
+                1
+            } else {
+                (body_height + API_MAX_PER_PAGE - 1) / API_MAX_PER_PAGE
+            };
+
+            let status_message = control_common::send_index_page_request_with_count(
                 1,
+                page_count,
                 &mut app.state_manager,
                 &app.tx_req,
                 &app.current_channel

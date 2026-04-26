@@ -49,8 +49,10 @@ impl Index {
 
     pub fn print(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, collection: &Vec<ListTopicItem>) {
 
-        if self.selected_topic_index > self.body_height() {
-            self.selected_topic_index = self.body_height();
+        let body_height = self.body_height();
+
+        if self.selected_topic_index > body_height {
+            self.selected_topic_index = body_height;
         }
 
         let width = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
@@ -59,7 +61,7 @@ impl Index {
         print_body(stdout,
                    self.body_width(),
                    2,
-                   self.body_height(),
+                   body_height,
                    &collection,
                    self.selected_topic_index);
     }
@@ -67,9 +69,9 @@ impl Index {
     pub fn body_height(&self) -> usize {
         let h = ::termion::terminal_size().expect("fail to get terminal size").1;
 
-        // Maximize body height: subtract 2 for header and status bar
-        if h >= 2 {
-            h as usize - 2
+        // Subtract 3 rows: 1 for header, 1 for separator, 1 for status bar
+        if h >= 3 {
+            h as usize - 3
         } else {
             0
         }
