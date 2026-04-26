@@ -18,8 +18,10 @@ use std::thread;
 
 fn main() {
 
-    // Initialize
-    log4rs::init_file("config/log4rs.yaml", Default::default()).expect("fail to init log4rs");
+    // Initialize logging first
+    if let Err(e) = log4rs::init_file("config/log4rs.yaml", Default::default()) {
+        eprintln!("Warning: Failed to initialize logging: {}", e);
+    }
 
     info!("app start");
 

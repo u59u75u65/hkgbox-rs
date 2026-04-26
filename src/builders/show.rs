@@ -96,6 +96,7 @@ impl Show {
             max_page: max_page,
             reply_count: String::from(reply_count),
             title: String::from(title),
+            main_content: None, // Old HTML parser doesn't extract main content
         };
 
         Ok(show_item)
