@@ -11,6 +11,12 @@ impl Show {
     pub fn new () -> Self { Show {} }
     pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
+            Key::Ctrl('o') => {
+                app.prev_state = app.state_manager.get_state();
+                app.dialog.show();
+                app.state_manager.update_state(Status::Dialog);
+                Some(1)
+            }
             Key::Char('q') => {
                 crate::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
                 Some(0)

@@ -63,6 +63,7 @@ fn main() -> Result<(), HkgError> {
 
     let mut index_control = hkg::control::index::Index::new();
     let mut show_control = hkg::control::show::Show::new();
+    let mut dialog_control = hkg::control::dialog::Dialog::new();
 
     // topics request
     let status_message = list_page(&mut app.state_manager, &tx_req, app.index_page);
@@ -138,6 +139,21 @@ fn main() -> Result<(), HkgError> {
                             None => error!("show_control handle receive none.")
                         }
                     }
+                    Status::Dialog => {
+                        match dialog_control.handle(c, &mut app) {
+                            Some(i) => {
+                                if i == 0 {
+                                    match control.upgrade() {
+                                        Some(working) => (*working).store(false, Ordering::Relaxed),
+                                        None => {}
+                                    }
+                                } else {
+                                    print_screen(&mut app);
+                                }
+                            }
+                            None => error!("dialog_control handle receive none.")
+                        }
+                    }
                 }
             }
             Err(_e) => {}
@@ -186,6 +202,20 @@ fn print_screen(app: &mut hkg::App) {
         }
         Status::Show => {
             app.show.print(&mut app.stdout, &app.show_item);
+        }
+        Status::Dialog => {
+            // Print the underlying screen (List or Show)
+            match app.prev_state {
+                Status::List => {
+                    app.index.print(&mut app.stdout, &app.list_topic_items);
+                }
+                Status::Show => {
+                    app.show.print(&mut app.stdout, &app.show_item);
+                }
+                _ => {}
+            }
+            // Print dialog on top
+            app.dialog.print(&mut app.stdout);
         }
     }
 

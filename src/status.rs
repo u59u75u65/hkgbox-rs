@@ -4,4 +4,5 @@ pub enum Status {
     Startup,
     List,
     Show,
+    Dialog,
 }

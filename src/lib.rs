@@ -34,6 +34,9 @@ pub struct App <'a>{
     pub status_bar: screen::status_bar::StatusBar,
     pub index: screen::index::Index,
     pub show: screen::show::Show,
+    pub dialog: screen::dialog::Dialog,
+
+    pub prev_state: status::Status,
 
     pub tx_req: &'a Sender<resources::ChannelItem>,
     pub rx_res: &'a Receiver<resources::ChannelItem>,
@@ -109,6 +112,8 @@ impl<'a> AppBuilder<'a> {
             status_bar: screen::status_bar::StatusBar::new(),
             index: screen::index::Index::new(),
             show: screen::show::Show::new(icon_collection),
+            dialog: screen::dialog::Dialog::new(),
+            prev_state: status::Status::List,
             tx_req,
             rx_res,
             stdout,

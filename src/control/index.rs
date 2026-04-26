@@ -1,6 +1,7 @@
 use log::info;
 use termion::event::Key;
 use crate::control::common as control_common;
+use crate::status::Status;
 
 
 pub struct Index {
@@ -12,6 +13,12 @@ impl Index {
     pub fn new () -> Self { Index {} }
     pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
+            Key::Ctrl('o') => {
+                app.prev_state = app.state_manager.get_state();
+                app.dialog.show();
+                app.state_manager.update_state(Status::Dialog);
+                Some(1)
+            }
             Key::Char('q') => {
                 crate::screen::common::reset_screen();
                 Some(0)
