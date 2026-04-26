@@ -150,15 +150,18 @@ impl ChannelDialog {
 
             if i == self.selected_index {
                 // Highlight selected channel - reduced by 1 on each side
-                let highlight_content = format!("{}{}{}", &left_padding[1..], item_text, " ".repeat(item_padding.saturating_sub(1)));
-                write!(stdout, "{}│{}{}{}{}{}│{}",
+                let highlight_left = &left_padding[1..]; // Skip first space
+                let highlight_right = " ".repeat(item_padding.saturating_sub(1)); // One less space
+                let highlight_content = format!("{}{}{}", highlight_left, item_text, highlight_right);
+                let full_line = format!("│ {}{}{}{} │",
+                    ::termion::color::Fg(::termion::color::Black),
+                    ::termion::color::Bg(::termion::color::Yellow),
+                    highlight_content,
+                    ::termion::style::Reset
+                );
+                write!(stdout, "{}{}",
                        ::termion::cursor::Goto(dialog_x + 1, dialog_y + line_num as u16),
-                       ::termion::color::Fg(::termion::color::Black),
-                       ::termion::color::Bg(::termion::color::Yellow),
-                       highlight_content,
-                       ::termion::style::Reset,
-                       ::termion::color::Fg(::termion::color::White),
-                       ::termion::cursor::Hide).expect("fail to write to shell");
+                       full_line).expect("fail to write to shell");
             } else {
                 write!(stdout, "{}{}│{}│",
                        ::termion::cursor::Goto(dialog_x + 1, dialog_y + line_num as u16),
