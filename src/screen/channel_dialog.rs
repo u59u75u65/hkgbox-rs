@@ -121,12 +121,8 @@ impl ChannelDialog {
         write!(stdout, "{}┐",
                ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + 1)).expect("fail to write to shell");
 
-        // Title line with sides
-        let title_width = jks_len(&self.title);
-        let title_padding = dialog_width.saturating_sub(title_width + 2);
-        let title_left = " ".repeat(title_padding / 2);
-        let title_right = " ".repeat(title_padding - title_padding / 2);
-        let title_line = format!("│{}{}{}│", title_left, self.title, title_right);
+        // Title line with sides - aligned left
+        let title_line = format!("│{}{}│", self.title, " ".repeat(dialog_width.saturating_sub(self.title.len() + 2)));
 
         write!(stdout, "{}{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 2),
