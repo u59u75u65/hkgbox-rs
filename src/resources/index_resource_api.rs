@@ -11,6 +11,8 @@ pub struct IndexResource<'a, T: 'a + Cache> {
     client: HkgApiClient,
     _cache: &'a mut Box<T>,
     forum: String,
+    page: usize,
+    max_page: usize,
     pub list_items: Vec<ListTopicItem>,
 }
 
@@ -20,6 +22,8 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
             client: HkgApiClient::new().expect("Failed to create API client"),
             _cache: cache,
             forum: "BW".to_string(),  // Default forum
+            page: 1,
+            max_page: 1,
             list_items: Vec::new(),
         }
     }
@@ -29,16 +33,31 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn set_forum(&mut self, forum: String) {
         self.forum = forum;
     }
+
+    pub fn set_page(&mut self, page: usize) {
+        self.page = page;
+    }
+
+    pub fn get_page(&self) -> usize {
+        self.page
+    }
+
+    pub fn get_max_page(&self) -> usize {
+        self.max_page
+    }
 }
 
 impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
     fn fetch(&mut self, _item: &ChannelItem) -> ChannelItem {
-        log::info!("[IndexResource] Starting fetch for forum: {}", self.forum);
+        log::info!("[IndexResource] Starting fetch for forum: {}, page: {}", self.forum, self.page);
 
         // Call API instead of scraping HTML
-        match self.client.fetch_topics(&self.forum, 1) {
+        match self.client.fetch_topics(&self.forum, self.page as i32) {
             Ok(response) => {
                 log::info!("[IndexResource] Got {} topics from API", response.data.list.len());
+
+                // Update max_page from API response
+                self.max_page = response.data.max_page as usize;
 
                 // Convert API topics to existing ListTopicItem format
                 self.list_items = response.data.list
@@ -49,14 +68,14 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
                 log::info!("[IndexResource] Converted {} topics", self.list_items.len());
 
                 ChannelItem {
-                    extra: Some(ChannelItemType::IndexWithData(self.list_items.clone())),
+                    extra: Some(ChannelItemType::IndexWithPageData(self.list_items.clone(), self.page, self.max_page)),
                     result: String::new(),
                 }
             }
             Err(e) => {
                 log::error!("[IndexResource] API error: {}", e);
                 ChannelItem {
-                    extra: Some(ChannelItemType::Index(ChannelIndexItem {})),
+                    extra: Some(ChannelItemType::Index(ChannelIndexItem { page: self.page })),
                     result: format!("Error: {}", e),
                 }
             }

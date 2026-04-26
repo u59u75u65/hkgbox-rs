@@ -44,7 +44,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
         }
 
         let result_item = ChannelItem {
-            extra: Some(ChannelItemType::Index(ChannelIndexItem {})),
+            extra: Some(ChannelItemType::Index(ChannelIndexItem { page: 1 })),
             result: String::new(),
         };
 
