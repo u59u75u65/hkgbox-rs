@@ -16,7 +16,7 @@ impl<'a, T: 'a + Cache> ShowResource<'a, T> {
             cache: cache            
         }
     }
-    fn post_url(&self, postid: &String, page: usize) -> String {
+    fn post_url(&self, postid: &str, page: usize) -> String {
         let base_url = "http://forum1.hkgolden.com/view.aspx";
         let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
                               base_url = base_url,

@@ -15,7 +15,7 @@ impl WebResource {
         }
     }
 
-    pub fn fetch(&mut self, url: &String) -> Result<String, Error> {
+    pub fn fetch(&mut self, url: &str) -> Result<String, Error> {
         info!("web resource #fetch");
         let client = reqwest::blocking::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
@@ -33,7 +33,7 @@ impl WebResource {
     }
 
     pub fn fetch_safe(&mut self, url: &str) -> String {
-        match self.fetch(&String::from(url)) {
+        match self.fetch(url) {
             Ok(s) => s,
             Err(e) => format!("{:?}", e),
         }

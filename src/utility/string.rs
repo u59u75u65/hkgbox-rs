@@ -48,13 +48,11 @@ pub fn cjks_contains(c: char) -> bool {
 }
 
 pub fn jks_len(s: &str) -> usize {
-    return s.chars()
-            .map(|x| if cjks_contains(x) {
-                2
-            } else {
-                1
-            })
-            .collect::<Vec<usize>>()
-            .iter()
-            .fold(0, |acc, &x| acc + x);
+    s.chars()
+        .map(|x| if cjks_contains(x) {
+            2
+        } else {
+            1
+        })
+        .sum()
 }

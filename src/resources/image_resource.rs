@@ -20,95 +20,80 @@ impl<'a, T: 'a + Cache + Send> ImageResource<'a, T> {
 
 impl<'a, T: 'a + Cache + Send> Resource for ImageResource<'a, T> {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
-        info!("[image_resource] #fetch {:?}", item.extra.clone());
-        match item.extra.clone() {
-            Some(o) => {
-                match o {
-                    ChannelItemType::Image(extra) => {
-                        let url = extra.url;
-                        let url2 = url.clone();
-                        let img_path = "data/cache/img/";
-                        let img_file_name = base64::engine::general_purpose::URL_SAFE.encode(url);
+        info!("[image_resource] #fetch {:?}", item.extra);
+        match &item.extra {
+            Some(ChannelItemType::Image(extra)) => {
+                let url = &extra.url;
+                let img_path = "data/cache/img/";
+                let img_file_name = base64::engine::general_purpose::URL_SAFE.encode(url);
 
-                        info!("image resource - before find in cache. url: {}", url2.clone());
-                        let read_result: Option<(bool, Vec<u8>, String)> = match self.cache.read(&img_path, &img_file_name) {
-                            Ok(result) => {
-                                info!("image resource - find in cache success. url:  {}", url2.clone());
-                                Some( (true, result, Default::default()) )
-                            }
-                            Err(_) => {
-                                info!("image resource - find in cache fail. url:  {}", url2.clone());
+                info!("image resource - before find in cache. url: {}", url);
+                let read_result: Option<(bool, Vec<u8>, String)> = match self.cache.read(img_path, &img_file_name) {
+                    Ok(result) => {
+                        info!("image resource - find in cache success. url: {}", url);
+                        Some((true, result, Default::default()))
+                    }
+                    Err(_) => {
+                        info!("image resource - find in cache fail. url: {}", url);
 
-                                let (tx_req, _rx_req) = channel::<Option<(bool, Vec<u8>, String)>>();
-                                let _tx_req2 = tx_req.clone();
+                        let client_result = reqwest::blocking::Client::builder()
+                            .timeout(std::time::Duration::from_secs(5))
+                            .build();
 
-                                let url3 = url2.clone();
-                                let _url4 = url2.clone();
-
-                                let client_result = reqwest::blocking::Client::builder()
-                                    .timeout(std::time::Duration::from_secs(5))
-                                    .build();
-
-                                match client_result {
-                                    Ok(client) => {
-                                        match client.get(&url3).send() {
-                                            Ok(mut resp) => {
-                                                info!("image resource - http request success url:  {}", url3.clone());
-                                                let mut buffer = Vec::new();
-                                                match resp.copy_to(&mut buffer) {
-                                                    Ok(_) => {
-                                                        match self.cache.write(&img_path, &img_file_name, buffer.clone()) {
-                                                            Ok(_) => None,
-                                                            Err(_) => Some((false, Vec::new(), "Failed to write cache".to_string()))
-                                                        }
-                                                    }
-                                                    Err(e) => {
-                                                        info!("image resource - failed to read response: {:?}", e);
-                                                        Some( (false, Vec::new(), e.to_string()) )
-                                                    }
+                        match client_result {
+                            Ok(client) => {
+                                match client.get(url).send() {
+                                    Ok(mut resp) => {
+                                        info!("image resource - http request success url: {}", url);
+                                        let mut buffer = Vec::new();
+                                        match resp.copy_to(&mut buffer) {
+                                            Ok(_) => {
+                                                match self.cache.write(img_path, &img_file_name, buffer.clone()) {
+                                                    Ok(_) => None,
+                                                    Err(_) => Some((false, Vec::new(), "Failed to write cache".to_string()))
                                                 }
                                             }
                                             Err(e) => {
-                                                info!("image resource - http request fail url:  {}", url3.clone());
-                                                Some( (false, Vec::new(), e.to_string()) )
+                                                info!("image resource - failed to read response: {:?}", e);
+                                                Some((false, Vec::new(), e.to_string()))
                                             }
                                         }
                                     }
                                     Err(e) => {
-                                        info!("image resource - failed to create client: {:?}", e);
-                                        Some( (false, Vec::new(), e.to_string()) )
+                                        info!("image resource - http request fail url: {}", url);
+                                        Some((false, Vec::new(), e.to_string()))
                                     }
                                 }
                             }
-                        };
-
-                        match read_result {
-                            Some((from_cache, result, reason)) => {
-                                let url5 = url2.clone();
-                                info!("image url: {} reason: {}", url5, reason);
-                                let result_item = ChannelItem {
-                                    extra: Some(ChannelItemType::Image(ChannelImageItem { url: url2, bytes: result, from_cache: from_cache })),
-                                    result: reason,
-                                };
-                                result_item
-                            },
-                            None => {
-                                ChannelItem {
-                                    extra: Some(ChannelItemType::Image(Default::default())),
-                                    result: Default::default(),
-                                }
+                            Err(e) => {
+                                info!("image resource - failed to create client: {:?}", e);
+                                Some((false, Vec::new(), e.to_string()))
                             }
                         }
+                    }
+                };
+
+                match read_result {
+                    Some((from_cache, result, reason)) => {
+                        info!("image url: {} reason: {}", url, reason);
+                        ChannelItem {
+                            extra: Some(ChannelItemType::Image(ChannelImageItem {
+                                url: url.clone(),
+                                bytes: result,
+                                from_cache: from_cache
+                            })),
+                            result: reason,
+                        }
                     },
-                    _ => {
+                    None => {
                         ChannelItem {
                             extra: Some(ChannelItemType::Image(Default::default())),
                             result: Default::default(),
                         }
                     }
                 }
-            }
-            None => {
+            },
+            _ => {
                 ChannelItem {
                     extra: Some(ChannelItemType::Image(Default::default())),
                     result: Default::default(),

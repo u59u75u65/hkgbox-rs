@@ -390,52 +390,40 @@ fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
     (replier_name, time)
 }
 
-fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType> {
+fn clean_reply_body(vec: &[NodeType]) -> Vec<NodeType> {
     // clean up lines (end)
-    let vec2 = {
-        let vec_length = vec.len();
-        let vec_check_cleanup = vec.clone();
+    let vec_length = vec.len();
 
-        // check if last 4 elements match the EMPTY PATTERN
-        let is_last4_empty = vec_check_cleanup.iter()
-                                              .rev()
-                                              .take(4)
-                                              .enumerate()
-                                              .all(|(j, node)| match node.clone() {
-                                                  NodeType::Br(_n) => j == 1 || j == 2 || j == 3,
-                                                  NodeType::Text(n) => j == 0 && n.data.is_empty(),
-                                                  _ => false,
-                                              });
+    // check if last 4 elements match the EMPTY PATTERN
+    let is_last4_empty = vec.iter()
+        .rev()
+        .take(4)
+        .enumerate()
+        .all(|(j, node)| match node {
+            NodeType::Br(_n) => j == 1 || j == 2 || j == 3,
+            NodeType::Text(n) => j == 0 && n.data.is_empty(),
+            _ => false,
+        });
 
-        let vec_short_length = if vec_length > 4 && is_last4_empty {
-            vec_length - 4
-        } else {
-            vec_length
-        };
-
-        vec.iter().take(vec_short_length)
+    let vec_short_length = if vec_length > 4 && is_last4_empty {
+        vec_length - 4
+    } else {
+        vec_length
     };
 
     // clean up lines (start)
-    let vec3 = {
-        let vec2_cloned = vec2.clone();
-        let mut result: Vec<NodeType> = Vec::new();
-        for (_j, node) in vec2_cloned.enumerate() {
-            let node2 = node.clone();
-            let node3 = node.clone();
-            match node2 {
-                NodeType::Br(_n) => {
-                    if !result.is_empty() {
-                        result.push(node3);
-                    }
+    let mut result: Vec<NodeType> = Vec::new();
+    for node in vec.iter().take(vec_short_length) {
+        match node {
+            NodeType::Br(_) => {
+                if !result.is_empty() {
+                    result.push(node.clone());
                 }
-                _ => result.push(node3),
             }
+            _ => result.push(node.clone()),
         }
-        result.clone()
-    };
-
-    vec3
+    }
+    result
 }
 
 fn make_separator_replier_name(_separator_width: usize,

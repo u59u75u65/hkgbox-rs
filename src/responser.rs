@@ -35,17 +35,15 @@ impl Responser {
 
                                         // get all images links in an array, and send to background download
                                         let maps = app.show_item.replies.iter().flat_map(|reply| {
-                                                let f = reply.body.iter().filter(|node| {
-                                                        let node2 = (*node).clone();
-                                                        match node2 {
-                                                            crate::reply_model::NodeType::Image(ref n) => {
-                                                                // Check for external images (HTTP/HTTPS URLs)
-                                                                n.data.starts_with("http") || n.data.starts_with("https")
-                                                            }
-                                                            _ => false,
+                                                reply.body.iter().filter(|node| {
+                                                    match node {
+                                                        crate::reply_model::NodeType::Image(n) => {
+                                                            // Check for external images (HTTP/HTTPS URLs)
+                                                            n.data.starts_with("http") || n.data.starts_with("https")
                                                         }
-                                                    }).collect::<Vec<_>>();
-                                                f
+                                                        _ => false,
+                                                    }
+                                                })
                                             })
                                             .collect::<Vec<_>>();
 
@@ -54,9 +52,8 @@ impl Responser {
                                                               &format!("[SIMG:{count}]", count = count));
 
                                         for node in &maps {
-                                            let node2 = (*node).clone();
-                                            match node2 {
-                                                crate::reply_model::NodeType::Image(ref n) => {
+                                            match node {
+                                                crate::reply_model::NodeType::Image(n) => {
                                                     let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
                                                     app.status_bar.append(&app.screen_manager, &status_message);
                                                 }
@@ -88,16 +85,14 @@ impl Responser {
 
                                 // get all images links in an array, and send to background download
                                 let maps = app.show_item.replies.iter().flat_map(|reply| {
-                                        let f = reply.body.iter().filter(|node| {
-                                                let node2 = (*node).clone();
-                                                match node2 {
-                                                    crate::reply_model::NodeType::Image(ref n) => {
-                                                        n.data.starts_with("http") || n.data.starts_with("https")
-                                                    }
-                                                    _ => false,
+                                        reply.body.iter().filter(|node| {
+                                            match node {
+                                                crate::reply_model::NodeType::Image(n) => {
+                                                    n.data.starts_with("http") || n.data.starts_with("https")
                                                 }
-                                            }).collect::<Vec<_>>();
-                                        f
+                                                _ => false,
+                                            }
+                                        })
                                     })
                                     .collect::<Vec<_>>();
 
@@ -106,9 +101,8 @@ impl Responser {
                                                       &format!("[SIMG:{count}]", count = count));
 
                                 for node in &maps {
-                                    let node2 = (*node).clone();
-                                    match node2 {
-                                        crate::reply_model::NodeType::Image(ref n) => {
+                                    match node {
+                                        crate::reply_model::NodeType::Image(n) => {
                                             let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
                                             app.status_bar.append(&app.screen_manager, &status_message);
                                         }
@@ -183,7 +177,7 @@ impl Responser {
 
 }
 
-fn get_posturl(postid: &String, page: usize) -> String {
+fn get_posturl(postid: &str, page: usize) -> String {
     let base_url = "http://forum1.hkgolden.com/view.aspx";
     let posturl = format!("{base_url}?type=BW&message={postid}&page={page}",
                           base_url = base_url,
@@ -193,11 +187,9 @@ fn get_posturl(postid: &String, page: usize) -> String {
 }
 
 
-fn image_request(url: &String, _state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+fn image_request(url: &str, _state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
-    let url2 = url.clone();
-
-    info!("image_request - url: {}", url2);
+    info!("image_request - url: {}", url);
     let ci = ChannelItem {
         extra: Some(ChannelItemType::Image(ChannelImageItem {
                                   url: url.to_string(),

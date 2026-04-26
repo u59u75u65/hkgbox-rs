@@ -88,11 +88,11 @@ impl Show {
 }
 
 
-fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+fn show_page(postid: &str, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let ci = ChannelItem {
         extra: Some(ChannelItemType::Show(ChannelShowItem {
-                                         postid: postid.clone(),
+                                         postid: postid.to_string(),
                                          page: page,
                                      })),
         result: String::from(""),
@@ -110,6 +110,6 @@ fn show_page(postid: &String, page: usize, state_manager: &mut StateManager, tx_
     status_message
 }
 
-fn get_show_page_status_message(postid: &String, page: usize, status_message: &String) -> String {
+fn get_show_page_status_message(postid: &str, page: usize, status_message: &str) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
 }
