@@ -378,22 +378,22 @@ impl ChannelDialog {
 
         // Instructions below bottom border
         let instructions = if self.filter_mode {
-            "Type: Filter | Backspace: Delete | ESC: Exit | ↑↓: Navigate | Enter: Select"
+            "Type to filter | ←: Delete | ESC: Exit | ↑↓: Navigate | Enter: Select"
         } else {
             "↑↓: Navigate | Enter: Select | /: Filter | ESC: Cancel"
         };
-        write!(stdout, "{}{}{}{}",
+
+        // Center the instructions in the dialog
+        let instructions_width = jks_len(&instructions);
+        let padding_left = (dialog_width.saturating_sub(instructions_width)) / 2;
+        let padding_right = dialog_width.saturating_sub(instructions_width + padding_left);
+        let padded_instructions = format!("{}{}{}", " ".repeat(padding_left), instructions, " ".repeat(padding_right));
+
+        write!(stdout, "{}{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + dialog_height as u16),
                ::termion::color::Fg(::termion::color::Yellow),
                ::termion::style::Bold,
-               instructions).expect("fail to write to shell");
-
-        // Truncate or pad instructions to fit dialog width
-        let instructions_len = jks_len(&instructions);
-        if instructions_len < dialog_width {
-            write!(stdout, "{}{}",
-                   " ".repeat(dialog_width - instructions_len),
-                   ::termion::cursor::Hide).expect("fail to write to shell");
-        }
+               padded_instructions,
+               ::termion::style::Reset).expect("fail to write to shell");
     }
 }
