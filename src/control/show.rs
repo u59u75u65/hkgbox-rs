@@ -1,8 +1,5 @@
-use std::sync::mpsc::Sender;
 use termion::event::Key;
 use crate::status::*;
-use crate::state_manager::*;
-use crate::resources::*;
 use crate::control::common as control_common;
 
 pub struct Show {

@@ -3,7 +3,6 @@ use crate::resources::common::*;
 use crate::caches::common::*;
 
 use log::info;
-use std::sync::mpsc::channel;
 use base64::engine::Engine;
 
 pub struct ImageResource<'a, T: 'a + Cache + Send> {

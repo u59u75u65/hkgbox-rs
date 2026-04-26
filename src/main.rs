@@ -9,7 +9,6 @@ use log::{info, error};
 use hkg::status::*;
 use hkg::model::IconItem;
 use hkg::state_manager::*;
-use hkg::screen_manager::*;
 use hkg::resources::*;
 use hkg::web::*;
 use hkg::responser::*;

@@ -2,7 +2,6 @@ use std::io::Read;
 
 use base64::{Engine as _, engine::general_purpose};
 use crate::reply_model::{NodeType, ImageNode, TextNode, BlockQuoteNode, BrNode};
-use chrono::{Local, DateTime};
 
 pub fn imgcat_from_data(data: &[u8], width: usize) -> String {
     let encoded = general_purpose::STANDARD.encode(data);
@@ -469,7 +468,7 @@ pub fn parse_html_content(html: &str) -> Vec<NodeType> {
 }
 
 pub fn timestamp_to_strings(ms: i64) -> (String, String) {
-    use chrono::{DateTime, Local, Utc, TimeZone};
+    use chrono::{Local, Utc, TimeZone};
 
     // Convert milliseconds since epoch to local time
     let timestamp = ms / 1000;

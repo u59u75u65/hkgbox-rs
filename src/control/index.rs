@@ -1,11 +1,7 @@
 use log::info;
-use std::sync::mpsc::Sender;
 use termion::event::Key;
-use crate::state_manager::*;
-use crate::resources::*;
 use crate::control::common as control_common;
 
-use std::default::Default;
 
 pub struct Index {
 
