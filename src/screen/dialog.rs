@@ -58,47 +58,42 @@ impl Dialog {
         let dialog_x = ((width - dialog_width) / 2) as u16;
         let dialog_y = ((height - dialog_height) / 2) as u16;
 
-        // Clear dialog area
-        for y in dialog_y..dialog_y + dialog_height as u16 {
-            write!(stdout, "{}{}",
-                   ::termion::cursor::Goto(1, y + 1),
-                   " ".repeat(width)).expect("fail to write to shell");
-        }
-
-        // Draw dialog border
-        let border = "─".repeat(dialog_width);
-        let side = "│";
-
-        // Top border
-        write!(stdout, "{}{}┌{}┐{}",
+        // Draw corners and edges by position
+        // Top-left corner
+        write!(stdout, "{}{}┌{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 1),
                ::termion::color::Fg(::termion::color::White),
-               border,
                ::termion::style::Reset).expect("fail to write to shell");
 
-        // Title line
+        // Top border
+        for i in 1..dialog_width as u16 {
+            write!(stdout, "{}─",
+                   ::termion::cursor::Goto(dialog_x + 1 + i, dialog_y + 1)).expect("fail to write to shell");
+        }
+
+        // Top-right corner
+        write!(stdout, "{}┐",
+               ::termion::cursor::Goto(dialog_x + 1 + dialog_width as u16, dialog_y + 1)).expect("fail to write to shell");
+
+        // Title line with sides
         let title_padding = dialog_width.saturating_sub(self.title.len() + 2);
         let title_left = " ".repeat(title_padding / 2);
         let title_right = " ".repeat(title_padding - title_padding / 2);
-        write!(stdout, "{}{}{}{}{}{}{}{}",
+        let title_line = format!("│{}{}{}│", title_left, self.title, title_right);
+
+        write!(stdout, "{}{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 2),
                ::termion::color::Fg(::termion::color::White),
-               side,
                ::termion::style::Bold,
-               format!("{}{}{}", title_left, self.title, title_right),
-               ::termion::style::Reset,
-               side,
-               ::termion::cursor::Hide).expect("fail to write to shell");
+               title_line,
+               ::termion::style::Reset).expect("fail to write to shell");
 
-        // Empty line
-        write!(stdout, "{}{}{}{}{}",
+        // Empty line with sides
+        write!(stdout, "{}│{}│",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 3),
-               ::termion::color::Fg(::termion::color::White),
-               side,
-               " ".repeat(dialog_width),
-               side).expect("fail to write to shell");
+               " ".repeat(dialog_width)).expect("fail to write to shell");
 
-        // Prompt line with input
+        // Input line with sides
         let input_text = format!("{} {}", self.prompt, self.input);
         let input_display = if input_text.len() > dialog_width - 2 {
             format!("...{}", &input_text[input_text.len() - dialog_width + 5..])
@@ -106,30 +101,37 @@ impl Dialog {
             input_text.clone()
         };
         let input_padding = dialog_width.saturating_sub(input_display.len() + 2);
-        write!(stdout, "{}{}{}{}{}{}{}{}",
+        let input_line = format!("│{}{}{}│",
+                                 ::termion::style::Bold,
+                                 format!("{}{}", input_display, " ".repeat(input_padding)),
+                                 ::termion::style::Reset);
+
+        write!(stdout, "{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 4),
                ::termion::color::Fg(::termion::color::White),
-               side,
-               ::termion::style::Bold,
-               format!("{}{}", input_display, " ".repeat(input_padding)),
-               ::termion::style::Reset,
-               side,
-               ::termion::cursor::Hide).expect("fail to write to shell");
-
-        // Bottom border
-        write!(stdout, "{}{}└{}┘{}",
-               ::termion::cursor::Goto(dialog_x + 1, dialog_y + 5),
-               ::termion::color::Fg(::termion::color::White),
-               border,
+               input_line,
                ::termion::style::Reset).expect("fail to write to shell");
 
-        // Instructions line
+        // Bottom-left corner
+        write!(stdout, "{}└",
+               ::termion::cursor::Goto(dialog_x + 1, dialog_y + 5)).expect("fail to write to shell");
+
+        // Bottom border
+        for i in 1..dialog_width as u16 {
+            write!(stdout, "{}─",
+                   ::termion::cursor::Goto(dialog_x + 1 + i, dialog_y + 5)).expect("fail to write to shell");
+        }
+
+        // Bottom-right corner
+        write!(stdout, "{}┘",
+               ::termion::cursor::Goto(dialog_x + 1 + dialog_width as u16, dialog_y + 5)).expect("fail to write to shell");
+
+        // Instructions
         let instructions = "ENTER: Open | ESC: Cancel";
-        write!(stdout, "{}{}{}{}{}",
+        write!(stdout, "{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 6),
                ::termion::color::Fg(::termion::color::Yellow),
                ::termion::style::Bold,
-               instructions,
-               ::termion::style::Reset).expect("fail to write to shell");
+               instructions).expect("fail to write to shell");
     }
 }
