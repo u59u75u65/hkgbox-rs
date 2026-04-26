@@ -44,6 +44,9 @@ crossbeam = "0.8"
 # URL parsing
 url = "2.5"
 
+# Error handling
+thiserror = "2.0"
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 

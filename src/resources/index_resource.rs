@@ -40,7 +40,7 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
 
         if !from_cache {
             let result2 = result.clone();
-            self.cache.write(&html_path, &file_name, result2).expect("fail to write cache");
+            self.cache.write(&html_path, &file_name, result2).expect("Failed to write HTML cache");
         }
 
         let result_item = ChannelItem {

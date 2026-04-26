@@ -243,7 +243,7 @@ fn parse_url_query_item(url_str: &str) -> Result<UrlQueryItem, &'static str> {
     }
     let query = query_option.unwrap();
 
-    let re = Regex::new(r"(\\?|&)(?P<key>[^&=]+)=(?P<value>[^&]+)").expect("fail to parse url query item, reason: invalid regex");
+    let re = Regex::new(r"(\\?|&)(?P<key>[^&=]+)=(?P<value>[^&]+)").expect("Failed to compile URL query regex pattern");
 
     let (channel, message) = {
 

@@ -547,6 +547,7 @@ dependencies = [
  "serde",
  "serde_json",
  "termion",
+ "thiserror",
  "time",
  "tokio-util",
  "url",

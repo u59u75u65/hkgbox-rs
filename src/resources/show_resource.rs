@@ -50,12 +50,12 @@ impl<'a, T: 'a + Cache> Resource for ShowResource<'a, T> {
 
                         if !from_cache {
                             let result2 = result.clone();
-                            self.cache.write(&html_path, &show_file_name, result2).expect("fail to write cache");
+                            self.cache.write(&html_path, &show_file_name, result2).expect("Failed to write HTML cache");
                         }
 
                         let result_item = ChannelItem {
                             extra: Some(ChannelItemType::Show(ChannelShowItem { postid: postid, page: extra.page })),
-                            result: String::from_utf8(result).expect("fail to build result item, reason: invalid string"),
+                            result: String::from_utf8(result).expect("Failed to convert HTML response to UTF-8 string"),
                         };
                         result_item
                     },

@@ -14,9 +14,10 @@ use hkg::resources::*;
 use hkg::web::*;
 use hkg::responser::*;
 use hkg::screen::common;
+use hkg::HkgError;
 use std::thread;
 
-fn main() {
+fn main() -> Result<(), HkgError> {
 
     // Initialize logging first
     if let Err(e) = log4rs::init_file("config/log4rs.yaml", Default::default()) {
@@ -42,12 +43,16 @@ fn main() {
     let mut app = {
 
         let stdout = {
-            Box::new(_stdout.lock().into_raw_mode().expect("fail to lock stdout"))
+            let locked = _stdout.lock();
+            locked.into_raw_mode()
+                .map_err(|e| HkgError::Terminal(format!("Failed to acquire stdout lock: {}", e)))?
         };
 
         let icon_collection: Box<Vec<IconItem>> = {
             let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
-            Box::new(serde_json::from_str(&icon_manifest_string).expect("fail to lock stdout"))
+            let icons: Vec<IconItem> = serde_json::from_str(&icon_manifest_string)
+                .map_err(|e| HkgError::Config(format!("Failed to parse icon manifest JSON: {}", e)))?;
+            Box::new(icons)
         };
 
         hkg::App {
@@ -68,7 +73,7 @@ fn main() {
             tx_req: &tx_req,
             rx_res: &rx_res,
 
-            stdout: stdout,
+            stdout: Box::new(stdout),
         }
     };
 
@@ -95,11 +100,21 @@ fn main() {
             let stdin = stdin();
 
             for c in stdin.keys() {
-                // println!("{:?}", c);
-                tx_in.send(c.ok().unwrap()).unwrap();
-
+                match c {
+                    Ok(key) => {
+                        if tx_in.send(key).is_err() {
+                            info!("Main thread disconnected, exiting input thread");
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to read key: {}", e);
+                        break;
+                    }
+                }
             }
         }
+        info!("Input thread exiting");
     });
 
     while (*working2).load(Ordering::Relaxed) {
@@ -160,6 +175,9 @@ fn main() {
 
         thread::sleep(std::time::Duration::from_millis(50));
     }
+
+    info!("app shutdown");
+    Ok(())
 }
 
 fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
@@ -193,5 +211,7 @@ fn print_screen(app: &mut hkg::App) {
 
     app.status_bar.print(&app.screen_manager);
 
-    app.stdout.flush().expect("fail to flush the stdout");
+    if let Err(e) = app.stdout.flush() {
+        error!("Failed to flush stdout: {}", e);
+    }
 }

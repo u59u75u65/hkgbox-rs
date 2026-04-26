@@ -175,7 +175,9 @@ impl Responser {
                     None => { }
                 }
             }
-            Err(_) => {}
+            Err(e) => {
+                error!("Failed to receive response: {}", e);
+            }
         }
     }
 

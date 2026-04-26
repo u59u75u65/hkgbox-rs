@@ -14,6 +14,9 @@ pub mod responser;
 pub mod builders;
 pub mod screen;
 pub mod control;
+pub mod error;
+
+pub use error::{HkgError, Result};
 
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
