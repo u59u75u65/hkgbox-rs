@@ -13,9 +13,23 @@ impl ChannelDialog {
     pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
             Key::Esc => {
-                info!("[ChannelDialog] ESC pressed, canceling dialog");
-                app.channel_dialog.hide();
-                app.state_manager.update_state(app.prev_state);
+                if app.channel_dialog.is_filter_mode() {
+                    // Exit filter mode
+                    app.channel_dialog.exit_filter_mode();
+                    Some(1)
+                } else {
+                    // Close dialog
+                    info!("[ChannelDialog] ESC pressed, canceling dialog");
+                    app.channel_dialog.hide();
+                    app.state_manager.update_state(app.prev_state);
+                    Some(1)
+                }
+            }
+            Key::Char('/') => {
+                if !app.channel_dialog.is_filter_mode() {
+                    // Enter filter mode
+                    app.channel_dialog.enter_filter_mode();
+                }
                 Some(1)
             }
             Key::Up => {
@@ -30,6 +44,27 @@ impl ChannelDialog {
                 // Enter confirms selection
                 let index = app.channel_dialog.get_selected_index() + 1;
                 self.select_channel(app, index)
+            }
+            Key::Backspace => {
+                if app.channel_dialog.is_filter_mode() {
+                    app.channel_dialog.backspace_filter();
+                    Some(1)
+                } else {
+                    None
+                }
+            }
+            Key::Char(c) => {
+                if app.channel_dialog.is_filter_mode() {
+                    // Only allow alphanumeric characters and space
+                    if c.is_alphanumeric() || c == ' ' {
+                        app.channel_dialog.add_filter_char(c);
+                        Some(1)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
             }
             Key::Ctrl('c') => {
                 Some(0)

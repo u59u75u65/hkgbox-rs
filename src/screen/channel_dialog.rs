@@ -14,6 +14,9 @@ pub struct ChannelDialog {
     selected_index: usize,
     scroll_offset: usize,
     items_per_page: usize,
+    filter_mode: bool,
+    filter_pattern: String,
+    filtered_channels: Vec<usize>,
 }
 
 impl ChannelDialog {
@@ -75,6 +78,9 @@ impl ChannelDialog {
             selected_index: 0,
             scroll_offset: 0,
             items_per_page: 12, // Show 12 channels at a time
+            filter_mode: false,
+            filter_pattern: String::new(),
+            filtered_channels: Vec::new(),
         }
     }
 
@@ -82,6 +88,9 @@ impl ChannelDialog {
         self.visible = true;
         self.selected_index = 0;
         self.scroll_offset = 0;
+        self.filter_mode = false;
+        self.filter_pattern.clear();
+        self.filtered_channels.clear();
     }
 
     pub fn hide(&mut self) {
@@ -93,25 +102,57 @@ impl ChannelDialog {
     }
 
     pub fn move_up(&mut self) {
+        let display_channels = self.get_display_channels();
+        if display_channels.is_empty() {
+            return;
+        }
+
         if self.selected_index == 0 {
-            self.selected_index = self.channels.len() - 1;
-            self.scroll_offset = self.channels.len().saturating_sub(self.items_per_page);
+            // Wrap to last
+            self.selected_index = display_channels.last().unwrap().0;
+            self.scroll_offset = self.selected_index.saturating_sub(self.items_per_page - 1);
         } else {
-            self.selected_index -= 1;
-            if self.selected_index < self.scroll_offset {
-                self.scroll_offset = self.selected_index;
+            let current_pos = display_channels.iter().position(|&(i, _)| i == self.selected_index);
+            if let Some(pos) = current_pos {
+                if pos == 0 {
+                    // Wrap to last
+                    self.selected_index = display_channels.last().unwrap().0;
+                    self.scroll_offset = self.selected_index.saturating_sub(self.items_per_page - 1);
+                } else {
+                    // Move to previous in filtered list
+                    self.selected_index = display_channels[pos - 1].0;
+                    if self.selected_index < self.scroll_offset {
+                        self.scroll_offset = self.selected_index;
+                    }
+                }
             }
         }
     }
 
     pub fn move_down(&mut self) {
+        let display_channels = self.get_display_channels();
+        if display_channels.is_empty() {
+            return;
+        }
+
         if self.selected_index >= self.channels.len() - 1 {
-            self.selected_index = 0;
+            // Wrap to first
+            self.selected_index = display_channels.first().unwrap().0;
             self.scroll_offset = 0;
         } else {
-            self.selected_index += 1;
-            if self.selected_index >= self.scroll_offset + self.items_per_page {
-                self.scroll_offset = self.selected_index - self.items_per_page + 1;
+            let current_pos = display_channels.iter().position(|&(i, _)| i == self.selected_index);
+            if let Some(pos) = current_pos {
+                if pos >= display_channels.len() - 1 {
+                    // Wrap to first
+                    self.selected_index = display_channels.first().unwrap().0;
+                    self.scroll_offset = 0;
+                } else {
+                    // Move to next in filtered list
+                    self.selected_index = display_channels[pos + 1].0;
+                    if self.selected_index >= self.scroll_offset + self.items_per_page {
+                        self.scroll_offset = self.selected_index - self.items_per_page + 1;
+                    }
+                }
             }
         }
     }
@@ -127,6 +168,80 @@ impl ChannelDialog {
     pub fn set_selected_index(&mut self, index: usize) {
         if index < self.channels.len() {
             self.selected_index = index;
+        }
+    }
+
+    pub fn is_filter_mode(&self) -> bool {
+        self.filter_mode
+    }
+
+    pub fn enter_filter_mode(&mut self) {
+        self.filter_mode = true;
+        self.filter_pattern.clear();
+        self.update_filtered_channels();
+        if !self.filtered_channels.is_empty() {
+            self.selected_index = self.filtered_channels[0];
+            self.scroll_offset = 0;
+        }
+    }
+
+    pub fn exit_filter_mode(&mut self) {
+        self.filter_mode = false;
+        self.filter_pattern.clear();
+        self.filtered_channels.clear();
+        self.selected_index = 0;
+        self.scroll_offset = 0;
+    }
+
+    pub fn add_filter_char(&mut self, c: char) {
+        self.filter_pattern.push(c);
+        self.update_filtered_channels();
+        if !self.filtered_channels.is_empty() {
+            self.selected_index = self.filtered_channels[0];
+            self.scroll_offset = 0;
+        }
+    }
+
+    pub fn backspace_filter(&mut self) {
+        self.filter_pattern.pop();
+        self.update_filtered_channels();
+        if !self.filtered_channels.is_empty() {
+            self.selected_index = self.filtered_channels[0];
+            self.scroll_offset = 0;
+        }
+    }
+
+    pub fn get_filter_pattern(&self) -> &str {
+        &self.filter_pattern
+    }
+
+    fn update_filtered_channels(&mut self) {
+        if self.filter_pattern.is_empty() {
+            self.filtered_channels.clear();
+            return;
+        }
+
+        let pattern_lower = self.filter_pattern.to_lowercase();
+        self.filtered_channels = self.channels.iter()
+            .enumerate()
+            .filter(|(_, channel)| {
+                let title_lower = channel.title.to_lowercase();
+                let channel_lower = channel.channel.to_lowercase();
+                title_lower.contains(&pattern_lower) || channel_lower.contains(&pattern_lower)
+            })
+            .map(|(i, _)| i)
+            .collect();
+    }
+
+    fn get_display_channels(&self) -> Vec<(usize, &ChannelInfo)> {
+        if self.filter_mode && !self.filter_pattern.is_empty() {
+            self.filtered_channels.iter()
+                .map(|&i| (i, &self.channels[i]))
+                .collect()
+        } else {
+            self.channels.iter()
+                .enumerate()
+                .collect()
         }
     }
 
@@ -169,32 +284,52 @@ impl ChannelDialog {
         write!(stdout, "{}┐",
                ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + 1)).expect("fail to write to shell");
 
-        // Title line with sides - aligned left, show page indicator
-        let page_indicator = if self.channels.len() > self.items_per_page {
-            let current_page = self.scroll_offset / self.items_per_page + 1;
-            let total_pages = (self.channels.len() + self.items_per_page - 1) / self.items_per_page;
-            format!(" [{}/{}]", current_page, total_pages)
-        } else {
-            String::new()
-        };
-        let title_line = format!("│{}{}{}│", self.title, " ".repeat(dialog_width.saturating_sub(self.title.len() + page_indicator.len() + 2)), page_indicator);
+        // Title line with sides - aligned left, show filter indicator or page indicator
+        if self.filter_mode {
+            let filter_display = format!("/{}", self.filter_pattern);
+            let title_line = format!("│{}{}│", self.title, " ".repeat(dialog_width.saturating_sub(self.title.len() + filter_display.len() + 3)));
+            write!(stdout, "{}{}{}{}{}",
+                   ::termion::cursor::Goto(dialog_x + 1, dialog_y + 2),
+                   ::termion::color::Fg(::termion::color::White),
+                   ::termion::style::Bold,
+                   title_line,
+                   ::termion::style::Reset).expect("fail to write to shell");
 
-        write!(stdout, "{}{}{}{}{}",
-               ::termion::cursor::Goto(dialog_x + 1, dialog_y + 2),
-               ::termion::color::Fg(::termion::color::White),
-               ::termion::style::Bold,
-               title_line,
-               ::termion::style::Reset).expect("fail to write to shell");
+            // Filter pattern display
+            write!(stdout, "{}{}{}{}{}",
+                   ::termion::cursor::Goto(dialog_x + 1, dialog_y + 3),
+                   ::termion::color::Fg(::termion::color::Cyan),
+                   ::termion::style::Bold,
+                   filter_display,
+                   ::termion::style::Reset).expect("fail to write to shell");
+        } else {
+            let page_indicator = if self.channels.len() > self.items_per_page {
+                let current_page = self.scroll_offset / self.items_per_page + 1;
+                let total_pages = (self.channels.len() + self.items_per_page - 1) / self.items_per_page;
+                format!(" [{}/{}]", current_page, total_pages)
+            } else {
+                String::new()
+            };
+            let title_line = format!("│{}{}{}│", self.title, " ".repeat(dialog_width.saturating_sub(self.title.len() + page_indicator.len() + 2)), page_indicator);
+
+            write!(stdout, "{}{}{}{}{}",
+                   ::termion::cursor::Goto(dialog_x + 1, dialog_y + 2),
+                   ::termion::color::Fg(::termion::color::White),
+                   ::termion::style::Bold,
+                   title_line,
+                   ::termion::style::Reset).expect("fail to write to shell");
+        }
 
         // Channel list - show only visible channels
-        let visible_channels = self.channels.iter()
-            .skip(self.scroll_offset)
-            .take(self.items_per_page)
-            .enumerate();
+        let display_channels = self.get_display_channels();
 
-        for (i, channel) in visible_channels {
-            let line_num = i + 3;
-            let actual_index = self.scroll_offset + i;
+        // Determine starting line based on filter mode
+        let start_line = if self.filter_mode { 4 } else { 3 };
+
+        for (pos, (actual_index, channel)) in display_channels.iter().skip(self.scroll_offset)
+            .take(self.items_per_page)
+            .enumerate() {
+            let line_num = start_line + pos;
             if line_num >= dialog_height - 1 {
                 break;
             }
@@ -205,7 +340,7 @@ impl ChannelDialog {
             let item_padding = dialog_width.saturating_sub(item_text_width + 2 + left_padding.len());
             let inner_content = format!("{}{}{}", left_padding, item_text, " ".repeat(item_padding));
 
-            if actual_index == self.selected_index {
+            if *actual_index == self.selected_index {
                 // Highlight selected channel - reduced by 1 on each side
                 let highlight_left = &left_padding[1..]; // Skip first space
                 let highlight_right = " ".repeat(item_padding.saturating_sub(1)); // One less space
@@ -242,12 +377,23 @@ impl ChannelDialog {
                ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + dialog_height as u16 - 1)).expect("fail to write to shell");
 
         // Instructions below bottom border
-        let instructions = format!("↑↓: Navigate | Enter: Select | ESC: Cancel");
-        write!(stdout, "{}{}{}{}{}",
+        let instructions = if self.filter_mode {
+            "Type: Filter | Backspace: Delete | ESC: Exit | ↑↓: Navigate | Enter: Select"
+        } else {
+            "↑↓: Navigate | Enter: Select | /: Filter | ESC: Cancel"
+        };
+        write!(stdout, "{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + dialog_height as u16),
                ::termion::color::Fg(::termion::color::Yellow),
                ::termion::style::Bold,
-               instructions,
-               " ".repeat(dialog_width.saturating_sub(jks_len(&instructions)))).expect("fail to write to shell");
+               instructions).expect("fail to write to shell");
+
+        // Truncate or pad instructions to fit dialog width
+        let instructions_len = jks_len(&instructions);
+        if instructions_len < dialog_width {
+            write!(stdout, "{}{}",
+                   " ".repeat(dialog_width - instructions_len),
+                   ::termion::cursor::Hide).expect("fail to write to shell");
+        }
     }
 }
