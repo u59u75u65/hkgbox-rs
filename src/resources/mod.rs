@@ -16,7 +16,7 @@ pub enum ChannelItemType {
     Index(ChannelIndexItem),
     Image(ChannelImageItem),
     IndexWithData(Vec<crate::model::ListTopicItem>),
-    IndexWithPageData(Vec<crate::model::ListTopicItem>, usize, usize), // items, current_page, max_page
+    IndexWithPageData(Vec<crate::model::ListTopicItem>, usize, usize, String), // items, current_page, max_page, channel
     ShowWithData(crate::model::ShowItem),
 }
 
@@ -25,6 +25,7 @@ pub enum ChannelItemType {
 #[derive(Default)]
 pub struct ChannelIndexItem {
     pub page: usize,
+    pub channel: String,
 }
 
 #[derive(Debug)]

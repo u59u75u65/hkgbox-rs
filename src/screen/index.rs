@@ -9,6 +9,7 @@ pub struct Index {
     selected_topic_index: usize,
     page: usize,
     max_page: usize,
+    channel: String,
 }
 
 impl Index {
@@ -18,12 +19,21 @@ impl Index {
             selected_topic_index: 0,
             page: 1,
             max_page: 1,
+            channel: String::from("BW"),
         }
     }
 
     pub fn set_page(&mut self, page: usize, max_page: usize) {
         self.page = page;
         self.max_page = max_page;
+    }
+
+    pub fn set_channel(&mut self, channel: String) {
+        self.channel = channel;
+    }
+
+    pub fn get_channel(&self) -> &str {
+        &self.channel
     }
 
     pub fn select_topic(&mut self, index: usize) {
@@ -42,7 +52,7 @@ impl Index {
 
         let width = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
 
-        print_header(stdout, width as usize, &self.title, self.page, self.max_page);
+        print_header(stdout, width as usize, &self.title, self.page, self.max_page, &self.channel);
         print_body(stdout,
                    self.body_width(),
                    2,
@@ -75,15 +85,16 @@ impl Index {
 
 }
 
-fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str, page: usize, _max_page: usize) {
-    // print header
+fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str, page: usize, _max_page: usize, channel: &str) {
+    // print header with channel in top left
+    let channel_text = format!("[{}]", channel);
     let page_text = format!(" [{}]", page);
     let text_with_page = format!("{}{}", text, page_text);
     let padding = ((width - text_with_page.len()) / 2) as u16;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
     let header_top_padding = seq_str_gen(0, width, " ", "");
 
-    let title_right_padding = (0..if padding > 11 { padding - 11 } else { 0 } ).map(|_| " ").collect::<Vec<_>>().join("");
+    let _title_right_padding = (0..if padding > 11 { padding - 11 } else { 0 } ).map(|_| " ").collect::<Vec<_>>().join("");
 
     write!(stdout, "{}{}{}{}{}",
             ::termion::cursor::Goto(1, 1),
@@ -92,15 +103,16 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::style::Reset,
            	::termion::cursor::Hide).expect("fail to write to shell");
 
-    write!(stdout, "{}{}{}{}{}{}{}{}u59u75u65{}{}",
+    write!(stdout, "{}{}{}{}{}{}{}{}{}{}{}",
+            ::termion::cursor::Goto(1, 1),
+            ::termion::color::Fg(::termion::color::Cyan),
+            ::termion::style::Bold,
+            channel_text,
+            ::termion::style::Reset,
             ::termion::cursor::Goto(padding + 1, 1),
             ::termion::color::Fg(::termion::color::White),
             ::termion::style::Bold,
             text_with_page,
-            ::termion::style::Reset,
-            ::termion::cursor::Hide,
-            title_right_padding,
-            ::termion::style::Bold,
             ::termion::style::Reset,
             ::termion::cursor::Hide,
             ).expect("fail to write to shell");

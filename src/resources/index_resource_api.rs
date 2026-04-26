@@ -68,14 +68,22 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
                 log::info!("[IndexResource] Converted {} topics", self.list_items.len());
 
                 ChannelItem {
-                    extra: Some(ChannelItemType::IndexWithPageData(self.list_items.clone(), self.page, self.max_page)),
+                    extra: Some(ChannelItemType::IndexWithPageData(
+                        self.list_items.clone(),
+                        self.page,
+                        self.max_page,
+                        self.forum.clone()
+                    )),
                     result: String::new(),
                 }
             }
             Err(e) => {
                 log::error!("[IndexResource] API error: {}", e);
                 ChannelItem {
-                    extra: Some(ChannelItemType::Index(ChannelIndexItem { page: self.page })),
+                    extra: Some(ChannelItemType::Index(ChannelIndexItem {
+                        page: self.page,
+                        channel: self.forum.clone(),
+                    })),
                     result: format!("Error: {}", e),
                 }
             }

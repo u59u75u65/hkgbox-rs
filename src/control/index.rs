@@ -83,7 +83,7 @@ impl Index {
                     let new_page = app.index_page - 1;
                     app.index_page = new_page;
                     app.index.select_topic(1);
-                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req);
+                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req, &app.current_channel);
                     app.status_bar.append(&app.screen_manager,
                                           &control_common::format_index_page_status(new_page, &status_message));
                 }
@@ -95,7 +95,7 @@ impl Index {
                     let new_page = app.index_page + 1;
                     app.index_page = new_page;
                     app.index.select_topic(1);
-                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req);
+                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req, &app.current_channel);
                     app.status_bar.append(&app.screen_manager,
                                           &control_common::format_index_page_status(new_page, &status_message));
                 }

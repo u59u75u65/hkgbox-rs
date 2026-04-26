@@ -141,7 +141,7 @@ impl Responser {
                                 app.state_manager.set_to_print_screen(true);
                                 app.state_manager.set_web_request(false);
                             }
-                            ChannelItemType::IndexWithPageData(items, page, max_page) => {
+                            ChannelItemType::IndexWithPageData(items, page, max_page, channel) => {
                                 // New API mode - data already parsed with page info
                                 app.list_topic_items.clear();
                                 for item in items {
@@ -151,6 +151,8 @@ impl Responser {
                                 app.index_page = page;
                                 app.index_max_page = max_page;
                                 app.index.set_page(page, max_page);
+                                app.index.set_channel(channel.clone());
+                                app.current_channel = channel;
 
                                 app.status_bar.append(&app.screen_manager, &format!("[TOPICS:API-ROK p{}/{}]", page, max_page));
 

@@ -39,9 +39,13 @@ pub fn send_index_page_request(
     page: usize,
     state_manager: &mut StateManager,
     tx_req: &Sender<ChannelItem>,
+    channel: &str,
 ) -> String {
     let ci = ChannelItem {
-        extra: Some(ChannelItemType::Index(ChannelIndexItem { page })),
+        extra: Some(ChannelItemType::Index(ChannelIndexItem {
+            page,
+            channel: channel.to_string(),
+        })),
         result: String::from(""),
     };
 
