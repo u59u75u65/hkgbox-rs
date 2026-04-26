@@ -378,10 +378,13 @@ fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
 
     let published_at = reply.published_at.clone();
 
+    // Parse the published_at time (now in local timezone thanks to timestamp_to_strings fix)
     let published_at_dt = match NaiveDateTime::parse_from_str(&published_at, "%d/%m/%Y %H:%M") {
-        Ok(v) => v.and_local_timezone(Local).single().unwrap_or(now).naive_local(),
+        Ok(v) => v,
         Err(_e) => now.naive_local(),
     };
+
+    // Compare with current local time
     let duration = now.naive_local() - published_at_dt;
     let time = published_at_format(&duration);
     (replier_name, time)
@@ -555,10 +558,11 @@ fn make_separator_bottom(separator_width: usize, separator_padding: &str) -> Str
 
 
 fn published_at_format(duration: &Duration) -> String {
-    let weeks = duration.num_weeks();
-    let days = duration.num_days();
-    let hours = duration.num_hours();
-    let minutes = duration.num_minutes();
+    let total_seconds = duration.num_seconds();
+    let weeks = total_seconds / 604800;
+    let days = total_seconds / 86400;
+    let hours = total_seconds / 3600;
+    let minutes = total_seconds / 60;
 
     if weeks > 0 {
         format!("{}w", weeks)
