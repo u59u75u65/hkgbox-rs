@@ -286,8 +286,8 @@ impl ChannelDialog {
 
         // Title line with sides - aligned left, show filter indicator or page indicator
         if self.filter_mode {
-            let filter_display = format!("/{}", self.filter_pattern);
-            let title_line = format!("│{}{}│", self.title, " ".repeat(dialog_width.saturating_sub(self.title.len() + filter_display.len() + 3)));
+            // In filter mode, just show the title normally (filter pattern is on next line)
+            let title_line = format!("│{}{}│", self.title, " ".repeat(dialog_width.saturating_sub(self.title.len() + 2)));
             write!(stdout, "{}{}{}{}{}",
                    ::termion::cursor::Goto(dialog_x + 1, dialog_y + 2),
                    ::termion::color::Fg(::termion::color::White),
@@ -295,7 +295,8 @@ impl ChannelDialog {
                    title_line,
                    ::termion::style::Reset).expect("fail to write to shell");
 
-            // Filter pattern display
+            // Filter pattern display on next line
+            let filter_display = format!("/{}", self.filter_pattern);
             write!(stdout, "{}{}{}{}{}",
                    ::termion::cursor::Goto(dialog_x + 1, dialog_y + 3),
                    ::termion::color::Fg(::termion::color::Cyan),
