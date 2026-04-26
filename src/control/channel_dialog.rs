@@ -43,9 +43,10 @@ impl ChannelDialog {
             let channel_info = channel_info.clone();
             info!("[ChannelDialog] Selected channel {}: {}", channel_info.channel, channel_info.title);
 
-            // Update current channel
+            // Update current channel with both code and title
             app.current_channel = channel_info.channel.clone();
-            app.index.set_channel(channel_info.channel.clone());
+            app.current_channel_title = channel_info.title.clone();
+            app.index.set_channel(channel_info.channel.clone(), channel_info.title.clone());
 
             // Reset to page 1 when switching channels
             app.index_page = 1;

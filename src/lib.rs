@@ -31,6 +31,7 @@ pub struct App <'a>{
     pub index_page: usize,
     pub index_max_page: usize,
     pub current_channel: String,
+    pub current_channel_title: String,
 
     pub status_bar: screen::status_bar::StatusBar,
     pub index: screen::index::Index,
@@ -112,6 +113,7 @@ impl<'a> AppBuilder<'a> {
             index_page: 1,
             index_max_page: 1,
             current_channel: String::from("BW"),
+            current_channel_title: String::from("吹水台"),
             status_bar: screen::status_bar::StatusBar::new(),
             index: screen::index::Index::new(),
             show: screen::show::Show::new(icon_collection),

@@ -9,7 +9,8 @@ pub struct Index {
     selected_topic_index: usize,
     page: usize,
     max_page: usize,
-    channel: String,
+    channel_code: String,
+    channel_title: String,
 }
 
 impl Index {
@@ -19,7 +20,8 @@ impl Index {
             selected_topic_index: 0,
             page: 1,
             max_page: 1,
-            channel: String::from("BW"),
+            channel_code: String::from("BW"),
+            channel_title: String::from("吹水台"),
         }
     }
 
@@ -28,12 +30,13 @@ impl Index {
         self.max_page = max_page;
     }
 
-    pub fn set_channel(&mut self, channel: String) {
-        self.channel = channel;
+    pub fn set_channel(&mut self, channel_code: String, channel_title: String) {
+        self.channel_code = channel_code;
+        self.channel_title = channel_title;
     }
 
     pub fn get_channel(&self) -> &str {
-        &self.channel
+        &self.channel_code
     }
 
     pub fn select_topic(&mut self, index: usize) {
@@ -52,7 +55,7 @@ impl Index {
 
         let width = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
 
-        print_header(stdout, width as usize, &self.title, self.page, self.max_page, &self.channel);
+        print_header(stdout, width as usize, &self.title, self.page, self.max_page, &self.channel_title);
         print_body(stdout,
                    self.body_width(),
                    2,
@@ -85,9 +88,9 @@ impl Index {
 
 }
 
-fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str, page: usize, _max_page: usize, channel: &str) {
-    // print header with channel in top left
-    let channel_text = format!("[{}]", channel);
+fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str, page: usize, _max_page: usize, channel_title: &str) {
+    // print header with channel title in top left
+    let channel_text = format!("[{}]", channel_title);
     let page_text = format!(" [{}]", page);
     let text_with_page = format!("{}{}", text, page_text);
     let padding = ((width - text_with_page.len()) / 2) as u16;
