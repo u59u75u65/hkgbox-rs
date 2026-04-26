@@ -31,24 +31,6 @@ impl ChannelDialog {
                 let index = app.channel_dialog.get_selected_index() + 1;
                 self.select_channel(app, index)
             }
-            Key::Char('1') | Key::Char('2') | Key::Char('3') | Key::Char('4') |
-            Key::Char('5') | Key::Char('6') | Key::Char('7') | Key::Char('8') |
-            Key::Char('9') => {
-                let digit = match c {
-                    Key::Char('1') => 1,
-                    Key::Char('2') => 2,
-                    Key::Char('3') => 3,
-                    Key::Char('4') => 4,
-                    Key::Char('5') => 5,
-                    Key::Char('6') => 6,
-                    Key::Char('7') => 7,
-                    Key::Char('8') => 8,
-                    Key::Char('9') => 9,
-                    _ => 1,
-                };
-                app.channel_dialog.set_selected_index(digit - 1);
-                self.select_channel(app, digit)
-            }
             Key::Ctrl('c') => {
                 Some(0)
             }
