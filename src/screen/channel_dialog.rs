@@ -146,22 +146,24 @@ impl ChannelDialog {
             let item_text_width = jks_len(&item_text);
             let left_padding = "   "; // 3 spaces of left padding
             let item_padding = dialog_width.saturating_sub(item_text_width + 2 + left_padding.len());
-            let item_line = format!("│{}{}{}│", left_padding, item_text, " ".repeat(item_padding));
+            let inner_content = format!("{}{}{}", left_padding, item_text, " ".repeat(item_padding));
 
             if i == self.selected_index {
-                // Highlight selected channel
-                write!(stdout, "{}{}{}{}{}{}",
+                // Highlight selected channel - reduced by 1 on each side
+                let highlight_content = format!("{}{}{}", &left_padding[1..], item_text, " ".repeat(item_padding.saturating_sub(1)));
+                write!(stdout, "{}│{}{}{}{}{}│{}",
                        ::termion::cursor::Goto(dialog_x + 1, dialog_y + line_num as u16),
                        ::termion::color::Fg(::termion::color::Black),
                        ::termion::color::Bg(::termion::color::Yellow),
-                       item_line,
+                       highlight_content,
                        ::termion::style::Reset,
+                       ::termion::color::Fg(::termion::color::White),
                        ::termion::cursor::Hide).expect("fail to write to shell");
             } else {
-                write!(stdout, "{}{}{}",
+                write!(stdout, "{}{}│{}│",
                        ::termion::cursor::Goto(dialog_x + 1, dialog_y + line_num as u16),
                        ::termion::color::Fg(::termion::color::White),
-                       item_line).expect("fail to write to shell");
+                       inner_content).expect("fail to write to shell");
             }
         }
 
