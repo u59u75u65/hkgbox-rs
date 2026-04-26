@@ -1,6 +1,7 @@
 // Debug parse_html_content for any thread ID
 use hkg::api_client::HkgApiClient;
 use std::env;
+use chrono;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -73,6 +74,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (i, reply) in response.data.replies.iter().enumerate() {
         println!("┌─────────────────────────────────────────────────────────────");
         println!("│ Reply {} - Author: {}", i + 1, reply.author_name);
+        println!("├─────────────────────────────────────────────────────────────");
+        println!("│ Raw reply_date: {} ms ({} since epoch)", reply.reply_date, reply.reply_date);
+        println!("│ Current time: {} ms ({} since epoch)",
+            chrono::Utc::now().timestamp_millis(),
+            chrono::Utc::now().timestamp()
+        );
+        println!("│ Time difference: {} ms", chrono::Utc::now().timestamp_millis() - reply.reply_date);
+
+        use hkg::api_utils::timestamp_to_strings;
+        let (date, time) = timestamp_to_strings(reply.reply_date);
+        println!("│ Computed local time: {} {}", date, time);
+
         println!("├─────────────────────────────────────────────────────────────");
         println!("│ Raw HTML ({} chars):", reply.content.len());
         println!("│ {}", reply.content);
