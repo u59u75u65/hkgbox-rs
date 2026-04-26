@@ -3,6 +3,7 @@ use termion::event::Key;
 use crate::status::*;
 use crate::state_manager::*;
 use crate::resources::*;
+use crate::control::common as control_common;
 
 pub struct Show {
 
@@ -27,10 +28,10 @@ impl Show {
                 if app.show_item.page > 1 {
                     let postid = app.show_item.url_query.message.as_str();
                     let page = &app.show_item.page - 1;
-                    let status_message = show_page(postid, page, &mut app.state_manager, &app.tx_req);
+                    let status_message = control_common::send_page_request(postid, page, &mut app.state_manager, &app.tx_req);
 
                     app.status_bar.append(&app.screen_manager,
-                                          &get_show_page_status_message(postid, page, &status_message));
+                                          &control_common::format_page_status(postid, page, &status_message));
                 }
                 Some(1)
             }
@@ -39,10 +40,10 @@ impl Show {
                 if app.show_item.max_page > app.show_item.page {
                     let postid = app.show_item.url_query.message.as_str();
                     let page = &app.show_item.page + 1;
-                    let status_message = show_page(postid, page, &mut app.state_manager, &app.tx_req);
+                    let status_message = control_common::send_page_request(postid, page, &mut app.state_manager, &app.tx_req);
 
                     app.status_bar.append(&app.screen_manager,
-                                          &get_show_page_status_message(postid, page, &status_message));
+                                          &control_common::format_page_status(postid, page, &status_message));
                 }
                 Some(1)
             }
@@ -85,31 +86,4 @@ impl Show {
             _ => None,
         }
     }
-}
-
-
-fn show_page(postid: &str, page: usize, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
-
-    let ci = ChannelItem {
-        extra: Some(ChannelItemType::Show(ChannelShowItem {
-                                         postid: postid.to_string(),
-                                         page: page,
-                                     })),
-        result: String::from(""),
-    };
-
-
-    let status_message = match tx_req.send(ci) {
-        Ok(()) => {
-            state_manager.set_web_request(true); // *is_web_requesting = true;
-            "SOK".to_string()
-        }
-        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
-    };
-
-    status_message
-}
-
-fn get_show_page_status_message(postid: &str, page: usize, status_message: &str) -> String {
-    format!("[{}-{}:{}]", postid, page, status_message)
 }

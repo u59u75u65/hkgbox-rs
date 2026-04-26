@@ -41,39 +41,21 @@ fn main() -> Result<(), HkgError> {
     let control = Arc::downgrade(&working);
 
     let mut app = {
-
         let stdout = {
             let locked = _stdout.lock();
             locked.into_raw_mode()
                 .map_err(|e| HkgError::Terminal(format!("Failed to acquire stdout lock: {}", e)))?
         };
 
-        let icon_collection: Box<Vec<IconItem>> = {
-            let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
-            let icons: Vec<IconItem> = serde_json::from_str(&icon_manifest_string)
-                .map_err(|e| HkgError::Config(format!("Failed to parse icon manifest JSON: {}", e)))?;
-            Box::new(icons)
-        };
+        let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
+        let icon_collection: Box<Vec<IconItem>> = serde_json::from_str(&icon_manifest_string)
+            .map_err(|e| HkgError::Config(format!("Failed to parse icon manifest JSON: {}", e)))?;
 
-        hkg::App {
-            index_builder: hkg::builders::index::Index::new(),
-            show_builder: hkg::builders::show::Show::new(),
-            state_manager: StateManager::new(tx_state),
-            screen_manager: ScreenManager::new(),
-
-            // initialize empty page
-            list_topic_items: Default::default(),
-            show_item: Default::default(),
-
-            status_bar: hkg::screen::status_bar::StatusBar::new(),
-            index: hkg::screen::index::Index::new(),
-            show: hkg::screen::show::Show::new(icon_collection),
-
-            tx_req: &tx_req,
-            rx_res: &rx_res,
-
-            stdout: Box::new(stdout),
-        }
+        hkg::App::builder()
+            .channels(&tx_req, &rx_res)
+            .icon_collection(icon_collection)
+            .state_channel(tx_state)
+            .build(Box::new(stdout))?
     };
 
     Requester::new(rx_req, tx_res, working.clone());
