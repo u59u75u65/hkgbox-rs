@@ -27,8 +27,8 @@
 
 ---
 
-### Phase 2: API Migration 🚧 (PLANNED)
-**Status**: Analysis complete, implementation pending
+### Phase 2: API Migration 🚧 (IN PROGRESS)
+**Status**: Analysis complete, implementation ready to start
 
 **Goals**:
 - [ ] Migrate from HTML scraping to JSON API
@@ -171,15 +171,16 @@
 
 ## Immediate Priorities (Next 2 Weeks)
 
-1. **API Migration Proof of Concept**
+1. ✅ **API Analysis Complete**
+   - Topic list API documented
+   - Thread view API documented
+   - Response structures analyzed
+
+2. **API Migration Proof of Concept** (Ready to start)
    - Fetch topics from JSON API
    - Display in terminal UI
    - Verify performance gains
-
-2. **Show Thread API Investigation**
-   - Find replies endpoint
-   - Document response format
-   - Plan migration strategy
+   - Test thread view API
 
 3. **Basic Testing**
    - Manual testing of current build

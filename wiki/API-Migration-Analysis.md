@@ -287,6 +287,13 @@ fn build_api_url(forum: &str, page: i32) -> String {
         forum, page
     )
 }
+
+fn build_thread_url(thread_id: i32, page: i32) -> String {
+    format!(
+        "https://api.hkgolden.com/v1/view/{}/{}?sensormode=Y&hideblock=N",
+        thread_id, page
+    )
+}
 ```
 
 ## Migration Roadmap
@@ -333,11 +340,116 @@ fn build_api_url(forum: &str, page: i32) -> String {
 
 ## Show Thread API
 
-**Note**: We haven't yet analyzed the API for fetching individual thread/replies. This should be investigated next.
+**Status**: ✅ Analyzed (April 26, 2026)
 
-Potential endpoint pattern:
+### Endpoint
 ```
-https://api.hkgolden.com/v1/messages/{forum}/{thread_id}/{page}
+https://api.hkgolden.com/v1/view/{thread_id}/{page}?sensormode=Y&hideblock=N
+```
+
+**Example**: `https://api.hkgolden.com/v1/view/8044402/1?sensormode=Y&hideblock=N`
+
+### Response Structure
+
+#### Root Object
+```json
+{
+  "result": true,
+  "data": {
+    // Main post info (33 fields - same as topic list)
+    "id": 8044402,
+    "title": "標題",
+    "authorName": "作者",
+    "content": "主帖內容...",
+    
+    // Thread-specific
+    "currentPage": 1,
+    "totalPage": 11,
+    "totalReplies": 258,
+    
+    // Quoting system
+    "quoted": [
+      {"index": 138, "id": 295256843},
+      {"index": 143, "id": 295256881}
+    ],
+    
+    // Replies array
+    "replies": [
+      {
+        "id": 295238968,
+        "messageId": 8044402,
+        "index": 1,
+        "authorId": 574825,
+        "authorName": "用戶名",
+        "authorGender": 0,
+        "authorClass": 4,
+        "authorIcon": 145,
+        "replyDate": 1776867362887,
+        "content": "回覆內容",
+        "quoted": [],
+        "status": "A",
+        "isBlocked": false
+      }
+      // ... more replies
+    ]
+  }
+}
+```
+
+### Reply Object Fields (14 fields)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Unique reply ID |
+| `messageId` | integer | Parent thread ID |
+| `index` | integer | Reply position in thread |
+| `authorId` | integer | Author user ID |
+| `authorName` | string | Author username |
+| `authorGender` | integer | 0=female, 1=male |
+| `authorClass` | integer | User class (1-5) |
+| `authorIcon` | integer | Icon ID |
+| `replyDate` | integer | Timestamp (ms since epoch) |
+| `content` | string | Reply content (HTML) |
+| `quoted` | array | List of quoted replies |
+| `status` | string | "A" = active |
+| `isBlocked` | boolean | Blocked status |
+| `authorBadge` | string/null | Badge if any |
+
+### Content Format
+
+The `content` field contains **HTML markup**:
+- Text with `<br />` line breaks
+- `<blockquote>` for quoted replies
+- `<img>` tags for images
+- `<a>` tags for links
+- `<span data-color="red">` for colored text
+- Emoticons like `<img src="/faces/bye.gif" />`
+
+This means we'll still need **HTML parsing** for reply content, but the structure is much simpler than the old approach.
+
+### Main Post Fields
+
+The main post object includes **all 33 topic fields** plus:
+- `content`: Main post HTML content
+- `currentPage`: Current page number
+- `totalReplies`: Total reply count
+- `quoted`: Array of quoted post references
+- `replies`: Array of reply objects
+
+### Comparison with Current Implementation
+
+**Current (HTML scraping)**:
+```
+URL: http://archive.hkgolden.com/View.aspx?message={id}
+Parse: HTML selectors + regex extraction
+Fields: Manually extracted from HTML structure
+```
+
+**New (JSON API)**:
+```
+URL: https://api.hkgolden.com/v1/view/{thread_id}/{page}
+Parse: Direct JSON to struct
+Fields: All available immediately
 ```
 
 ## Dependencies After Migration
