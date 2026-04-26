@@ -91,7 +91,7 @@ impl Dialog {
         // Empty line with sides
         write!(stdout, "{}│{}│",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 3),
-               " ".repeat(dialog_width)).expect("fail to write to shell");
+               " ".repeat(dialog_width - 2)).expect("fail to write to shell");
 
         // Input line with sides
         let input_text = format!("{} {}", self.prompt, self.input);
