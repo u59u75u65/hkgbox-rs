@@ -65,11 +65,11 @@ impl Index {
     }
 
     pub fn body_height(&self) -> usize {
-
         let h = ::termion::terminal_size().expect("fail to get terminal size").1;
 
-        if h >= 3 {
-            h as usize - 3
+        // Maximize body height: subtract 2 for header and status bar
+        if h >= 2 {
+            h as usize - 2
         } else {
             0
         }
