@@ -66,7 +66,7 @@ impl ChannelDialog {
         let height = ::termion::terminal_size().expect("fail to get terminal size").1 as usize;
 
         let dialog_width = 35.min(width - 4);
-        let dialog_height = 16;
+        let dialog_height = 18;
 
         let dialog_x = ((width - dialog_width) / 2) as u16;
         let dialog_y = ((height - dialog_height) / 2) as u16;
@@ -136,10 +136,13 @@ impl ChannelDialog {
 
         // Instructions
         let instructions = "1-9: Select | ESC: Cancel";
-        write!(stdout, "{}{}{}{}",
+        let instructions_width = jks_len(&instructions);
+        let instructions_left = " ".repeat((dialog_width.saturating_sub(instructions_width)) / 2);
+        write!(stdout, "{}{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + dialog_height as u16),
                ::termion::color::Fg(::termion::color::Yellow),
                ::termion::style::Bold,
+               instructions_left,
                instructions).expect("fail to write to shell");
     }
 }
