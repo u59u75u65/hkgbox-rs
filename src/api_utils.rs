@@ -178,11 +178,16 @@ fn tokenize_html(html: &str) -> Vec<HtmlToken> {
                 // HTML entity
                 let _ = chars.next(); // consume '&'
                 let entity = read_html_entity(&mut chars);
-                if !current_text.is_empty() {
-                    tokens.push(HtmlToken::Text(current_text.clone()));
-                    current_text.clear();
+                if entity.is_empty() {
+                    // Invalid entity sequence, treat '&' as literal text
+                    current_text.push('&');
+                } else {
+                    if !current_text.is_empty() {
+                        tokens.push(HtmlToken::Text(current_text.clone()));
+                        current_text.clear();
+                    }
+                    tokens.push(HtmlToken::Entity(entity));
                 }
-                tokens.push(HtmlToken::Entity(entity));
             }
             _ => {
                 current_text.push(c);
@@ -286,13 +291,30 @@ fn read_html_entity(chars: &mut std::iter::Peekable<std::str::Chars>) -> String 
     let mut entity = String::new();
     entity.push('&');
 
-    while let Some(&c) = chars.peek() {
-        entity.push(c);
-        let _ = chars.next();
-        if c == ';' {
+    // Read up to 32 characters for the entity (HTML entities are usually short)
+    for _ in 0..32 {
+        if let Some(&c) = chars.peek() {
+            // Stop at whitespace (but don't consume it)
+            if c.is_whitespace() {
+                break;
+            }
+            // Stop if we hit a semicolon (end of entity)
+            if c == ';' {
+                entity.push(c);
+                let _ = chars.next(); // consume the ';'
+                break;
+            }
+            // Stop if we hit a '<' (start of new tag)
+            if c == '<' {
+                break;
+            }
+            entity.push(c);
+            let _ = chars.next();
+        } else {
             break;
         }
     }
+
     entity
 }
 
@@ -354,7 +376,44 @@ fn build_ast(tokens: &[HtmlToken]) -> Vec<AstNode> {
                     "&gt;" => ">",
                     "&amp;" => "&",
                     "&quot;" => "\"",
-                    _ => entity.as_str(),
+                    "&apos;" => "'",
+                    "&copy;" => "©",
+                    "&reg;" => "®",
+                    "&trade;" => "™",
+                    "&hellip;" => "...",
+                    _ => {
+                        // Handle malformed/incomplete HTML entities
+                        // The API sometimes sends "& text" instead of "&amp; text"
+                        if entity.starts_with("&amp") {
+                            "&"
+                        } else if entity.starts_with("&lt") {
+                            "<"
+                        } else if entity.starts_with("&gt") {
+                            ">"
+                        } else if entity.starts_with("&quot") {
+                            "\""
+                        } else if entity.starts_with("&apos") {
+                            "'"
+                        } else if entity.starts_with("&nbsp") {
+                            " "
+                        } else if entity == "&" {
+                            "&"  // Lone ampersand, treat as literal
+                        } else {
+                            // Unknown entity, return as-is but try to handle malformed ones
+                            if entity.ends_with(';') {
+                                entity.as_str()
+                            } else {
+                                // Malformed entity like "& text" - extract the part after &
+                                // and prepend the decoded &
+                                let text_part = &entity[1..];
+                                if text_part.is_empty() {
+                                    "&"
+                                } else {
+                                    &format!("&{}", text_part)
+                                }
+                            }
+                        }
+                    }
                 };
                 let node = AstNode::Text(decoded.to_string());
                 if let Some((_, ref mut children)) = stack.last_mut() {
