@@ -66,7 +66,7 @@ impl ChannelDialog {
         let height = ::termion::terminal_size().expect("fail to get terminal size").1 as usize;
 
         let dialog_width = 35.min(width - 4);
-        let dialog_height = 17;
+        let dialog_height = 18;
 
         let dialog_x = ((width - dialog_width) / 2) as u16;
         let dialog_y = ((height - dialog_height) / 2) as u16;
