@@ -1,4 +1,5 @@
 use std::io::Write;
+use crate::utility::string::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChannelInfo {
@@ -88,7 +89,8 @@ impl ChannelDialog {
                ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + 1)).expect("fail to write to shell");
 
         // Title line with sides
-        let title_padding = dialog_width.saturating_sub(self.title.len() + 2);
+        let title_width = jks_len(&self.title);
+        let title_padding = dialog_width.saturating_sub(title_width + 2);
         let title_left = " ".repeat(title_padding / 2);
         let title_right = " ".repeat(title_padding - title_padding / 2);
         let title_line = format!("│{}{}{}│", title_left, self.title, title_right);
@@ -108,7 +110,8 @@ impl ChannelDialog {
             }
 
             let item_text = format!("[{:2}] {} ({})", i + 1, channel.title, channel.channel);
-            let item_padding = dialog_width.saturating_sub(item_text.len() + 2);
+            let item_text_width = jks_len(&item_text);
+            let item_padding = dialog_width.saturating_sub(item_text_width + 2);
             let item_line = format!("│{}{}│", item_text, " ".repeat(item_padding));
 
             write!(stdout, "{}{}{}",
@@ -132,7 +135,7 @@ impl ChannelDialog {
                ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + dialog_height as u16 - 1)).expect("fail to write to shell");
 
         // Instructions
-        let instructions = "1-12: Select | ESC: Cancel";
+        let instructions = "1-9: Select | ESC: Cancel";
         write!(stdout, "{}{}{}{}",
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + dialog_height as u16),
                ::termion::color::Fg(::termion::color::Yellow),
