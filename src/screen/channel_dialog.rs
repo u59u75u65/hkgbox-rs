@@ -102,10 +102,10 @@ impl ChannelDialog {
                title_line,
                ::termion::style::Reset).expect("fail to write to shell");
 
-        // Channel list
+        // Channel list - show all 12 channels
         for (i, channel) in self.channels.iter().enumerate() {
             let line_num = i + 3;
-            if line_num >= dialog_height - 2 {
+            if line_num >= dialog_height - 1 {
                 break;
             }
 
@@ -134,7 +134,7 @@ impl ChannelDialog {
         write!(stdout, "{}┘",
                ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + dialog_height as u16 - 1)).expect("fail to write to shell");
 
-        // Instructions
+        // Instructions below bottom border
         let instructions = "1-9: Select | ESC: Cancel";
         let instructions_width = jks_len(&instructions);
         let instructions_left = " ".repeat((dialog_width.saturating_sub(instructions_width)) / 2);
