@@ -1,3 +1,4 @@
+use log::{info, error};
 use std::io::Cursor;
 
 use kuchiki::NodeRef;
@@ -5,10 +6,10 @@ use kuchiki::NodeDataRef;
 use kuchiki::NodeData;
 use kuchiki::ElementData;
 
-use model::ListTopicItem;
-use model::ListTopicTitleItem;
-use model::ListTopicAuthorItem;
-use model::UrlQueryItem;
+use crate::model::ListTopicItem;
+use crate::model::ListTopicTitleItem;
+use crate::model::ListTopicAuthorItem;
+use crate::model::UrlQueryItem;
 
 use regex::Regex;
 use url::Url;
@@ -251,8 +252,8 @@ fn parse_url_query_item(url_str: &str) -> Result<UrlQueryItem, &'static str> {
         let mut map = HashMap::new();
 
         for cap in re.captures_iter(query) {
-            let key = cap.name("key").unwrap_or("").to_string();
-            let value = cap.name("value").unwrap_or("").to_string();
+            let key = cap.name("key").map(|m| m.as_str()).unwrap_or("").to_string();
+            let value = cap.name("value").map(|m| m.as_str()).unwrap_or("").to_string();
             map.entry(key).or_insert(value);
         }
 

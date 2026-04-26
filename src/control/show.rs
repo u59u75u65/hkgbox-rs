@@ -1,8 +1,8 @@
 use std::sync::mpsc::Sender;
 use termion::event::Key;
-use status::*;
-use state_manager::*;
-use resources::*;
+use crate::status::*;
+use crate::state_manager::*;
+use crate::resources::*;
 
 pub struct Show {
 
@@ -11,14 +11,14 @@ pub struct Show {
 impl Show {
 
     pub fn new () -> Self { Show {} }
-    pub fn handle(&mut self, c: ::termion::event::Key,app: &mut ::App)-> Option<i32> {
+    pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
             Key::Char('q') => {
-                ::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
+                crate::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
                 Some(0)
             }
             Key::Char('r') => {
-                ::screen::common::clear_screen();
+                crate::screen::common::clear_screen();
                 app.status_bar.append(&app.screen_manager, &format!("r"));
                 Some(1)
             }
@@ -50,7 +50,7 @@ impl Show {
                 app.status_bar.append(&app.screen_manager, "↑");
                 let bh = app.show.body_height();
                 if app.show.scroll_up(bh) {
-                    ::screen::common::clear_screen();
+                    crate::screen::common::clear_screen();
                 }
                 Some(1)
             }
@@ -58,28 +58,28 @@ impl Show {
                 app.status_bar.append(&app.screen_manager, "↓");
                 let bh = app.show.body_height();
                 if app.show.scroll_down(bh) {
-                    ::screen::common::clear_screen();
+                    crate::screen::common::clear_screen();
                 }
                 Some(1)
             }
             Key::Up => {
                 app.status_bar.append(&app.screen_manager, "↑");
                 if app.show.scroll_up(2) {
-                    ::screen::common::clear_screen();
+                    crate::screen::common::clear_screen();
                 }
                 Some(1)
             }
             Key::Down => {
                 app.status_bar.append(&app.screen_manager, "↓");
                 if app.show.scroll_down(2) {
-                    ::screen::common::clear_screen();
+                    crate::screen::common::clear_screen();
                 }
                 Some(1)
             }
             Key::Backspace => {
                 app.status_bar.append(&app.screen_manager, "B");
                 app.state_manager.update_state(Status::List); // state = Status::List;
-                ::screen::common::clear_screen();
+                crate::screen::common::clear_screen();
                 Some(1)
             }
             _ => None,

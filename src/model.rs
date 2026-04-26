@@ -1,10 +1,7 @@
-use reply_model::*;
+use crate::reply_model::*;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
-#[derive(Clone)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ListTopicTitleItem {
     pub url: String,
     pub url_query: UrlQueryItem,
@@ -12,21 +9,13 @@ pub struct ListTopicTitleItem {
     pub num_of_pages: usize
 }
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
-#[derive(Clone)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ListTopicAuthorItem {
     pub url: String,
     pub name: String,
 }
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
-#[derive(Clone)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ListTopicItem {
     pub title: ListTopicTitleItem,
     pub author: ListTopicAuthorItem,
@@ -37,10 +26,7 @@ pub struct ListTopicItem {
 }
 
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ShowItem {
     pub url_query: UrlQueryItem,
     pub title: String,
@@ -50,11 +36,7 @@ pub struct ShowItem {
     pub replies: Vec<ShowReplyItem>
 }
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
-#[derive(Clone)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ShowReplyItem {
     pub userid: String,
     pub username: String,
@@ -63,20 +45,13 @@ pub struct ShowReplyItem {
     pub published_at: String
 }
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
-#[derive(Clone)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct UrlQueryItem {
     pub channel: String,
     pub message: String
 }
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct IconItem {
     pub src: String,
     pub alt: String

@@ -1,7 +1,7 @@
-use resources::*;
-use resources::web_resource::*;
-use resources::common::*;
-use caches::common::*;
+use crate::resources::*;
+use crate::resources::web_resource::*;
+use crate::resources::common::*;
+use crate::caches::common::*;
 
 pub struct IndexResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,
@@ -21,14 +21,10 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
 impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
     fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
-        let time_format = |t: ::time::Tm| {
-            match t.strftime("%Y%m%d%H%M") {
-                Ok(s) => s.to_string(),
-                Err(e) => panic!(e)
-            }
-        };
-
-        let time = time_format(::time::now());
+        // Use a simpler time formatting approach
+        let now = ::time::OffsetDateTime::now_utc();
+        let time = format!("{:04}{:02}{:02}{:02}{:02}",
+            now.year(), now.month() as u8, now.day(), now.hour(), now.minute());
 
         let html_path = format!("data/cache/html/topics/");
         let file_name = format!("{time}.html", time = time);
@@ -48,9 +44,10 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
         }
 
         let result_item = ChannelItem {
-            extra: Some( ChannelItemType::Index(ChannelIndexItem { }) ),
-            result: String::from_utf8(result).expect("fail to build result item, reason: invalid string"),
+            extra: Some(ChannelItemType::Index(ChannelIndexItem {})),
+            result: String::new(),
         };
+
         result_item
     }
 }

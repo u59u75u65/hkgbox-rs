@@ -1,8 +1,8 @@
 use std::io::Write;
 use std;
 
-use utility::string::*;
-use model::ListTopicItem;
+use crate::utility::string::*;
+use crate::model::ListTopicItem;
 
 pub struct Index {
     title: String,

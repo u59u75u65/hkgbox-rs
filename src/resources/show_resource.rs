@@ -1,7 +1,8 @@
-use resources::*;
-use resources::web_resource::*;
-use resources::common::*;
-use caches::common::*;
+use log::{info, error};
+use crate::resources::*;
+use crate::resources::web_resource::*;
+use crate::resources::common::*;
+use crate::caches::common::*;
 
 pub struct ShowResource<'a, T: 'a + Cache> {
     wr: &'a mut WebResource,

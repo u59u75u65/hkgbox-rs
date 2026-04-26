@@ -3,7 +3,7 @@ use std::fs::File;
 use std::fs;
 use std::io::{Read, Write};
 
-use caches::common::*;
+use crate::caches::common::*;
 
 pub struct FileCache {}
 
@@ -20,9 +20,9 @@ impl Cache for FileCache {
                                             -> Result<Vec<u8>, String> {
 
         let file_path = cache_path.as_ref().join(file_name);
-        let mut file = try!(File::open(file_path).map_err(|e| e.to_string()));
+        let mut file = File::open(file_path).map_err(|e| e.to_string())?;
         let mut buffer = Vec::new();
-        try!(file.read_to_end(&mut buffer).map_err(|e| e.to_string()));
+        file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
         Ok(buffer)
 
     }
@@ -33,9 +33,9 @@ impl Cache for FileCache {
                                              -> Result<(), String> {
 
         let file_path = cache_path.as_ref().join(file_name);
-        try!(fs::create_dir_all(&cache_path).map_err(|e| e.to_string()));
-        let mut file = try!(File::create(file_path).map_err(|e| e.to_string()));
-        try!(file.write_all(s.as_slice()).map_err(|e| e.to_string()));
+        fs::create_dir_all(&cache_path).map_err(|e| e.to_string())?;
+        let mut file = File::create(file_path).map_err(|e| e.to_string())?;
+        file.write_all(s.as_slice()).map_err(|e| e.to_string())?;
         Ok(())
 
     }

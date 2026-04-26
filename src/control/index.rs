@@ -1,7 +1,8 @@
+use log::{info, error};
 use std::sync::mpsc::Sender;
 use termion::event::Key;
-use state_manager::*;
-use resources::*;
+use crate::state_manager::*;
+use crate::resources::*;
 
 use std::default::Default;
 
@@ -12,14 +13,14 @@ pub struct Index {
 impl Index {
 
     pub fn new () -> Self { Index {} }
-    pub fn handle(&mut self, c: ::termion::event::Key,app: &mut ::App)-> Option<i32> {
+    pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
             Key::Char('q') => {
-                ::screen::common::reset_screen();
+                crate::screen::common::reset_screen();
                 Some(0)
             }
             Key::Char('r') => {
-                ::screen::common::clear_screen();
+                crate::screen::common::clear_screen();
                 app.status_bar.append(&app.screen_manager, &format!("r"));
                 Some(1)
             }

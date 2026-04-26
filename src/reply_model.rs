@@ -1,7 +1,6 @@
-#[derive(Clone)]
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum NodeType {
     Text(TextNode),
     Image(ImageNode),
@@ -9,34 +8,22 @@ pub enum NodeType {
     Br(BrNode),
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TextNode {
     pub data: String,
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ImageNode {
     pub data: String,
     pub alt: String
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BrNode {
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[derive(RustcEncodable)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockQuoteNode {
     pub data: Vec<NodeType>,
 }

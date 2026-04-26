@@ -1,5 +1,5 @@
 
-use screen_manager::*;
+use crate::screen_manager::*;
 
 pub struct StatusBar {
     store: String,

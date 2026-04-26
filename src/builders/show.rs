@@ -1,3 +1,4 @@
+use log::{info, error};
 use std::io::Cursor;
 
 use kuchiki::NodeRef;
@@ -5,10 +6,10 @@ use kuchiki::NodeDataRef;
 use kuchiki::NodeData;
 use kuchiki::ElementData;
 
-use model::ShowItem;
-use model::ShowReplyItem;
-use model::UrlQueryItem;
-use reply_model::*;
+use crate::model::ShowItem;
+use crate::model::ShowReplyItem;
+use crate::model::UrlQueryItem;
+use crate::reply_model::*;
 
 use regex::Regex;
 use url::Url;
@@ -126,8 +127,8 @@ impl Show {
             let mut map = HashMap::new();
 
             for cap in re.captures_iter(query) {
-                let key = cap.name("key").unwrap_or("").to_string();
-                let value = cap.name("value").unwrap_or("").to_string();
+                let key = cap.name("key").map(|m| m.as_str()).unwrap_or("").to_string();
+                let value = cap.name("value").map(|m| m.as_str()).unwrap_or("").to_string();
                 map.entry(key).or_insert(value);
             }
 
@@ -209,7 +210,7 @@ impl Show {
                                 if cap_option.is_none() {
                                     None
                                 } else {
-                                    Some(cap_option.unwrap().name("count").unwrap_or("0").to_string())
+                                    Some(cap_option.unwrap().name("count").map(|m| m.as_str()).unwrap_or("0").to_string())
                                 }
                             },
                             None => None

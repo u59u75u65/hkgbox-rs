@@ -1,16 +1,17 @@
+use log::{info, error};
 use std::sync::mpsc::Sender;
 use ::kuchiki::traits::*;
 
-use status::*;
-use state_manager::*;
-use resources::*;
+use crate::status::*;
+use crate::state_manager::*;
+use crate::resources::*;
 
 pub struct Responser {}
 
 impl Responser {
 
     pub fn new () -> Self { Responser {} }
-    pub fn try_recv (&self, mut app: &mut ::App) {
+    pub fn try_recv (&self, mut app: &mut crate::App) {
         match app.rx_res.try_recv() {
             Ok(item) => {
                 info!("respsoner receive item");
@@ -37,7 +38,7 @@ impl Responser {
                                                 let f = reply.body.iter().filter(|node| {
                                                         let node2 = node.clone();
                                                         match *node2 {
-                                                            ::reply_model::NodeType::Image(ref n) => {
+                                                            crate::reply_model::NodeType::Image(ref n) => {
                                                                 (n.data.starts_with("http") || n.data.starts_with("https")) && n.alt.starts_with("[img]") && n.alt.ends_with("[/img]")
                                                             }
                                                             _ => false,
@@ -54,7 +55,7 @@ impl Responser {
                                         for node in &maps {
                                             let node2 = node.clone();
                                             match *node2 {
-                                                ::reply_model::NodeType::Image(ref n) => {
+                                                crate::reply_model::NodeType::Image(ref n) => {
                                                     let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
                                                     app.status_bar.append(&app.screen_manager, &status_message);
                                                 }
@@ -63,7 +64,7 @@ impl Responser {
                                         }
 
                                         app.show.reset_y();
-                                        ::screen::common::clear_screen();
+                                        crate::screen::common::clear_screen();
                                         app.state_manager.update_state(Status::Show); //state = Status::Show;
                                     },
                                     Err(e) => {
@@ -87,7 +88,7 @@ impl Responser {
 
                                         app.status_bar.append(&app.screen_manager, &format!("[TOPICS:ROK]"));
 
-                                        ::screen::common::clear_screen();
+                                        crate::screen::common::clear_screen();
                                         app.state_manager.update_state(Status::List); // state = Status::List;
                                     },
                                     Err(e) => {

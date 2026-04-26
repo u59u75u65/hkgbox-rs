@@ -1,5 +1,5 @@
-use resources::*;
-use resources::common::*;
+use crate::resources::*;
+use crate::resources::common::*;
 
 pub struct DefaultResource {
 }

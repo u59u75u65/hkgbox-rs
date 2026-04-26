@@ -1,19 +1,3 @@
-extern crate termion;
-extern crate rustc_serialize;
-extern crate kuchiki;
-extern crate chrono;
-extern crate hyper;
-extern crate hyper_native_tls;
-extern crate cancellation;
-extern crate time;
-extern crate url;
-extern crate regex;
-extern crate crossbeam;
-
-#[macro_use]
-extern crate log;
-extern crate log4rs;
-
 pub mod caches;
 pub mod resources;
 pub mod status;

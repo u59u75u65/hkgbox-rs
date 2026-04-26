@@ -1,13 +1,14 @@
+use log::{info, error};
 use std::io::Write;
 use std;
 
 use chrono::*;
-use utility::string::*;
-use model::IconItem;
-use model::ShowReplyItem;
-use model::ShowItem;
-use reply_model::*;
-use screen::common::*;
+use crate::utility::string::*;
+use crate::model::IconItem;
+use crate::model::ShowReplyItem;
+use crate::model::ShowItem;
+use crate::reply_model::*;
+use crate::screen::common::*;
 
 pub struct Show {
     title: String,

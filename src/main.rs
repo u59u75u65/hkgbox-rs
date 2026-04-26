@@ -1,24 +1,11 @@
-extern crate hkg;
-extern crate termion;
-extern crate rustc_serialize;
-extern crate kuchiki;
-extern crate chrono;
-extern crate cancellation;
-extern crate crossbeam;
-
-#[macro_use]
-extern crate log;
-extern crate log4rs;
-
 use std::io::{stdout, stdin, Write};
-use std::io::{self, Read};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
-use rustc_serialize::json;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use log::{info, error};
 use hkg::status::*;
 use hkg::model::IconItem;
 use hkg::state_manager::*;
@@ -26,6 +13,7 @@ use hkg::screen_manager::*;
 use hkg::resources::*;
 use hkg::web::*;
 use hkg::responser::*;
+use hkg::screen::common;
 use std::thread;
 
 fn main() {
@@ -36,7 +24,7 @@ fn main() {
     info!("app start");
 
     // Clear the screen.
-    hkg::screen::common::clear_screen();
+    common::clear_screen();
 
     let _stdout = stdout();
 
@@ -57,7 +45,7 @@ fn main() {
 
         let icon_collection: Box<Vec<IconItem>> = {
             let icon_manifest_string = hkg::utility::readfile(String::from("data/icon.manifest.json"));
-            Box::new(json::decode(&icon_manifest_string).expect("fail to lock stdout"))
+            Box::new(serde_json::from_str(&icon_manifest_string).expect("fail to lock stdout"))
         };
 
         hkg::App {
@@ -164,7 +152,7 @@ fn main() {
         }
 
         if app.screen_manager.is_width_changed() || app.screen_manager.is_height_changed() {
-            hkg::screen::common::clear_screen();
+            common::clear_screen();
             print_screen(&mut app);
         }
 
