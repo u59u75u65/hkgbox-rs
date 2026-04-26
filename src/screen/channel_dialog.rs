@@ -11,6 +11,7 @@ pub struct ChannelDialog {
     title: String,
     channels: Vec<ChannelInfo>,
     visible: bool,
+    selected_index: usize,
 }
 
 impl ChannelDialog {
@@ -34,11 +35,13 @@ impl ChannelDialog {
             title: String::from("Select Channel"),
             channels,
             visible: false,
+            selected_index: 0,
         }
     }
 
     pub fn show(&mut self) {
         self.visible = true;
+        self.selected_index = 0;
     }
 
     pub fn hide(&mut self) {
@@ -47,6 +50,36 @@ impl ChannelDialog {
 
     pub fn is_visible(&self) -> bool {
         self.visible
+    }
+
+    pub fn move_up(&mut self) {
+        if self.selected_index == 0 {
+            self.selected_index = self.channels.len() - 1;
+        } else {
+            self.selected_index -= 1;
+        }
+    }
+
+    pub fn move_down(&mut self) {
+        if self.selected_index >= self.channels.len() - 1 {
+            self.selected_index = 0;
+        } else {
+            self.selected_index += 1;
+        }
+    }
+
+    pub fn get_selected_index(&self) -> usize {
+        self.selected_index
+    }
+
+    pub fn get_selected_channel(&self) -> Option<&ChannelInfo> {
+        self.channels.get(self.selected_index)
+    }
+
+    pub fn set_selected_index(&mut self, index: usize) {
+        if index < self.channels.len() {
+            self.selected_index = index;
+        }
     }
 
     pub fn get_channel(&self, index: usize) -> Option<&ChannelInfo> {
@@ -114,10 +147,21 @@ impl ChannelDialog {
             let item_padding = dialog_width.saturating_sub(item_text_width + 2);
             let item_line = format!("│{}{}│", item_text, " ".repeat(item_padding));
 
-            write!(stdout, "{}{}{}",
-                   ::termion::cursor::Goto(dialog_x + 1, dialog_y + line_num as u16),
-                   ::termion::color::Fg(::termion::color::White),
-                   item_line).expect("fail to write to shell");
+            if i == self.selected_index {
+                // Highlight selected channel
+                write!(stdout, "{}{}{}{}{}{}",
+                       ::termion::cursor::Goto(dialog_x + 1, dialog_y + line_num as u16),
+                       ::termion::color::Fg(::termion::color::Black),
+                       ::termion::color::Bg(::termion::color::Yellow),
+                       item_line,
+                       ::termion::style::Reset,
+                       ::termion::cursor::Hide).expect("fail to write to shell");
+            } else {
+                write!(stdout, "{}{}{}",
+                       ::termion::cursor::Goto(dialog_x + 1, dialog_y + line_num as u16),
+                       ::termion::color::Fg(::termion::color::White),
+                       item_line).expect("fail to write to shell");
+            }
         }
 
         // Bottom-left corner

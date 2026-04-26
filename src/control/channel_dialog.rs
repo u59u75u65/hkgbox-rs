@@ -18,6 +18,19 @@ impl ChannelDialog {
                 app.state_manager.update_state(app.prev_state);
                 Some(1)
             }
+            Key::Up => {
+                app.channel_dialog.move_up();
+                Some(1)
+            }
+            Key::Down => {
+                app.channel_dialog.move_down();
+                Some(1)
+            }
+            Key::Char('\n') => {
+                // Enter confirms selection
+                let index = app.channel_dialog.get_selected_index() + 1;
+                self.select_channel(app, index)
+            }
             Key::Char('1') | Key::Char('2') | Key::Char('3') | Key::Char('4') |
             Key::Char('5') | Key::Char('6') | Key::Char('7') | Key::Char('8') |
             Key::Char('9') => {
@@ -33,13 +46,8 @@ impl ChannelDialog {
                     Key::Char('9') => 9,
                     _ => 1,
                 };
+                app.channel_dialog.set_selected_index(digit - 1);
                 self.select_channel(app, digit)
-            }
-            Key::Char('\n') => {
-                // Enter without selection - just close
-                app.channel_dialog.hide();
-                app.state_manager.update_state(app.prev_state);
-                Some(1)
             }
             Key::Ctrl('c') => {
                 Some(0)
