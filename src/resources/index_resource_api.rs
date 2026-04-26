@@ -1,15 +1,15 @@
-use log::info;
 use crate::resources::*;
 use crate::resources::common::*;
 use crate::caches::common::*;
 use crate::api_client::HkgApiClient;
 use crate::api_models::*;
 use crate::api_utils::*;
-use crate::model::*;
+
+use crate::model::{ListTopicItem, ListTopicTitleItem, UrlQueryItem, ListTopicAuthorItem};
 
 pub struct IndexResource<'a, T: 'a + Cache> {
     client: HkgApiClient,
-    cache: &'a mut Box<T>,
+    _cache: &'a mut Box<T>,
     forum: String,
     pub list_items: Vec<ListTopicItem>,
 }
@@ -18,7 +18,7 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn new(cache: &'a mut Box<T>) -> Self {
         IndexResource {
             client: HkgApiClient::new().expect("Failed to create API client"),
-            cache,
+            _cache: cache,
             forum: "BW".to_string(),  // Default forum
             list_items: Vec::new(),
         }

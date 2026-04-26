@@ -100,7 +100,7 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::style::Bold,
             header_bottom,
             ::termion::style::Reset,
-            ::termion::cursor::Hide).expect("fail to write to shell");;
+            ::termion::cursor::Hide).expect("fail to write to shell");
 }
 
 fn print_body(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>,
@@ -166,5 +166,5 @@ fn print_body(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>,
 }
 
 fn seq_str_gen(start: usize, end: usize, sym: &str, join_sym: &str) -> String {
-    (start..end).map(|_| sym.clone()).collect::<Vec<_>>().join(&join_sym)
+    (start..end).map(|_| sym).collect::<Vec<_>>().join(&join_sym)
 }

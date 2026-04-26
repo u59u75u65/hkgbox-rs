@@ -2,9 +2,7 @@ use log::{info, error};
 use std::io::Cursor;
 
 use kuchiki::NodeRef;
-use kuchiki::NodeDataRef;
 use kuchiki::NodeData;
-use kuchiki::ElementData;
 
 use crate::model::ShowItem;
 use crate::model::ShowReplyItem;
@@ -163,7 +161,7 @@ impl Show {
         )
     }
 
-    fn parse_title_and_reply_count (&self, document: &NodeRef,  url: &str) -> Result<(String, String), &'static str> {
+    fn parse_title_and_reply_count (&self, document: &NodeRef,  _url: &str) -> Result<(String, String), &'static str> {
 
         return match document.select(".repliers tr") {
             Ok(mut trs) => {
@@ -186,7 +184,7 @@ impl Show {
 
                         let divs = divs_option.unwrap();
 
-                        let mut divs_enumerator = divs.iter().enumerate();
+                        let divs_enumerator = divs.iter().enumerate();
 
                         let count = divs_enumerator.clone().count();
                         if  count < 2 {
@@ -231,7 +229,7 @@ impl Show {
                     None => Err(&"fail to build title and reply_count, reason: 'repliers_tr' not found")
                 }
             },
-            Err(e) =>  Err("fail to build title and reply_count, reason: 'repliers_tr' not found")
+            Err(_e) =>  Err("fail to build title and reply_count, reason: 'repliers_tr' not found")
         };
 
     }
@@ -261,7 +259,7 @@ impl Show {
 }
 
 
-fn reply_items_handler((index,tr): (usize, &::kuchiki::NodeDataRef<::kuchiki::ElementData>)) -> Result<ShowReplyItem, &'static str> {
+fn reply_items_handler((_index,tr): (usize, &::kuchiki::NodeDataRef<::kuchiki::ElementData>)) -> Result<ShowReplyItem, &'static str> {
     let tr_attrs = (&tr.attributes).borrow();
     let userid_option = tr_attrs.get("userid");
 
@@ -287,7 +285,7 @@ fn reply_items_handler((index,tr): (usize, &::kuchiki::NodeDataRef<::kuchiki::El
     let content_elm = content_elm_option.unwrap();
 
     let mut buff = Cursor::new(Vec::new());
-    let serialize_result = content_elm.as_node().serialize(&mut buff);
+    let _serialize_result = content_elm.as_node().serialize(&mut buff);
     let vec = buff.into_inner();
     let content_result = String::from_utf8(vec);
 
@@ -298,8 +296,8 @@ fn reply_items_handler((index,tr): (usize, &::kuchiki::NodeDataRef<::kuchiki::El
     let content = content_result.unwrap();
 
     let datatime_option = tr.as_node().select(".repliers_right span").ok()
-                    .map_or(None, |mut x| x.last() )
-                    .map_or(None, |mut x| Some(x.text_contents()));
+                    .map_or(None, |x| x.last() )
+                    .map_or(None, |x| Some(x.text_contents()));
 
     if datatime_option.is_none() {
         return Err("fail to parse show reply item, reason: 'datatime' not found");
@@ -307,9 +305,7 @@ fn reply_items_handler((index,tr): (usize, &::kuchiki::NodeDataRef<::kuchiki::El
 
     let datatime = datatime_option.unwrap();
 
-    let mut vec: Vec<NodeType> = Vec::new();
-
-    vec = recursive(content_elm.as_node());
+    let vec = recursive(content_elm.as_node());
 
     Ok(
         ShowReplyItem {
@@ -327,7 +323,7 @@ fn recursive(elm: &NodeRef) -> Vec<NodeType> {
 
     let mut vec: Vec<NodeType> = Vec::new();
 
-    for (index, child) in elm.children().enumerate() {
+    for (_index, child) in elm.children().enumerate() {
         // println!("[{}] => {:?}", index, child);
         let node_data = child.data().clone();
 

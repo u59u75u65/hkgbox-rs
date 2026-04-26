@@ -1,4 +1,4 @@
-use log::{info, error};
+use log::info;
 use std::sync::mpsc::Sender;
 use termion::event::Key;
 use crate::state_manager::*;

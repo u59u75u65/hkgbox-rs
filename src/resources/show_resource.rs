@@ -1,4 +1,4 @@
-use log::{info, error};
+use log::info;
 use crate::resources::*;
 use crate::resources::web_resource::*;
 use crate::resources::common::*;

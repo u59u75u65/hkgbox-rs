@@ -11,7 +11,7 @@ pub struct Responser {}
 impl Responser {
 
     pub fn new () -> Self { Responser {} }
-    pub fn try_recv (&self, mut app: &mut crate::App) {
+    pub fn try_recv (&self, app: &mut crate::App) {
         match app.rx_res.try_recv() {
             Ok(item) => {
                 info!("respsoner receive item");
@@ -36,8 +36,8 @@ impl Responser {
                                         // get all images links in an array, and send to background download
                                         let maps = app.show_item.replies.iter().flat_map(|reply| {
                                                 let f = reply.body.iter().filter(|node| {
-                                                        let node2 = node.clone();
-                                                        match *node2 {
+                                                        let node2 = (*node).clone();
+                                                        match node2 {
                                                             crate::reply_model::NodeType::Image(ref n) => {
                                                                 // Check for external images (HTTP/HTTPS URLs)
                                                                 n.data.starts_with("http") || n.data.starts_with("https")
@@ -54,8 +54,8 @@ impl Responser {
                                                               &format!("[SIMG:{count}]", count = count));
 
                                         for node in &maps {
-                                            let node2 = node.clone();
-                                            match *node2 {
+                                            let node2 = (*node).clone();
+                                            match node2 {
                                                 crate::reply_model::NodeType::Image(ref n) => {
                                                     let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
                                                     app.status_bar.append(&app.screen_manager, &status_message);
@@ -89,10 +89,10 @@ impl Responser {
                                 // get all images links in an array, and send to background download
                                 let maps = app.show_item.replies.iter().flat_map(|reply| {
                                         let f = reply.body.iter().filter(|node| {
-                                                let node2 = node.clone();
-                                                match *node2 {
+                                                let node2 = (*node).clone();
+                                                match node2 {
                                                     crate::reply_model::NodeType::Image(ref n) => {
-                                                        (n.data.starts_with("http") || n.data.starts_with("https"))
+                                                        n.data.starts_with("http") || n.data.starts_with("https")
                                                     }
                                                     _ => false,
                                                 }
@@ -106,8 +106,8 @@ impl Responser {
                                                       &format!("[SIMG:{count}]", count = count));
 
                                 for node in &maps {
-                                    let node2 = node.clone();
-                                    match *node2 {
+                                    let node2 = (*node).clone();
+                                    match node2 {
                                         crate::reply_model::NodeType::Image(ref n) => {
                                             let status_message = image_request(&n.data, &mut app.state_manager, &app.tx_req);
                                             app.status_bar.append(&app.screen_manager, &status_message);
@@ -161,7 +161,7 @@ impl Responser {
                                 app.state_manager.set_to_print_screen(true);
                                 app.state_manager.set_web_request(false);
                             }
-                            ChannelItemType::Image(extra) => {
+                            ChannelItemType::Image(_extra) => {
                                 if item.result != "" {
                                     error!("image item failed to build.");
                                     app.status_bar.append(&app.screen_manager,
@@ -191,7 +191,7 @@ fn get_posturl(postid: &String, page: usize) -> String {
 }
 
 
-fn image_request(url: &String, state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+fn image_request(url: &String, _state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
 
     let url2 = url.clone();
 

@@ -46,7 +46,7 @@ impl StateManager {
             self.prev_state = self.current_state;
             self.current_state = value;
 
-            self.tx_state.send((prev_state_tmp, current_state_tmp));
+            let _ = self.tx_state.send((prev_state_tmp, current_state_tmp));
         }
     }
 

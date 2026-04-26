@@ -1,6 +1,7 @@
 use reqwest::blocking::Client;
 use std::time::Duration;
-use log::{info, error};
+
+use log::info;
 
 use crate::api_models::*;
 

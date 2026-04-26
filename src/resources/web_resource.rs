@@ -1,6 +1,7 @@
-use log::{info, error};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
+
+use log::info;
 
 pub struct WebResource {
      pub pages: HashMap<String, String>,

@@ -7,7 +7,6 @@ pub mod image_resource;
 pub mod default_resource;
 pub mod web_resource;
 
-use crate::model::*;
 use std::default::Default;
 
 #[derive(Debug)]

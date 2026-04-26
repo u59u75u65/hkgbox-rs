@@ -1,9 +1,7 @@
-use log::{info, error};
-use std::io::Cursor;
+use log::error;
 
 use kuchiki::NodeRef;
 use kuchiki::NodeDataRef;
-use kuchiki::NodeData;
 use kuchiki::ElementData;
 
 use crate::model::ListTopicItem;
@@ -46,7 +44,7 @@ impl Index {
     }
 }
 
-fn list_topic_items_handler((index, tr): (usize, ::kuchiki::NodeDataRef<::kuchiki::ElementData>)) -> Result<ListTopicItem, &'static str> {
+fn list_topic_items_handler((_index, tr): (usize, ::kuchiki::NodeDataRef<::kuchiki::ElementData>)) -> Result<ListTopicItem, &'static str> {
 
     let items_option = tr.as_node().select("td");
 
@@ -83,12 +81,12 @@ fn list_topic_items_handler((index, tr): (usize, ::kuchiki::NodeDataRef<::kuchik
                         return Err(&"length of map is invalid.");
                     }
 
-                    let mut map_enumerator = map.iter().enumerate();
+                    let map_enumerator = map.iter().enumerate();
                     let date_option = match map_enumerator.clone()
                               .filter(|&(i, _)| i == 0)
                               .map(|(i, e)| (i, e))
                               .next() {
-                        Some((i, text)) => Some(text),
+                        Some((_i, text)) => Some(text),
                         None => None,
                     };
 
@@ -96,7 +94,7 @@ fn list_topic_items_handler((index, tr): (usize, ::kuchiki::NodeDataRef<::kuchik
                               .filter(|&(i, _)| i == 1)
                               .map(|(i, e)| (i, e))
                               .next() {
-                        Some((i, text)) => Some(text),
+                        Some((_i, text)) => Some(text),
                         None => None,
                     };
 
@@ -131,7 +129,7 @@ fn list_topic_items_handler((index, tr): (usize, ::kuchiki::NodeDataRef<::kuchik
 
 fn parse_list_topic_title_item(item: &NodeDataRef<ElementData>) -> Result<ListTopicTitleItem, &'static str> {
     let (first_link, links_count) = {
-        let mut links_option = item.as_node().select("a");
+        let links_option = item.as_node().select("a");
 
         if links_option.is_err() {
             return Err("fail to parse list topic title item, reason: links not found");
@@ -179,7 +177,7 @@ fn parse_list_topic_title_item(item: &NodeDataRef<ElementData>) -> Result<ListTo
         }
         let url = url_result.unwrap();
 
-        let url_str = url.into_string();
+        let url_str = String::from(url);
         let url_query_option = parse_url_query_item(&url_str);
 
         if url_query_option.is_err() {

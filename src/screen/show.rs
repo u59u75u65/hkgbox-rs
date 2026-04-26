@@ -98,7 +98,7 @@ impl Show {
     }
 
     pub fn print_body(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
-        let width = self.body_width();
+        let _width = self.body_width();
         let rows = self.body_height();
 
         // Print main content first if exists
@@ -113,7 +113,7 @@ impl Show {
         }
 
         // Then print replies
-        for (i, reply) in item.replies.iter().take(rows).enumerate() {
+        for (_i, reply) in item.replies.iter().take(rows).enumerate() {
 
             self.print_reply(stdout, &reply.body, 0);
 
@@ -152,7 +152,7 @@ impl Show {
         let mut text_y_offset = 0;
         let w = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
 
-        for (j, node) in vec_clean.iter().enumerate() {
+        for (_j, node) in vec_clean.iter().enumerate() {
             match node.clone() {
                 NodeType::Text(n) => {
                     if n.data != "" {
@@ -215,7 +215,7 @@ impl Show {
                         is_first = false;                
                     }
                 }
-                NodeType::Br(n) => {
+                NodeType::Br(_n) => {
                     if !line.is_empty() {
                         if self.can_print() {
                             self.print_reply_line(stdout, format!(" {}{}", padding, line));
@@ -249,12 +249,10 @@ impl Show {
 
                 if text_y_offset > 0 {
                     self.y += text_y_offset;
-                    text_y_offset = 0;
                 }
 
                 if img_offset > 0 {
                     self.y += img_offset;
-                    img_offset = 0;
                 }
             }
 
@@ -284,7 +282,7 @@ impl Show {
     }
 
     fn build_separator_top(&mut self, replier_name: &str, time: &str) -> String {
-        let (separator_width, separator_padding_width, separator_padding) =
+        let (separator_width, _separator_padding_width, separator_padding) =
             self.build_separator_arguments();
         make_separator_top(separator_width,
                            &separator_padding,
@@ -295,7 +293,7 @@ impl Show {
     }
 
     fn build_separator_bottom(&mut self) -> String {
-        let (separator_width, separator_padding_width, separator_padding) =
+        let (separator_width, _separator_padding_width, separator_padding) =
             self.build_separator_arguments();
         make_separator_bottom(separator_width, &separator_padding)
     }
@@ -366,7 +364,7 @@ impl Show {
 
     fn scrolled_y(&self) -> usize {
         // info!("[scrolled_y] y: {} scroll_y: {} body_height: {}", self.y, self.scroll_y,  self.body_height());
-        if self.y >= self.scroll_y { (self.y - self.scroll_y) } else { 0 }
+        if self.y >= self.scroll_y { self.y - self.scroll_y  } else { 0 }
     }
 
 }
@@ -380,11 +378,12 @@ fn make_separator_content(reply: &ShowReplyItem) -> (String, String) {
 
     let published_at = reply.published_at.clone();
 
-    let published_at_dt = match Local.datetime_from_str(&published_at, "%d/%m/%Y %H:%M") {
-        Ok(v) => v,
-        Err(e) => now,
+    let published_at_dt = match NaiveDateTime::parse_from_str(&published_at, "%d/%m/%Y %H:%M") {
+        Ok(v) => v.and_local_timezone(Local).single().unwrap_or(now).naive_local(),
+        Err(_e) => now.naive_local(),
     };
-    let time = published_at_format(&(now - published_at_dt));
+    let duration = now.naive_local() - published_at_dt;
+    let time = published_at_format(&duration);
     (replier_name, time)
 }
 
@@ -400,7 +399,7 @@ fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType> {
                                               .take(4)
                                               .enumerate()
                                               .all(|(j, node)| match node.clone() {
-                                                  NodeType::Br(n) => j == 1 || j == 2 || j == 3,
+                                                  NodeType::Br(_n) => j == 1 || j == 2 || j == 3,
                                                   NodeType::Text(n) => j == 0 && n.data.is_empty(),
                                                   _ => false,
                                               });
@@ -418,11 +417,11 @@ fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType> {
     let vec3 = {
         let vec2_cloned = vec2.clone();
         let mut result: Vec<NodeType> = Vec::new();
-        for (j, node) in vec2_cloned.enumerate() {
+        for (_j, node) in vec2_cloned.enumerate() {
             let node2 = node.clone();
             let node3 = node.clone();
             match node2 {
-                NodeType::Br(n) => {
+                NodeType::Br(_n) => {
                     if !result.is_empty() {
                         result.push(node3);
                     }
@@ -436,8 +435,8 @@ fn clean_reply_body(vec: &Vec<NodeType>) -> Vec<NodeType> {
     vec3
 }
 
-fn make_separator_replier_name(separator_width: usize,
-                               separator_padding: &str,
+fn make_separator_replier_name(_separator_width: usize,
+                               _separator_padding: &str,
                                replier_max_width: usize,
                                replier_name: &str)
                                -> String {
@@ -464,8 +463,8 @@ fn make_separator_replier_name(separator_width: usize,
     return separator_replier;
 }
 
-fn make_separator_time(separator_width: usize,
-                       separator_padding: &str,
+fn make_separator_time(_separator_width: usize,
+                       _separator_padding: &str,
                        time_max_width: usize,
                        time: &str)
                        -> String {
@@ -575,5 +574,5 @@ fn published_at_format(duration: &Duration) -> String {
 }
 
 fn seq_str_gen(start: usize, end: usize, sym: &str, join_sym: &str) -> String {
-    (start..end).map(|_| sym.clone()).collect::<Vec<_>>().join(&join_sym)
+    (start..end).map(|_| sym).collect::<Vec<_>>().join(&join_sym)
 }

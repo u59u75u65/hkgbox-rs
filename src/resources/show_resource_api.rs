@@ -1,16 +1,16 @@
-use log::info;
 use crate::resources::*;
 use crate::resources::common::*;
 use crate::caches::common::*;
 use crate::api_client::HkgApiClient;
 use crate::api_models::*;
 use crate::api_utils::*;
-use crate::model::*;
-use crate::reply_model::*;
+
+use crate::model::{ShowReplyItem, ShowItem, UrlQueryItem};
+use log::info;
 
 pub struct ShowResourceApi<'a, T: 'a + Cache> {
     client: HkgApiClient,
-    cache: &'a mut Box<T>,
+    _cache: &'a mut Box<T>,
     pub replies: Vec<ShowReplyItem>,
     pub title: String,
     pub total_replies: i32,
@@ -20,7 +20,7 @@ impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
     pub fn new(cache: &'a mut Box<T>) -> Self {
         ShowResourceApi {
             client: HkgApiClient::new().expect("Failed to create API client"),
-            cache,
+            _cache: cache,
             replies: Vec::new(),
             title: String::new(),
             total_replies: 0,

@@ -11,7 +11,7 @@ impl DefaultResource {
 }
 
 impl Resource for DefaultResource {
-    fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
+    fn fetch(&mut self, _item: &ChannelItem) -> ChannelItem {
         Default::default()
     }
 }

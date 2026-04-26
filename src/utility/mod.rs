@@ -1,7 +1,6 @@
 pub mod string;
 
 // open.rs
-use std::error::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -16,7 +15,7 @@ pub fn readfile(p: String) -> String
             // The `description` method of `io::Error` returns a string that
             // describes the error
             Err(why) => panic!("couldn't open {}: {}", display,
-                                                       Error::description(&why)),
+                                                       why.to_string()),
             Ok(file) => file,
         };
 
@@ -24,7 +23,7 @@ pub fn readfile(p: String) -> String
    let mut s = String::new();
    match file.read_to_string(&mut s) {
        Err(why) => panic!("couldn't read {}: {}", display,
-                                                  Error::description(&why)),
+                                                  why.to_string()),
        Ok(_) => return s,
    }
 }

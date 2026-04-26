@@ -20,7 +20,7 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 }
 
 impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
-    fn fetch(&mut self, item: &ChannelItem) -> ChannelItem {
+    fn fetch(&mut self, _item: &ChannelItem) -> ChannelItem {
         // Use a simpler time formatting approach
         let now = ::time::OffsetDateTime::now_utc();
         let time = format!("{:04}{:02}{:02}{:02}{:02}",

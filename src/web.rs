@@ -1,4 +1,4 @@
-use log::{info, error};
+use log::info;
 use std::thread;
 use std::sync::mpsc::{Receiver, Sender};
 

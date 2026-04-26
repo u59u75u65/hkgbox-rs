@@ -34,7 +34,7 @@ fn main() {
     let (tx_req, rx_req) = channel::<ChannelItem>();
     let (tx_res, rx_res) = channel::<ChannelItem>();
 
-    let (tx_state, rx_state) = channel::<(Status,Status)>();
+    let (tx_state, _rx_state) = channel::<(Status,Status)>();
 
     let working = Arc::new(AtomicBool::new(true));
     let control = Arc::downgrade(&working);
@@ -145,7 +145,7 @@ fn main() {
                     }
                 }
             }
-            Err(e) => {}
+            Err(_e) => {}
         };
 
         if app.state_manager.is_to_print_screen() {

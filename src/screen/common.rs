@@ -36,7 +36,7 @@ pub fn imgcat_from_url(url: &str, height: usize) -> Result<String, String> {
             file.read_to_end(&mut buffer).expect("fail to read image");
             Ok(imgcat(buffer, &"height", height))
         },
-        Err(why) => {
+        Err(_why) => {
             info!("imgcat_from_url: Not cached, fetching from network...");
 
             // Fetch from network
