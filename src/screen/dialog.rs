@@ -66,14 +66,14 @@ impl Dialog {
                ::termion::style::Reset).expect("fail to write to shell");
 
         // Top border
-        for i in 1..dialog_width as u16 {
+        for i in 0..dialog_width as u16 - 2 {
             write!(stdout, "{}─",
-                   ::termion::cursor::Goto(dialog_x + 1 + i, dialog_y + 1)).expect("fail to write to shell");
+                   ::termion::cursor::Goto(dialog_x + 2 + i, dialog_y + 1)).expect("fail to write to shell");
         }
 
         // Top-right corner
         write!(stdout, "{}┐",
-               ::termion::cursor::Goto(dialog_x + 1 + dialog_width as u16, dialog_y + 1)).expect("fail to write to shell");
+               ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + 1)).expect("fail to write to shell");
 
         // Title line with sides
         let title_padding = dialog_width.saturating_sub(self.title.len() + 2);
@@ -117,14 +117,14 @@ impl Dialog {
                ::termion::cursor::Goto(dialog_x + 1, dialog_y + 5)).expect("fail to write to shell");
 
         // Bottom border
-        for i in 1..dialog_width as u16 {
+        for i in 0..dialog_width as u16 - 2 {
             write!(stdout, "{}─",
-                   ::termion::cursor::Goto(dialog_x + 1 + i, dialog_y + 5)).expect("fail to write to shell");
+                   ::termion::cursor::Goto(dialog_x + 2 + i, dialog_y + 5)).expect("fail to write to shell");
         }
 
         // Bottom-right corner
         write!(stdout, "{}┘",
-               ::termion::cursor::Goto(dialog_x + 1 + dialog_width as u16, dialog_y + 5)).expect("fail to write to shell");
+               ::termion::cursor::Goto(dialog_x + dialog_width as u16, dialog_y + 5)).expect("fail to write to shell");
 
         // Instructions
         let instructions = "ENTER: Open | ESC: Cancel";
