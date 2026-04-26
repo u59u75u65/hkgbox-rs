@@ -13,6 +13,12 @@ impl Index {
     pub fn new () -> Self { Index {} }
     pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
+            Key::Char('c') => {
+                app.prev_state = app.state_manager.get_state();
+                app.channel_dialog.show();
+                app.state_manager.update_state(Status::ChannelDialog);
+                Some(1)
+            }
             Key::Ctrl('o') => {
                 app.prev_state = app.state_manager.get_state();
                 app.dialog.show();

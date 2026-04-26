@@ -36,6 +36,7 @@ pub struct App <'a>{
     pub index: screen::index::Index,
     pub show: screen::show::Show,
     pub dialog: screen::dialog::Dialog,
+    pub channel_dialog: screen::channel_dialog::ChannelDialog,
 
     pub prev_state: status::Status,
 
@@ -115,6 +116,7 @@ impl<'a> AppBuilder<'a> {
             index: screen::index::Index::new(),
             show: screen::show::Show::new(icon_collection),
             dialog: screen::dialog::Dialog::new(),
+            channel_dialog: screen::channel_dialog::ChannelDialog::new(),
             prev_state: status::Status::List,
             tx_req,
             rx_res,
