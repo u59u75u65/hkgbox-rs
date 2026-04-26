@@ -7,6 +7,8 @@ use crate::model::ListTopicItem;
 pub struct Index {
     title: String,
     selected_topic_index: usize,
+    page: usize,
+    max_page: usize,
 }
 
 impl Index {
@@ -14,7 +16,14 @@ impl Index {
         Index {
             title: String::from("高登"),
             selected_topic_index: 0,
+            page: 1,
+            max_page: 1,
         }
+    }
+
+    pub fn set_page(&mut self, page: usize, max_page: usize) {
+        self.page = page;
+        self.max_page = max_page;
     }
 
     pub fn select_topic(&mut self, index: usize) {
@@ -33,7 +42,7 @@ impl Index {
 
         let width = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
 
-        print_header(stdout, width as usize, &self.title);
+        print_header(stdout, width as usize, &self.title, self.page, self.max_page);
         print_body(stdout,
                    self.body_width(),
                    2,
@@ -66,9 +75,11 @@ impl Index {
 
 }
 
-fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str) {
+fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str, page: usize, _max_page: usize) {
     // print header
-    let padding = ((width - text.len()) / 2) as u16;
+    let page_text = format!(" [{}]", page);
+    let text_with_page = format!("{}{}", text, page_text);
+    let padding = ((width - text_with_page.len()) / 2) as u16;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
     let header_top_padding = seq_str_gen(0, width, " ", "");
 
@@ -85,7 +96,7 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::cursor::Goto(padding + 1, 1),
             ::termion::color::Fg(::termion::color::White),
             ::termion::style::Bold,
-            text,
+            text_with_page,
             ::termion::style::Reset,
             ::termion::cursor::Hide,
             title_right_padding,
