@@ -28,6 +28,9 @@ pub struct App <'a>{
     pub list_topic_items: Vec<model::ListTopicItem>,
     pub show_item: model::ShowItem,
 
+    pub index_page: usize,
+    pub index_max_page: usize,
+
     pub status_bar: screen::status_bar::StatusBar,
     pub index: screen::index::Index,
     pub show: screen::show::Show,
@@ -101,6 +104,8 @@ impl<'a> AppBuilder<'a> {
             screen_manager: screen_manager::ScreenManager::new(),
             list_topic_items: Default::default(),
             show_item: Default::default(),
+            index_page: 1,
+            index_max_page: 1,
             status_bar: screen::status_bar::StatusBar::new(),
             index: screen::index::Index::new(),
             show: screen::show::Show::new(icon_collection),

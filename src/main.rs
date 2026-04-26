@@ -65,7 +65,7 @@ fn main() -> Result<(), HkgError> {
     let mut show_control = hkg::control::show::Show::new();
 
     // topics request
-    let status_message = list_page(&mut app.state_manager, &tx_req);
+    let status_message = list_page(&mut app.state_manager, &tx_req, app.index_page);
     app.status_bar.append(&app.screen_manager, &status_message);
 
 
@@ -160,10 +160,10 @@ fn main() -> Result<(), HkgError> {
     Ok(())
 }
 
-fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>) -> String {
+fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>, page: usize) -> String {
 
     let ci = ChannelItem {
-        extra: Some(ChannelItemType::Index(Default::default())),
+        extra: Some(ChannelItemType::Index(ChannelIndexItem { page })),
         result: Default::default()
     };
 
