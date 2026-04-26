@@ -1,7 +1,7 @@
 use std::io::{stdout, stdin, Write};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Sender;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -69,7 +69,6 @@ fn main() -> Result<(), HkgError> {
             index: hkg::screen::index::Index::new(),
             show: hkg::screen::show::Show::new(icon_collection),
 
-            image_request_count_lock: Arc::new(Mutex::new(0)),
             tx_req: &tx_req,
             rx_res: &rx_res,
 

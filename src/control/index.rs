@@ -31,9 +31,9 @@ impl Index {
                     if i > 0 {
                         info!("select topic: {}", i);
                         let topic_item = &app.list_topic_items[i - 1];
-                        let postid = &topic_item.title.url_query.message;
+                        let postid = topic_item.title.url_query.message.as_str();
                         let page = 1;
-                        let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
+                        let status_message = show_page(postid, page, &mut app.state_manager, &app.tx_req);
 
                         app.status_bar.append(&app.screen_manager,
                                               &get_show_page_status_message(postid, page, &status_message));

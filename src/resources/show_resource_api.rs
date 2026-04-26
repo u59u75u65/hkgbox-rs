@@ -69,8 +69,8 @@ impl<'a, T: 'a + Cache> Resource for ShowResourceApi<'a, T> {
                 let show_item = ShowItem {
                     title: self.title.clone(),
                     url_query: UrlQueryItem {
-                        channel: "BW".to_string(),
-                        message: thread_id.to_string(),
+                        channel: crate::model::ChannelId::new("BW".to_string()),
+                        message: crate::model::MessageId::new(thread_id.to_string()),
                     },
                     page: page,
                     max_page: ((self.total_replies as f32) / 20.0).ceil() as usize,

@@ -4,12 +4,25 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+/// Represents the current request state of the application
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RequestState {
+    Idle,
+    WebRequest,
+    BackgroundRequest,
+}
+
+impl Default for RequestState {
+    fn default() -> Self {
+        RequestState::Idle
+    }
+}
+
 #[derive(Clone)]
 pub struct StateManager {
     current_state: Status,
     prev_state: Status,
-    is_web_requesting: bool,
-    is_bg_requesting: bool,
+    request_state: RequestState,
     tx_state: Sender<(Status,Status)>,
     to_print_screen: Arc<AtomicBool>
 }
@@ -19,24 +32,42 @@ impl StateManager {
         StateManager {
             current_state: Status::Startup,
             prev_state: Status::Startup,
-            is_web_requesting: false,
-            is_bg_requesting: false,
+            request_state: RequestState::Idle,
             tx_state: tx_state,
             to_print_screen: Arc::new(AtomicBool::new(false))
         }
     }
+
     pub fn is_web_request (&self) -> bool {
-        self.is_web_requesting
-    }
-    pub fn set_web_request(&mut self, value: bool) {
-        self.is_web_requesting = value;
+        matches!(self.request_state, RequestState::WebRequest)
     }
 
     pub fn is_bg_request (&self) -> bool {
-        self.is_bg_requesting
+        matches!(self.request_state, RequestState::BackgroundRequest)
     }
+
+    pub fn set_request_state(&mut self, state: RequestState) {
+        self.request_state = state;
+    }
+
+    pub fn get_request_state(&self) -> RequestState {
+        self.request_state
+    }
+
+    pub fn set_web_request(&mut self, value: bool) {
+        self.request_state = if value {
+            RequestState::WebRequest
+        } else {
+            RequestState::Idle
+        };
+    }
+
     pub fn set_bg_request(&mut self, value: bool) {
-        self.is_bg_requesting = value;
+        self.request_state = if value {
+            RequestState::BackgroundRequest
+        } else {
+            RequestState::Idle
+        };
     }
 
     pub fn update_state(&mut self, value: Status) {

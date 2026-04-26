@@ -25,9 +25,9 @@ impl Show {
             Key::Left => {
                 app.status_bar.append(&app.screen_manager, &format!("←"));
                 if app.show_item.page > 1 {
-                    let postid = &app.show_item.url_query.message;
+                    let postid = app.show_item.url_query.message.as_str();
                     let page = &app.show_item.page - 1;
-                    let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
+                    let status_message = show_page(postid, page, &mut app.state_manager, &app.tx_req);
 
                     app.status_bar.append(&app.screen_manager,
                                           &get_show_page_status_message(postid, page, &status_message));
@@ -37,9 +37,9 @@ impl Show {
             Key::Right => {
                 app.status_bar.append(&app.screen_manager, &format!("→"));
                 if app.show_item.max_page > app.show_item.page {
-                    let postid = &app.show_item.url_query.message;
+                    let postid = app.show_item.url_query.message.as_str();
                     let page = &app.show_item.page + 1;
-                    let status_message = show_page(&postid, page, &mut app.state_manager, &app.tx_req);
+                    let status_message = show_page(postid, page, &mut app.state_manager, &app.tx_req);
 
                     app.status_bar.append(&app.screen_manager,
                                           &get_show_page_status_message(postid, page, &status_message));

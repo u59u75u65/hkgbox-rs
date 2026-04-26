@@ -275,7 +275,7 @@ fn parse_url_query_item(url_str: &str) -> Result<UrlQueryItem, &'static str> {
     };
 
     Ok(UrlQueryItem {
-           channel: String::from(channel),
-           message: String::from(message),
+           channel: crate::model::ChannelId::new(channel),
+           message: crate::model::MessageId::new(message),
        })
 }

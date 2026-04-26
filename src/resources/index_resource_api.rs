@@ -73,8 +73,8 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
             title: ListTopicTitleItem {
                 url: format!("/messages/{}.aspx", api_topic.id),
                 url_query: UrlQueryItem {
-                    channel: api_topic.forum.clone(),
-                    message: api_topic.id.to_string(),
+                    channel: crate::model::ChannelId::new(api_topic.forum.clone()),
+                    message: crate::model::MessageId::new(api_topic.id.to_string()),
                 },
                 text: api_topic.title.clone(),
                 num_of_pages: api_topic.total_page as usize,

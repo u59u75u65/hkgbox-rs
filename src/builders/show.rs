@@ -163,8 +163,8 @@ impl Show {
 
         Ok(
             UrlQueryItem {
-                channel: String::from(channel),
-                message: String::from(message)
+                channel: crate::model::ChannelId::new(channel),
+                message: crate::model::MessageId::new(message)
             }
         )
     }

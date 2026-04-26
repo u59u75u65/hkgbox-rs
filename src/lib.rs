@@ -19,14 +19,12 @@ pub mod error;
 pub use error::{HkgError, Result};
 
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex};
 
 pub struct App <'a>{
     pub index_builder: builders::index::Index,
     pub show_builder: builders::show::Show,
     pub state_manager: state_manager::StateManager,
     pub screen_manager: screen_manager::ScreenManager,
-    // pub icon_collection: &'a Box<Vec<model::IconItem>>,
     pub list_topic_items: Vec<model::ListTopicItem>,
     pub show_item: model::ShowItem,
 
@@ -34,7 +32,6 @@ pub struct App <'a>{
     pub index: screen::index::Index,
     pub show: screen::show::Show,
 
-    pub image_request_count_lock: Arc<Mutex<usize>>,
     pub tx_req: &'a Sender<resources::ChannelItem>,
     pub rx_res: &'a Receiver<resources::ChannelItem>,
 
