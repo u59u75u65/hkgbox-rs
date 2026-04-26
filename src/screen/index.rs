@@ -11,6 +11,7 @@ pub struct Index {
     max_page: usize,
     channel_code: String,
     channel_title: String,
+    version: String,
 }
 
 impl Index {
@@ -22,6 +23,7 @@ impl Index {
             max_page: 1,
             channel_code: String::from("BW"),
             channel_title: String::from("吹水台"),
+            version: String::from(env!("CARGO_PKG_VERSION")),
         }
     }
 
@@ -57,7 +59,7 @@ impl Index {
 
         let width = ::termion::terminal_size().expect("fail to get terminal size").0 as usize;
 
-        print_header(stdout, width as usize, &self.title, self.page, self.max_page, &self.channel_title);
+        print_header(stdout, width as usize, &self.title, self.page, self.max_page, &self.channel_title, &self.version);
         print_body(stdout,
                    self.body_width(),
                    2,
@@ -90,16 +92,17 @@ impl Index {
 
 }
 
-fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str, page: usize, _max_page: usize, channel_title: &str) {
+fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, width: usize, text: &str, page: usize, _max_page: usize, channel_title: &str, version: &str) {
     // print header with channel title in top left
     let channel_text = format!("[{}]", channel_title);
     let page_text = format!(" [{}]", page);
     let text_with_page = format!("{}{}", text, page_text);
+    let author_with_version = format!("u59u75u65 v{}", version);
     let padding = ((width - text_with_page.len()) / 2) as u16;
     let header_bottom = (0..width).map(|_| "─").collect::<Vec<_>>().join("");
     let header_top_padding = seq_str_gen(0, width, " ", "");
 
-    let title_right_padding = (0..if padding > 11 { padding - 11 } else { 0 } ).map(|_| " ").collect::<Vec<_>>().join("");
+    let title_right_padding = (0..if padding > author_with_version.len() as u16 { padding - author_with_version.len() as u16 } else { 0 } ).map(|_| " ").collect::<Vec<_>>().join("");
 
     write!(stdout, "{}{}{}{}{}",
             ::termion::cursor::Goto(1, 1),
@@ -121,7 +124,7 @@ fn print_header(stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, w
             ::termion::style::Reset,
             title_right_padding,
             ::termion::style::Bold,
-            "u59u75u65",
+            &author_with_version,
             ::termion::style::Reset,
             ::termion::cursor::Hide,
             ).expect("fail to write to shell");
