@@ -33,3 +33,30 @@ pub fn send_page_request(
 pub fn format_page_status(postid: &str, page: usize, status_message: &str) -> String {
     format!("[{}-{}:{}]", postid, page, status_message)
 }
+
+/// Send an index page request to the background worker
+pub fn send_index_page_request(
+    page: usize,
+    state_manager: &mut StateManager,
+    tx_req: &Sender<ChannelItem>,
+) -> String {
+    let ci = ChannelItem {
+        extra: Some(ChannelItemType::Index(ChannelIndexItem { page })),
+        result: String::from(""),
+    };
+
+    let status_message = match tx_req.send(ci) {
+        Ok(()) => {
+            state_manager.set_web_request(true);
+            "SOK".to_string()
+        }
+        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
+    };
+
+    status_message
+}
+
+/// Format an index page status message for display
+pub fn format_index_page_status(page: usize, status_message: &str) -> String {
+    format!("[p{}:{}]", page, status_message)
+}

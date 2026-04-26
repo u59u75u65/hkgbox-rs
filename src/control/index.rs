@@ -70,6 +70,28 @@ impl Index {
                 }
                 Some(1)
             }
+            Key::Left => {
+                app.status_bar.append(&app.screen_manager, "←");
+                if app.index_page > 1 {
+                    let new_page = app.index_page - 1;
+                    app.index_page = new_page;
+                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req);
+                    app.status_bar.append(&app.screen_manager,
+                                          &control_common::format_index_page_status(new_page, &status_message));
+                }
+                Some(1)
+            }
+            Key::Right => {
+                app.status_bar.append(&app.screen_manager, "→");
+                if app.index_page < app.index_max_page {
+                    let new_page = app.index_page + 1;
+                    app.index_page = new_page;
+                    let status_message = control_common::send_index_page_request(new_page, &mut app.state_manager, &app.tx_req);
+                    app.status_bar.append(&app.screen_manager,
+                                          &control_common::format_index_page_status(new_page, &status_message));
+                }
+                Some(1)
+            }
             _ => None,
         }
     }
