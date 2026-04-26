@@ -99,7 +99,7 @@ impl ChannelDialog {
         let height = ::termion::terminal_size().expect("fail to get terminal size").1 as usize;
 
         let dialog_width = 35.min(width - 4);
-        let dialog_height = 17;
+        let dialog_height = 16;
 
         let dialog_x = ((width - dialog_width) / 2) as u16;
         let dialog_y = ((height - dialog_height) / 2) as u16;
@@ -144,8 +144,9 @@ impl ChannelDialog {
 
             let item_text = format!("[{:2}] {} ({})", i + 1, channel.title, channel.channel);
             let item_text_width = jks_len(&item_text);
-            let item_padding = dialog_width.saturating_sub(item_text_width + 2);
-            let item_line = format!("│{}{}│", item_text, " ".repeat(item_padding));
+            let left_padding = "   "; // 3 spaces of left padding
+            let item_padding = dialog_width.saturating_sub(item_text_width + 2 + left_padding.len());
+            let item_line = format!("│{}{}{}│", left_padding, item_text, " ".repeat(item_padding));
 
             if i == self.selected_index {
                 // Highlight selected channel
