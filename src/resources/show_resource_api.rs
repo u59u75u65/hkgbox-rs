@@ -116,10 +116,8 @@ impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
         // Parse HTML content to extract nodes (images, text, etc.)
         let body_nodes = parse_html_content(&api_data.content);
 
-        // Use current time as published time for main content
-        let now = time::OffsetDateTime::now_utc();
-        let date = format!("{:02}/{:02}/{:04}", now.day(), now.month(), now.year());
-        let time = format!("{:02}:{:02}", now.hour(), now.minute());
+        // Use thread message_date as published time for main content
+        let (date, time) = timestamp_to_strings(api_data.message_date);
         let published_at = format!("{} {}", date, time);
 
         ShowReplyItem {

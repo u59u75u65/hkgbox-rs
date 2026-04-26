@@ -101,6 +101,9 @@ pub struct ApiThreadViewData {
     #[serde(rename = "totalReplies")]
     pub total_replies: i32,
 
+    #[serde(rename = "messageDate")]
+    pub message_date: i64,  // milliseconds since epoch
+
     // Replies
     #[serde(rename = "replies")]
     pub replies: Vec<ApiReply>,
