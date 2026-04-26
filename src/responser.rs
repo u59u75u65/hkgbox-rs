@@ -141,6 +141,24 @@ impl Responser {
                                 app.state_manager.set_to_print_screen(true);
                                 app.state_manager.set_web_request(false);
                             }
+                            ChannelItemType::IndexWithPageData(items, page, max_page) => {
+                                // New API mode - data already parsed with page info
+                                app.list_topic_items.clear();
+                                for item in items {
+                                    app.list_topic_items.push(item);
+                                }
+
+                                app.index_page = page;
+                                app.index_max_page = max_page;
+                                app.index.set_page(page, max_page);
+
+                                app.status_bar.append(&app.screen_manager, &format!("[TOPICS:API-ROK p{}/{}]", page, max_page));
+
+                                crate::screen::common::clear_screen();
+                                app.state_manager.update_state(Status::List);
+                                app.state_manager.set_to_print_screen(true);
+                                app.state_manager.set_web_request(false);
+                            }
                             ChannelItemType::IndexWithData(items) => {
                                 // New API mode - data already parsed
                                 app.list_topic_items.clear();

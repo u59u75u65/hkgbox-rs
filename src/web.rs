@@ -31,8 +31,18 @@ impl Requester {
                             Some(o) => {
                                 info!("request: {:?}", o);
                                 match o {
-                                    ChannelItemType::Index(_) | ChannelItemType::IndexWithData(_) => {
-                                        info!("[requester] creating IndexResource");
+                                    ChannelItemType::Index(index_item) => {
+                                        info!("[requester] creating IndexResource with page {}", index_item.page);
+                                        let mut index_resource = IndexResource::new(&mut fc);
+                                        index_resource.set_page(index_item.page);
+                                        info!("[requester] fetching from IndexResource");
+                                        let result = index_resource.fetch(&item);
+                                        info!("[requester] sending index response");
+                                        let _ = tx_res2.send(result);
+                                        info!("[requester] index response sent");
+                                    }
+                                    ChannelItemType::IndexWithData(_) | ChannelItemType::IndexWithPageData(_, _, _) => {
+                                        info!("[requester] creating IndexResource (default page)");
                                         let mut index_resource = IndexResource::new(&mut fc);
                                         info!("[requester] fetching from IndexResource");
                                         let result = index_resource.fetch(&item);
