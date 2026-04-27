@@ -5,7 +5,6 @@
 
 use reqwest::Client;
 use std::time::Duration;
-use std::sync::Arc;
 
 use log::info;
 
