@@ -6,8 +6,10 @@ authors = [ "u59u75u65" ]
 edition = "2021"
 
 [dependencies]
-# HTTP client - blocking for simpler integration
-reqwest = { version = "0.12", features = ["blocking"] }
+# HTTP client - async with blocking support for transition
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
 
 # HTML parsing
 kuchiki = "0.8"
