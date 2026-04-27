@@ -3,6 +3,7 @@ pub mod api_models;
 pub mod api_utils;
 pub mod caches;
 pub mod config;
+pub mod context;
 pub mod resources;
 pub mod services;
 pub mod status;
