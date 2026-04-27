@@ -4,7 +4,6 @@
 /// URL processing, and cache management.
 
 use crate::errors::{AppResult, UIError};
-use log::{info, debug};
 use std::path::PathBuf;
 
 /// Service for image-related business logic

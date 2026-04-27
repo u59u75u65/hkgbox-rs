@@ -1,6 +1,5 @@
-use std::io::{stdout, stdin, Write};
+use std::io::{stdout, stdin};
 use std::sync::mpsc::channel;
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use termion::input::TermRead;
@@ -8,7 +7,6 @@ use termion::raw::IntoRawMode;
 use log::{info, error};
 use hkg::status::*;
 use hkg::model::IconItem;
-use hkg::state_manager::*;
 use hkg::resources::*;
 use hkg::web::*;
 use hkg::responser::*;

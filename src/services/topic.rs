@@ -6,7 +6,6 @@
 use crate::api_client::HkgApiClient;
 use crate::api_models::ApiTopicListResponse;
 use crate::errors::{AppResult, ApiError};
-use crate::model::ListTopicItem;
 use std::sync::Arc;
 use log::{info, debug};
 

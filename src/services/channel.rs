@@ -4,8 +4,6 @@
 //! filtering, and channel information management.
 
 use crate::screen::channel_dialog::ChannelInfo;
-use crate::errors::{AppResult, ConfigError};
-use log::{info, debug};
 use std::collections::HashMap;
 
 /// Service for channel-related business logic
