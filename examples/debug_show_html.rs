@@ -50,6 +50,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 hkg::reply_model::NodeType::Br(_) => {
                     println!("  {}. LineBreak", j + 1);
                 }
+                hkg::reply_model::NodeType::Link(link) => {
+                    let url_preview = if link.url.len() > 50 {
+                        format!("{}...", &link.url[..50])
+                    } else {
+                        link.url.clone()
+                    };
+                    println!("  {}. Link: '{}' -> '{}'", j + 1, link.text, url_preview);
+                }
             }
         }
 

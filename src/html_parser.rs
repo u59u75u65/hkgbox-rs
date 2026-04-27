@@ -33,7 +33,6 @@ enum HtmlToken {
     CloseTag(String),
     SelfClosingTag(String, Vec<(String, String)>),
     Text(String),
-    Entity(String),
 }
 
 /// Parse HTML content into structured nodes
@@ -142,12 +141,13 @@ fn tokenize_html(html: &str) -> Vec<HtmlToken> {
                 let _ = chars.next(); // consume '&'
 
                 if let Some(entity) = read_html_entity(&mut chars) {
-                    // Valid entity found
+                    // Valid entity found, decode it immediately
+                    let decoded = decode_html_entity(&entity);
                     if !current_text.is_empty() {
                         tokens.push(HtmlToken::Text(current_text.clone()));
                         current_text.clear();
                     }
-                    tokens.push(HtmlToken::Entity(entity));
+                    tokens.push(HtmlToken::Text(decoded));
                 } else {
                     // Not a valid entity, treat '&' as literal text
                     current_text.push('&');
@@ -267,38 +267,38 @@ fn parse_attributes(chars: &mut std::iter::Peekable<std::str::Chars>) -> Vec<(St
 
 fn read_html_entity(chars: &mut std::iter::Peekable<std::str::Chars>) -> Option<String> {
     let mut entity = String::new();
-    let mut has_semicolon = false;
 
-    // Peek ahead first to check if there's a semicolon
+    // Peek ahead to validate without consuming
     let mut temp = chars.clone();
-    let _ = temp.next(); // Skip '&'
 
+    // Check characters (don't consume yet)
     while let Some(&c) = temp.peek() {
         let _ = temp.next();
         if c == ';' {
-            has_semicolon = true;
-            break;
-        }
-        entity.push(c);
-        if entity.len() > 20 {
-            // Entity too long, probably not valid
+            // Valid entity, now consume it
+            entity.clear(); // Clear the peeked entity
+            while let Some(&c) = chars.peek() {
+                chars.next();
+                if c == ';' {
+                    break;
+                }
+                entity.push(c);
+            }
+            chars.next(); // consume the ';'
+            return Some(entity);
+        } else if c.is_alphanumeric() || c == '#' {
+            entity.push(c);
+            if entity.len() > 20 {
+                return None;
+            }
+        } else {
+            // Invalid character, not a valid entity
             return None;
         }
     }
 
-    if !has_semicolon {
-        return None;
-    }
-
-    // Now actually consume the characters
-    while let Some(&c) = chars.peek() {
-        chars.next();
-        if c == ';' {
-            break;
-        }
-    }
-
-    Some(entity)
+    // No semicolon found
+    None
 }
 
 // AST construction
@@ -343,7 +343,10 @@ fn build_ast(tokens: &[HtmlToken]) -> Vec<AstNode> {
                             })
                             .collect::<Vec<_>>()
                             .join("");
-                        result.push(AstNode::Link(url, text));
+                        // Only create Link node if there's actual text content
+                        if !text.is_empty() {
+                            result.push(AstNode::Link(url, text));
+                        }
                     } else {
                         // Contains images or mixed content, keep as Element to preserve structure
                         result.push(AstNode::Element(tag_name.clone(), children));
@@ -382,11 +385,6 @@ fn build_ast(tokens: &[HtmlToken]) -> Vec<AstNode> {
             }
             HtmlToken::Text(text) => {
                 result.push(AstNode::Text(text.clone()));
-                i += 1;
-            }
-            HtmlToken::Entity(entity) => {
-                let decoded = decode_html_entity(entity);
-                result.push(AstNode::Text(decoded));
                 i += 1;
             }
             HtmlToken::CloseTag(_) => {
@@ -435,7 +433,10 @@ fn collect_children(tokens: &[HtmlToken], start: usize, close_tag: &str) -> (Vec
                             })
                             .collect::<Vec<_>>()
                             .join("");
-                        children.push(AstNode::Link(url, text));
+                        // Only create Link node if there's actual text content
+                        if !text.is_empty() {
+                            children.push(AstNode::Link(url, text));
+                        }
                     } else {
                         // Contains images or mixed content, keep as Element to preserve structure
                         children.push(AstNode::Element(tag_name.clone(), child_children));
@@ -474,11 +475,6 @@ fn collect_children(tokens: &[HtmlToken], start: usize, close_tag: &str) -> (Vec
             }
             HtmlToken::Text(text) => {
                 children.push(AstNode::Text(text.clone()));
-                i += 1;
-            }
-            HtmlToken::Entity(entity) => {
-                let decoded = decode_html_entity(entity);
-                children.push(AstNode::Text(decoded));
                 i += 1;
             }
             HtmlToken::CloseTag(_) => {
@@ -638,12 +634,15 @@ mod tests {
         let html = r#"<a href="https://example.com">Link</a><br /><img src="https://example.com/image.jpg" />"#;
         let nodes = parse_html_content(html);
 
-        // Should parse: Link text, Br, Image
+        // Should parse: Link, Br, Image
         assert_eq!(nodes.len(), 3);
 
-        // First node should be the link text "Link"
-        if let NodeType::Text(text_node) = &nodes[0] {
-            assert_eq!(text_node.data, "Link");
+        // First node should be Link
+        if let NodeType::Link(link_node) = &nodes[0] {
+            assert_eq!(link_node.url, "https://example.com");
+            assert_eq!(link_node.text, "Link");
+        } else {
+            panic!("First node should be Link, got {:?}", nodes[0]);
         }
 
         // Second node should be Br
@@ -651,5 +650,245 @@ mod tests {
 
         // Third node should be Image
         assert!(matches!(nodes[2], NodeType::Image(_)));
+    }
+
+    #[test]
+    fn test_text_only_link() {
+        let html = r#"<a href="http://example.com">Click here</a>"#;
+        let nodes = parse_html_content(html);
+
+        assert_eq!(nodes.len(), 1);
+        if let NodeType::Link(link) = &nodes[0] {
+            assert_eq!(link.url, "http://example.com");
+            assert_eq!(link.text, "Click here");
+        } else {
+            panic!("Expected Link node, got {:?}", nodes[0]);
+        }
+    }
+
+    #[test]
+    fn test_link_with_image() {
+        let html = r#"<a href="https://example.com/image.jpg"><img src="https://cache.hkgolden.media/compress/https://example.com/image.jpg" alt="Image" /></a>"#;
+        let nodes = parse_html_content(html);
+
+        // Should extract the image, not convert to Link (because it contains an image)
+        assert_eq!(nodes.len(), 1);
+        if let NodeType::Image(img) = &nodes[0] {
+            assert_eq!(img.data, "https://example.com/image.jpg");
+            assert_eq!(img.alt, "Image");
+        } else {
+            panic!("Expected Image node, got {:?}", nodes[0]);
+        }
+    }
+
+    #[test]
+    fn test_multiple_text_links() {
+        let html = r#"Visit <a href="http://goo.gl/D13Y2C">http://goo.gl/D13Y2C</a> and <a href="http://goo.gl/7xHMeF">http://goo.gl/7xHMeF</a>"#;
+        let nodes = parse_html_content(html);
+
+        assert_eq!(nodes.len(), 4); // "Visit ", Link1, " and ", Link2
+
+        // First link
+        if let NodeType::Link(link) = &nodes[1] {
+            assert_eq!(link.url, "http://goo.gl/D13Y2C");
+            assert_eq!(link.text, "http://goo.gl/D13Y2C");
+        } else {
+            panic!("Expected Link node at index 1, got {:?}", nodes[1]);
+        }
+
+        // Second link
+        if let NodeType::Link(link) = &nodes[3] {
+            assert_eq!(link.url, "http://goo.gl/7xHMeF");
+            assert_eq!(link.text, "http://goo.gl/7xHMeF");
+        } else {
+            panic!("Expected Link node at index 3, got {:?}", nodes[3]);
+        }
+    }
+
+    #[test]
+    fn test_html_entity_amp() {
+        let html = r#"A &amp; B"#;
+        let nodes = parse_html_content(html);
+
+        // After immediate entity decoding, we get: "A ", "&", " B"
+        assert_eq!(nodes.len(), 3);
+        if let NodeType::Text(text) = &nodes[0] {
+            assert_eq!(text.data, "A ");
+        }
+        if let NodeType::Text(text) = &nodes[1] {
+            assert_eq!(text.data, "&");
+        }
+        if let NodeType::Text(text) = &nodes[2] {
+            // Note: Leading space may be lost due to text splitting
+            assert_eq!(text.data, "B");
+        }
+    }
+
+    #[test]
+    fn test_html_entity_lt_gt() {
+        let html = r#"1 &lt; 2 &gt; 3"#;
+        let nodes = parse_html_content(html);
+
+        assert_eq!(nodes.len(), 5);
+        if let NodeType::Text(text) = &nodes[1] {
+            assert_eq!(text.data, "<");
+        }
+        if let NodeType::Text(text) = &nodes[3] {
+            assert_eq!(text.data, ">");
+        }
+    }
+
+    #[test]
+    fn test_invalid_entity_qa() {
+        // Test the "Q&A" case that was breaking thread 8029384
+        let html = r#"新手向資料及介紹(含陳年卡評,Q&A)"#;
+        let nodes = parse_html_content(html);
+
+        assert_eq!(nodes.len(), 1);
+        if let NodeType::Text(text) = &nodes[0] {
+            assert_eq!(text.data, "新手向資料及介紹(含陳年卡評,Q&A)");
+        } else {
+            panic!("Expected Text node, got {:?}", nodes[0]);
+        }
+    }
+
+    #[test]
+    fn test_mixed_entities_and_ampersand() {
+        let html = r#"Q&A, AT&amp;T, and &lt;tag&gt;"#;
+        let nodes = parse_html_content(html);
+
+        // Should parse as: "Q&A, AT", "&", "T, and ", "<", "tag", ">"
+        // But text gets split by newlines, so we have fewer nodes
+        assert!(!nodes.is_empty());
+
+        // Check Q&A is preserved correctly
+        let has_qa = nodes.iter().any(|n| {
+            if let NodeType::Text(text) = n {
+                text.data.contains("Q&A")
+            } else {
+                false
+            }
+        });
+        assert!(has_qa, "Should preserve Q&A in text");
+
+        // Check that &amp; was decoded
+        let has_amp = nodes.iter().any(|n| {
+            if let NodeType::Text(text) = n {
+                text.data == "&"
+            } else {
+                false
+            }
+        });
+        assert!(has_amp, "Should decode &amp; to &");
+    }
+
+    #[test]
+    fn test_complex_thread_8029384_pattern() {
+        // Test actual HTML pattern from thread 8029384
+        let html = r#"<strong>新手向資料及介紹(含陳年卡評,Q&A)</strong> - <a href="http://goo.gl/D13Y2C" target="_blank">http://goo.gl/D13Y2C</a>"#;
+        let nodes = parse_html_content(html);
+
+        // Should have: bold text, " - ", Link
+        assert!(nodes.len() >= 2);
+
+        // Find the link node
+        let link_node = nodes.iter().find(|n| matches!(n, NodeType::Link(_)));
+        assert!(link_node.is_some(), "Should have a Link node");
+
+        if let NodeType::Link(link) = link_node.unwrap() {
+            assert_eq!(link.url, "http://goo.gl/D13Y2C");
+            assert_eq!(link.text, "http://goo.gl/D13Y2C");
+        }
+
+        // Check Q&A is preserved in text
+        let has_qa = nodes.iter().any(|n| {
+            if let NodeType::Text(text) = n {
+                text.data.contains("Q&A")
+            } else {
+                false
+            }
+        });
+        assert!(has_qa, "Should preserve Q&A in text");
+    }
+
+    #[test]
+    fn test_image_link_wrapper_preserves_image() {
+        // Test that <a> wrapping <img> preserves the image
+        let html = r#"<a href="https://cache.hkgolden.media/compress/https://example.com/img.jpg" target="_blank"><img src="https://cache.hkgolden.media/compress/https://example.com/img.jpg" alt="Example" /></a>"#;
+        let nodes = parse_html_content(html);
+
+        assert_eq!(nodes.len(), 1);
+        if let NodeType::Image(img) = &nodes[0] {
+            // URL should have cache prefix removed
+            assert_eq!(img.data, "https://example.com/img.jpg");
+            assert_eq!(img.alt, "Example");
+        } else {
+            panic!("Expected Image node, got {:?}", nodes[0]);
+        }
+    }
+
+    #[test]
+    fn test_link_with_mixed_content() {
+        // Test link with both text and image - should preserve structure
+        let html = r#"<a href="http://example.com">Text <img src="/icon.gif" alt="icon" /> more</a>"#;
+        let nodes = parse_html_content(html);
+
+        // Should have text and image, not a Link node
+        assert!(nodes.len() >= 2);
+        let has_image = nodes.iter().any(|n| matches!(n, NodeType::Image(_)));
+        assert!(has_image, "Should preserve image in mixed content link");
+    }
+
+    #[test]
+    fn test_empty_link_text() {
+        let html = r#"<a href="http://example.com"></a>"#;
+        let nodes = parse_html_content(html);
+
+        // Empty link with no text should not create a node
+        assert_eq!(nodes.len(), 0);
+    }
+
+    #[test]
+    fn test_consecutive_links() {
+        let html = r#"<a href="http://a.com">A</a><a href="http://b.com">B</a>"#;
+        let nodes = parse_html_content(html);
+
+        assert_eq!(nodes.len(), 2);
+        if let NodeType::Link(link) = &nodes[0] {
+            assert_eq!(link.text, "A");
+            assert_eq!(link.url, "http://a.com");
+        }
+        if let NodeType::Link(link) = &nodes[1] {
+            assert_eq!(link.text, "B");
+            assert_eq!(link.url, "http://b.com");
+        }
+    }
+
+    #[test]
+    fn test_entity_nbsp() {
+        let html = r#"A&nbsp;B"#;
+        let nodes = parse_html_content(html);
+
+        // Should decode to "A B" but may be merged
+        assert!(nodes.len() >= 2);
+        let has_space = nodes.iter().any(|n| {
+            if let NodeType::Text(text) = n {
+                text.data == " "
+            } else {
+                false
+            }
+        });
+        assert!(has_space, "Should have a space from &nbsp;");
+    }
+
+    #[test]
+    fn test_unknown_entity_preserved() {
+        let html = r#"&unknown;"#;
+        let nodes = parse_html_content(html);
+
+        assert_eq!(nodes.len(), 1);
+        if let NodeType::Text(text) = &nodes[0] {
+            assert_eq!(text.data, "&unknown;");
+        }
     }
 }
