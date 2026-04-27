@@ -1,7 +1,25 @@
+//! Show view input handling
+//!
+//! This module handles keyboard input processing for the show (thread view) screen.
+//! It manages navigation, pagination, and refresh operations.
+
 use termion::event::Key;
 use crate::status::*;
 use crate::control::common as control_common;
 
+/// Input handler for the show view
+///
+/// The `Show` handler processes keyboard events when the application is in
+/// the `Status::Show` state, managing thread content navigation and interaction.
+///
+/// # Key Bindings
+/// - `c` - Open channel selection dialog
+/// - `Ctrl+O` - Open thread by ID dialog
+/// - `q` - Quit application
+/// - `r` / `Ctrl+R` - Refresh current page (fetch from API)
+/// - `←/→` - Navigate pages
+/// - `↑/↓` / `PageUp/PageDown` - Scroll content
+/// - `Backspace` - Return to index
 pub struct Show {
 
 }
@@ -27,9 +45,17 @@ impl Show {
                 crate::screen::common::reset_screen(); // print!("{}{}{}", termion::clear::All, style::Reset, termion::cursor::Show);
                 Some(0)
             }
-            Key::Char('r') => {
-                crate::screen::common::clear_screen();
-                app.status_bar.append(&app.screen_manager, &format!("r"));
+            Key::Char('r') | Key::Ctrl('r') => {
+                if !app.state_manager.is_web_request() {
+                    // Refresh current show page
+                    let postid = app.show_item.url_query.message.as_str();
+                    let page = app.show_item.page;
+                    let status_message = control_common::send_page_request(postid, page, &mut app.state_manager, &app.tx_req);
+                    app.status_bar.append(&app.screen_manager,
+                                          &control_common::format_page_status(postid, page, &status_message));
+                } else {
+                    app.status_bar.append(&app.screen_manager, "[r][BUSY]");
+                }
                 Some(1)
             }
             Key::Left => {

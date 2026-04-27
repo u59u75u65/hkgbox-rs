@@ -17,7 +17,7 @@ use crate::status::Status;
 /// - `c` - Open channel selection dialog
 /// - `Ctrl+O` - Open thread by ID dialog
 /// - `q` - Quit application
-/// - `r` - Refresh screen
+/// - `r` / `Ctrl+R` - Refresh current page (fetch from API)
 /// - `Enter` - Open selected topic
 /// - `↑/↓` - Navigate topics
 /// - `←/→` - Navigate pages
@@ -81,9 +81,23 @@ impl Index {
                 crate::screen::common::reset_screen();
                 Some(0)
             }
-            Key::Char('r') => {
-                crate::screen::common::clear_screen();
-                app.status_bar.append(&app.screen_manager, &format!("r"));
+            Key::Char('r') | Key::Ctrl('r') => {
+                if !app.state_manager.is_web_request() {
+                    // Refresh current index page
+                    let body_height = app.index.body_height();
+                    let page_count = calculate_page_count(body_height);
+                    let status_message = control_common::send_index_page_request_with_count(
+                        app.index_page,
+                        page_count,
+                        &mut app.state_manager,
+                        &app.tx_req,
+                        &app.current_channel
+                    );
+                    app.status_bar.append(&app.screen_manager,
+                                          &control_common::format_index_page_status(app.index_page, &status_message));
+                } else {
+                    app.status_bar.append(&app.screen_manager, "[r][BUSY]");
+                }
                 Some(1)
             }
             Key::Char('\n') => {
