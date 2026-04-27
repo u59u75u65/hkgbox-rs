@@ -4,6 +4,7 @@ pub mod api_utils;
 pub mod caches;
 pub mod config;
 pub mod resources;
+pub mod services;
 pub mod status;
 pub mod state_manager;
 pub mod screen_manager;
