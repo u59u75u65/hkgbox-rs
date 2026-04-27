@@ -355,9 +355,29 @@ fn collect_children(tokens: &[HtmlToken], start: usize, close_tag: &str) -> (Vec
                 children.push(AstNode::Element(tag_name.clone(), child_children));
                 i = new_i;
             }
-            HtmlToken::SelfClosingTag(tag_name, _attrs) => {
-                // Self-closing tags are treated as elements with no children
-                children.push(AstNode::Element(tag_name.clone(), Vec::new()));
+            HtmlToken::SelfClosingTag(tag_name, attrs) => {
+                // Special handling for img tags to preserve attributes
+                if tag_name == "img" {
+                    let url = attrs.iter()
+                        .find(|(name, _)| name == "src")
+                        .map(|(_, value)| {
+                            // Remove cache URL prefix from image src
+                            value.replace("https://cache.hkgolden.media/compress/", "")
+                        })
+                        .unwrap_or_default();
+
+                    let alt = attrs.iter()
+                        .find(|(name, _)| name == "alt")
+                        .map(|(_, value)| value.clone())
+                        .unwrap_or_default();
+
+                    if !url.is_empty() {
+                        children.push(AstNode::Image(url, alt));
+                    }
+                } else {
+                    // Other self-closing tags are treated as elements with no children
+                    children.push(AstNode::Element(tag_name.clone(), Vec::new()));
+                }
                 i += 1;
             }
             HtmlToken::Text(text) => {
