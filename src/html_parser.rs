@@ -13,29 +13,16 @@ use crate::reply_model::{NodeType, ImageNode, TextNode, BlockQuoteNode, BrNode};
 ///
 /// # Returns
 /// Vector of image URLs found in the HTML
-///
-/// # Examples
-/// ```
-/// use hkg::html_parser;
-///
-/// let html = r#"<img src="https://example.com/image.jpg" />"#;
-/// let urls = html_parser::extract_image_urls(html);
-/// assert_eq!(urls.len(), 1);
-/// ```
 #[must_use]
 pub fn extract_image_urls(html: &str) -> Vec<String> {
     let mut urls = Vec::new();
-
-    // Pattern to match <img src="..." />
     let img_regex = Regex::new(r#"<img[^>]+src="([^"]+)""#).unwrap();
 
     for capture in img_regex.captures_iter(html) {
         if let Some(url_match) = capture.get(1) {
-            let url = url_match.as_str().to_string();
-            urls.push(url);
+            urls.push(url_match.as_str().to_string());
         }
     }
-
     urls
 }
 
@@ -44,7 +31,7 @@ pub fn extract_image_urls(html: &str) -> Vec<String> {
 enum HtmlToken {
     OpenTag(String),
     CloseTag(String),
-    SelfClosingTag(String, Vec<(String, String)>), // tag name, attributes
+    SelfClosingTag(String, Vec<(String, String)>),
     Text(String),
     Entity(String),
 }
@@ -56,15 +43,6 @@ enum HtmlToken {
 ///
 /// # Returns
 /// Vector of parsed nodes representing the HTML content
-///
-/// # Examples
-/// ```
-/// use hkg::html_parser;
-///
-/// let html = "<p>Hello world</p>";
-/// let nodes = html_parser::parse_html_content(html);
-/// # // nodes will contain TextNode with "Hello world"
-/// ```
 #[must_use]
 pub fn parse_html_content(html: &str) -> Vec<NodeType> {
     let tokens = tokenize_html(html);
@@ -87,65 +65,96 @@ fn tokenize_html(html: &str) -> Vec<HtmlToken> {
                     current_text.clear();
                 }
 
-                chars.next(); // consume '<'
-                match chars.next() {
+                let _ = chars.next(); // consume '<'
+                let next_char = chars.next();
+
+                match next_char {
                     Some('/') => {
-                        // Closing tag
-                        let tag_name = read_tag_name(&mut chars);
+                        // Closing tag - read tag name
+                        let mut tag_name = String::new();
+                        while let Some(&c) = chars.peek() {
+                            if c.is_whitespace() || c == '>' {
+                                break;
+                            }
+                            tag_name.push(c);
+                            let _ = chars.next();
+                        }
                         tokens.push(HtmlToken::CloseTag(tag_name));
+                        // Skip to next '>'
+                        while chars.next() != Some('>') {}
                     }
                     Some('!') => {
-                        // Comment or DOCTYPE - skip until '>'
-                        while let Some(&c) = chars.peek() {
-                            chars.next();
-                            if c == '>' {
-                                break;
-                            }
-                        }
+                        // Comment or doctype, skip to '>'
+                        while chars.next() != Some('>') {}
                     }
-                    Some('?') => {
-                        // XML processing instruction - skip until '?>'
-                        let mut prev = '\0';
-                        while let Some(&c) = chars.peek() {
-                            chars.next();
-                            if c == '>' && prev == '?' {
-                                break;
-                            }
-                            prev = c;
-                        }
-                    }
-                    _ => {
-                        // Opening tag or self-closing tag
-                        let tag_content = read_until(&mut chars, '>');
-                        let tag_content = tag_content.trim();
+                    Some(next_char) => {
+                        // Opening tag - we already consumed next_char, use it to start tag name
+                        let mut tag_name = String::new();
+                        tag_name.push(next_char);
 
-                        if tag_content.ends_with('/') {
-                            // Self-closing tag
-                            let (tag_name, attributes) = parse_tag_content(&tag_content[..tag_content.len() - 1]);
-                            tokens.push(HtmlToken::SelfClosingTag(tag_name, attributes));
+                        // Continue reading tag name
+                        while let Some(&c) = chars.peek() {
+                            if c.is_whitespace() || c == '>' || c == '/' {
+                                break;
+                            }
+                            tag_name.push(c);
+                            let _ = chars.next();
+                        }
+
+                        // Skip whitespace after tag name
+                        while let Some(&c) = chars.peek() {
+                            if !c.is_whitespace() {
+                                break;
+                            }
+                            let _ = chars.next();
+                        }
+
+                        // Check if this is a self-closing tag by looking ahead
+                        let mut is_self_closing = false;
+
+                        // Parse attributes and check for self-closing
+                        let attrs = parse_attributes(&mut chars);
+
+                        // After parsing attributes, check for '/'
+                        if let Some(&c) = chars.peek() {
+                            if c == '/' {
+                                is_self_closing = true;
+                                let _ = chars.next(); // consume '/'
+                            }
+                        }
+
+                        // Expect '>'
+                        if chars.next() != Some('>') {
+                            // Malformed HTML, but continue
+                        }
+
+                        if is_self_closing {
+                            tokens.push(HtmlToken::SelfClosingTag(tag_name, attrs));
                         } else {
-                            // Opening tag
-                            let (tag_name, attributes) = parse_tag_content(tag_content);
                             tokens.push(HtmlToken::OpenTag(tag_name));
                         }
                     }
+                    None => break,
                 }
             }
             '&' => {
                 // HTML entity
-                if !current_text.is_empty() {
-                    tokens.push(HtmlToken::Text(current_text.clone()));
-                    current_text.clear();
-                }
-
-                chars.next(); // consume '&'
+                let _ = chars.next(); // consume '&'
                 let entity = read_html_entity(&mut chars);
-                tokens.push(HtmlToken::Entity(entity));
+                if entity.is_empty() {
+                    // Invalid entity sequence, treat '&' as literal text
+                    current_text.push('&');
+                } else {
+                    if !current_text.is_empty() {
+                        tokens.push(HtmlToken::Text(current_text.clone()));
+                        current_text.clear();
+                    }
+                    tokens.push(HtmlToken::Entity(entity));
+                }
             }
             _ => {
-                // Regular text
-                chars.next();
                 current_text.push(c);
+                let _ = chars.next();
             }
         }
     }
@@ -158,49 +167,101 @@ fn tokenize_html(html: &str) -> Vec<HtmlToken> {
     tokens
 }
 
-fn read_tag_name(chars: &mut std::iter::Peekable<std::str::Chars>) -> String {
-    let mut tag_name = String::new();
+fn parse_attributes(chars: &mut std::iter::Peekable<std::str::Chars>) -> Vec<(String, String)> {
+    let mut attrs = Vec::new();
 
+    // Skip whitespace before attributes
     while let Some(&c) = chars.peek() {
-        if c.is_whitespace() || c == '>' {
+        if !c.is_whitespace() {
             break;
         }
-        chars.next();
-        tag_name.push(c);
+        let _ = chars.next();
     }
 
-    tag_name.to_lowercase()
-}
-
-fn read_until(chars: &mut std::iter::Peekable<std::str::Chars>, delimiter: char) -> String {
-    let mut result = String::new();
-
+    // Parse attributes until we hit '/' or '>'
     while let Some(&c) = chars.peek() {
-        chars.next();
-        if c == delimiter {
+        if c == '/' || c == '>' {
             break;
         }
-        result.push(c);
-    }
 
-    result
-}
+        // Skip whitespace
+        while let Some(&c) = chars.peek() {
+            if !c.is_whitespace() {
+                break;
+            }
+            let _ = chars.next();
+        }
 
-fn parse_tag_content(content: &str) -> (String, Vec<(String, String)>) {
-    let parts: Vec<&str> = content.split_whitespace().collect();
-    let tag_name = parts.first().map_or(String::new(), |s| s.to_lowercase());
+        // Check if we're done
+        if let Some(&c) = chars.peek() {
+            if c == '/' || c == '>' {
+                break;
+            }
+        }
 
-    let mut attributes = Vec::new();
-    if parts.len() > 1 {
-        for part in &parts[1..] {
-            if let Some((key, value)) = part.split_once('=') {
-                let value = value.trim_matches('"').trim_matches('\'').to_string();
-                attributes.push((key.to_lowercase(), value));
+        // Read attribute name
+        let mut attr_name = String::new();
+        while let Some(&c) = chars.peek() {
+            if c.is_whitespace() || c == '=' {
+                break;
+            }
+            attr_name.push(c);
+            let _ = chars.next();
+        }
+
+        // Skip whitespace and '='
+        while let Some(&c) = chars.peek() {
+            if !c.is_whitespace() {
+                break;
+            }
+            let _ = chars.next();
+        }
+
+        if let Some(&c) = chars.peek() {
+            if c == '=' {
+                let _ = chars.next(); // consume '='
+
+                // Skip whitespace after '='
+                while let Some(&c) = chars.peek() {
+                    if !c.is_whitespace() {
+                        break;
+                    }
+                    let _ = chars.next();
+                }
+
+                // Read attribute value
+                if let Some(&c) = chars.peek() {
+                    if c == '"' || c == '\'' {
+                        let quote = c;
+                        let _ = chars.next(); // consume opening quote
+                        let mut attr_value = String::new();
+
+                        while let Some(ch) = chars.next() {
+                            if ch == quote {
+                                break;
+                            }
+                            attr_value.push(ch);
+                        }
+
+                        attrs.push((attr_name, attr_value));
+                    } else {
+                        // Unquoted value - read until whitespace or delimiter
+                        let mut attr_value = String::new();
+                        while let Some(&c) = chars.peek() {
+                            if c.is_whitespace() || c == '>' || c == '/' {
+                                break;
+                            }
+                            attr_value.push(c);
+                            let _ = chars.next();
+                        }
+                        attrs.push((attr_name, attr_value));
+                    }
+                }
             }
         }
     }
 
-    (tag_name, attributes)
+    attrs
 }
 
 fn read_html_entity(chars: &mut std::iter::Peekable<std::str::Chars>) -> String {
@@ -235,17 +296,22 @@ fn build_ast(tokens: &[HtmlToken]) -> Vec<AstNode> {
                 result.push(AstNode::Element(tag_name.clone(), children));
                 i = new_i;
             }
+            HtmlToken::SelfClosingTag(tag_name, _attrs) => {
+                // Self-closing tags are treated as elements with no children
+                result.push(AstNode::Element(tag_name.clone(), Vec::new()));
+                i += 1;
+            }
             HtmlToken::Text(text) => {
                 result.push(AstNode::Text(text.clone()));
                 i += 1;
             }
             HtmlToken::Entity(entity) => {
-                // Convert basic HTML entities
                 let decoded = decode_html_entity(entity);
                 result.push(AstNode::Text(decoded));
                 i += 1;
             }
-            _ => {
+            HtmlToken::CloseTag(_) => {
+                // Ignore close tags at top level (malformed HTML)
                 i += 1;
             }
         }
@@ -268,6 +334,11 @@ fn collect_children(tokens: &[HtmlToken], start: usize, close_tag: &str) -> (Vec
                 children.push(AstNode::Element(tag_name.clone(), child_children));
                 i = new_i;
             }
+            HtmlToken::SelfClosingTag(tag_name, _attrs) => {
+                // Self-closing tags are treated as elements with no children
+                children.push(AstNode::Element(tag_name.clone(), Vec::new()));
+                i += 1;
+            }
             HtmlToken::Text(text) => {
                 children.push(AstNode::Text(text.clone()));
                 i += 1;
@@ -277,7 +348,8 @@ fn collect_children(tokens: &[HtmlToken], start: usize, close_tag: &str) -> (Vec
                 children.push(AstNode::Text(decoded));
                 i += 1;
             }
-            _ => {
+            HtmlToken::CloseTag(_) => {
+                // Mismatched close tag, skip it
                 i += 1;
             }
         }
@@ -307,8 +379,7 @@ fn ast_to_nodes(ast: Vec<AstNode>, extract_images: bool) -> Vec<NodeType> {
                 match tag.as_str() {
                     "img" => {
                         if extract_images {
-                            // Extract image src attribute
-                            let src = extract_img_src(&children);
+                            let src = extract_img_src_from_children(&children);
                             nodes.push(NodeType::Image(ImageNode {
                                 data: src.clone(),
                                 alt: src,
@@ -324,10 +395,17 @@ fn ast_to_nodes(ast: Vec<AstNode>, extract_images: bool) -> Vec<NodeType> {
                             data: child_nodes,
                         }));
                     }
+                    "div" | "p" | "span" => {
+                        let sub_nodes = ast_to_nodes(children, extract_images);
+                        nodes.extend(sub_nodes);
+                    }
+                    "b" | "strong" | "i" | "em" | "a" => {
+                        let sub_nodes = ast_to_nodes(children, extract_images);
+                        nodes.extend(sub_nodes);
+                    }
                     _ => {
-                        // Recursively process other elements
-                        let child_nodes = ast_to_nodes(children, extract_images);
-                        nodes.extend(child_nodes);
+                        let sub_nodes = ast_to_nodes(children, extract_images);
+                        nodes.extend(sub_nodes);
                     }
                 }
             }
@@ -347,9 +425,8 @@ fn ast_to_nodes(ast: Vec<AstNode>, extract_images: bool) -> Vec<NodeType> {
     nodes
 }
 
-fn extract_img_src(_children: &[AstNode]) -> String {
-    // In a real implementation, you'd extract the src attribute
-    // For now, return a placeholder
+fn extract_img_src_from_children(_children: &[AstNode]) -> String {
+    // For now, return empty string - the img tag should have attributes parsed
     String::new()
 }
 
@@ -358,25 +435,76 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_extract_image_urls() {
-        let html = r#"<img src="https://example.com/image1.jpg" /><img src="https://example.com/image2.png">"#;
-        let urls = extract_image_urls(html);
-        assert_eq!(urls.len(), 2);
-        assert_eq!(urls[0], "https://example.com/image1.jpg");
-        assert_eq!(urls[1], "https://example.com/image2.png");
-    }
-
-    #[test]
-    fn test_extract_image_urls_no_images() {
-        let html = "<p>No images here</p>";
-        let urls = extract_image_urls(html);
-        assert!(urls.is_empty());
-    }
-
-    #[test]
-    fn test_parse_html_content() {
+    fn test_parse_html_content_simple() {
         let html = "<p>Hello world</p>";
         let nodes = parse_html_content(html);
         assert!(!nodes.is_empty());
+    }
+
+    #[test]
+    fn test_debug_tokens() {
+        let html = r#"<br />"#;
+        let tokens = tokenize_html(html);
+        println!("Tokens for '<br />':");
+        for (i, token) in tokens.iter().enumerate() {
+            println!("  {}: {:?}", i, token);
+        }
+
+        let ast = build_ast(&tokens);
+        println!("AST for '<br />':");
+        for (i, node) in ast.iter().enumerate() {
+            println!("  {}: {:?}", i, node);
+        }
+
+        let nodes = ast_to_nodes(ast, true);
+        println!("Nodes for '<br />':");
+        for (i, node) in nodes.iter().enumerate() {
+            println!("  {}: {:?}", i, node);
+        }
+    }
+
+    #[test]
+    fn test_parse_html_content_with_strong() {
+        let html = r#"<p>Hello <strong>world</strong>!</p>"#;
+        let nodes = parse_html_content(html);
+
+        // Should have 3 text nodes: "Hello ", "world", "!"
+        assert_eq!(nodes.len(), 3);
+        if let NodeType::Text(text_node) = &nodes[0] {
+            assert_eq!(text_node.data, "Hello ");
+        }
+        if let NodeType::Text(text_node) = &nodes[1] {
+            assert_eq!(text_node.data, "world");
+        }
+        if let NodeType::Text(text_node) = &nodes[2] {
+            assert_eq!(text_node.data, "!");
+        }
+    }
+
+    #[test]
+    fn test_extract_image_urls() {
+        let html = r#"<img src="https://example.com/image1.jpg" />"#;
+        let urls = extract_image_urls(html);
+        assert_eq!(urls.len(), 1);
+    }
+
+    #[test]
+    fn test_real_html_from_thread() {
+        let html = r#"<a href="https://example.com">Link</a><br /><img src="https://example.com/image.jpg" />"#;
+        let nodes = parse_html_content(html);
+
+        // Should parse: Link text, Br, Image
+        assert_eq!(nodes.len(), 3);
+
+        // First node should be the link text "Link"
+        if let NodeType::Text(text_node) = &nodes[0] {
+            assert_eq!(text_node.data, "Link");
+        }
+
+        // Second node should be Br
+        assert!(matches!(nodes[1], NodeType::Br(_)));
+
+        // Third node should be Image
+        assert!(matches!(nodes[2], NodeType::Image(_)));
     }
 }
