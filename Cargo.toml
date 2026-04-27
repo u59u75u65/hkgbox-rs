@@ -47,6 +47,10 @@ url = "2.5"
 # Error handling
 thiserror = "2.0"
 
+[dev-dependencies]
+# Mocking support for testing
+mockall = "0.13"
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
