@@ -2,6 +2,7 @@ pub mod api_client;
 pub mod api_models;
 pub mod api_utils;
 pub mod caches;
+pub mod config;
 pub mod resources;
 pub mod status;
 pub mod state_manager;
@@ -11,12 +12,17 @@ pub mod reply_model;
 pub mod model;
 pub mod web;
 pub mod responser;
+pub mod requests;
+pub mod rendering;
 pub mod builders;
 pub mod screen;
 pub mod control;
+pub mod errors;
 pub mod error;
 
 pub use error::{HkgError, Result};
+pub use errors::{AppError, ApiError, CacheError, UIError, DataError, ConfigError};
+pub use errors::{AppResult, ApiResult, CacheResult, UIResult, DataResult, ConfigResult};
 
 use std::sync::mpsc::{Receiver, Sender};
 

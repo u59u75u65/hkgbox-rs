@@ -1,3 +1,8 @@
+//! HKGolden API client
+//!
+//! This module provides a client for interacting with the HKGolden API,
+//! handling HTTP requests for fetching topics and thread data.
+
 use reqwest::blocking::Client;
 use std::time::Duration;
 
@@ -5,12 +10,35 @@ use log::info;
 
 use crate::api_models::*;
 
+/// HTTP client for HKGolden API
+///
+/// The `HkgApiClient` provides methods to fetch data from the HKGolden API,
+/// including topic lists and thread views with replies.
+///
+/// # Examples
+/// ```
+/// use hkg::api_client::HkgApiClient;
+///
+/// let client = HkgApiClient::new().unwrap();
+/// let topics = client.fetch_topics("BW", 1).unwrap();
+/// ```
 pub struct HkgApiClient {
     client: Client,
     base_url: String,
 }
 
 impl HkgApiClient {
+    /// Create a new HKG API client with default settings
+    ///
+    /// # Returns
+    /// A configured API client or an error if HTTP client creation fails
+    ///
+    /// # Examples
+    /// ```
+    /// use hkg::api_client::HkgApiClient;
+    ///
+    /// let client = HkgApiClient::new().unwrap();
+    /// ```
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let client = Client::builder()
             .timeout(Duration::from_secs(10))

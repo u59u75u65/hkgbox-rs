@@ -1,16 +1,68 @@
+//! Index view input handling
+//!
+//! This module handles keyboard input processing for the index (topic list) view.
+//! It manages navigation, topic selection, pagination, and mode switching.
+
 use log::info;
 use termion::event::Key;
 use crate::control::common as control_common;
 use crate::status::Status;
 
-
+/// Input handler for the index view
+///
+/// The `Index` handler processes keyboard events when the application is in
+/// the `Status::List` state, managing topic list navigation and interaction.
+///
+/// # Key Bindings
+/// - `c` - Open channel selection dialog
+/// - `Ctrl+O` - Open thread by ID dialog
+/// - `q` - Quit application
+/// - `r` - Refresh screen
+/// - `Enter` - Open selected topic
+/// - `↑/↓` - Navigate topics
+/// - `←/→` - Navigate pages
 pub struct Index {
 
 }
 
 impl Index {
+    /// Create a new index input handler
+    ///
+    /// # Examples
+    /// ```
+    /// use hkg::control::index::Index;
+    ///
+    /// let handler = Index::new();
+    /// ```
+    #[must_use]
+    pub fn new() -> Self { Index {} }
 
-    pub fn new () -> Self { Index {} }
+    /// Handle a keyboard event in the index view
+    ///
+    /// # Arguments
+    /// * `c` - The keyboard event to handle
+    /// * `app` - Mutable reference to the application state
+    ///
+    /// # Returns
+    /// * `Some(1)` - Event was handled, screen should be redrawn
+    /// * `Some(0)` - Quit requested
+    /// * `None` - Event not handled or no screen update needed
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # use hkg::control::index::Index;
+    /// # use hkg::App;
+    /// let mut handler = Index::new();
+    /// # let mut app: App = unsafe { std::mem::zeroed() };
+    /// use termion::event::Key;
+    ///
+    /// match handler.handle(Key::Char('q'), &mut app) {
+    ///     Some(0) => println!("Quit requested"),
+    ///     Some(1) => println!("Screen updated"),
+    ///     None => println!("No change"),
+    /// }
+    /// ```
+    #[allow(clippy::too_many_lines)]
     pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
             Key::Char('c') => {

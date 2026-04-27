@@ -12,6 +12,8 @@ use hkg::state_manager::*;
 use hkg::resources::*;
 use hkg::web::*;
 use hkg::responser::*;
+use hkg::requests;
+use hkg::rendering;
 use hkg::screen::common;
 use hkg::HkgError;
 use std::thread;
@@ -67,7 +69,7 @@ fn main() -> Result<(), HkgError> {
     let mut channel_dialog_control = hkg::control::channel_dialog::ChannelDialog::new();
 
     // topics request
-    let status_message = list_page(&mut app.state_manager, &tx_req, app.index_page, &app.current_channel);
+    let status_message = requests::list_page(&mut app.state_manager, &tx_req, app.index_page, &app.current_channel);
     app.status_bar.append(&app.screen_manager, &status_message);
 
 
@@ -119,7 +121,7 @@ fn main() -> Result<(), HkgError> {
                                         None => {}
                                     }
                                 } else {
-                                    print_screen(&mut app);
+                                    rendering::print_screen(&mut app);
                                 }
                             }
                             None => error!("index_control handle receive none.")
@@ -134,7 +136,7 @@ fn main() -> Result<(), HkgError> {
                                         None => {}
                                     }
                                 } else {
-                                    print_screen(&mut app);
+                                    rendering::print_screen(&mut app);
                                 }
                             }
                             None => error!("show_control handle receive none.")
@@ -149,7 +151,7 @@ fn main() -> Result<(), HkgError> {
                                         None => {}
                                     }
                                 } else {
-                                    print_screen(&mut app);
+                                    rendering::print_screen(&mut app);
                                 }
                             }
                             None => error!("dialog_control handle receive none.")
@@ -164,7 +166,7 @@ fn main() -> Result<(), HkgError> {
                                         None => {}
                                     }
                                 } else {
-                                    print_screen(&mut app);
+                                    rendering::print_screen(&mut app);
                                 }
                             }
                             None => error!("channel_dialog_control handle receive none.")
@@ -176,13 +178,13 @@ fn main() -> Result<(), HkgError> {
         };
 
         if app.state_manager.is_to_print_screen() {
-            print_screen(&mut app);
+            rendering::print_screen(&mut app);
             app.state_manager.set_to_print_screen(false);
         }
 
         if app.screen_manager.is_width_changed() || app.screen_manager.is_height_changed() {
             common::clear_screen();
-            print_screen(&mut app);
+            rendering::print_screen(&mut app);
         }
 
         thread::sleep(std::time::Duration::from_millis(50));
@@ -190,87 +192,4 @@ fn main() -> Result<(), HkgError> {
 
     info!("app shutdown");
     Ok(())
-}
-
-fn list_page(state_manager: &mut StateManager, tx_req: &Sender<ChannelItem>, page: usize, channel: &str) -> String {
-
-    // Calculate how many API pages to fetch based on terminal height
-    const API_MAX_PER_PAGE: usize = 30;
-    let (_, terminal_height) = termion::terminal_size().expect("Failed to get terminal size");
-    // Subtract 3 rows: 1 for header, 1 for separator, 1 for status bar
-    let body_height = if terminal_height >= 3 {
-        terminal_height as usize - 3
-    } else {
-        0
-    };
-    let page_count = if body_height <= API_MAX_PER_PAGE {
-        1
-    } else {
-        (body_height + API_MAX_PER_PAGE - 1) / API_MAX_PER_PAGE
-    };
-
-    let ci = ChannelItem {
-        extra: Some(ChannelItemType::Index(ChannelIndexItem {
-            page,
-            channel: channel.to_string(),
-            page_count,
-        })),
-        result: Default::default()
-    };
-
-    let status_message = match tx_req.send(ci) {
-        Ok(()) => {
-            state_manager.set_web_request(true);    // *is_web_requesting = true;
-            "SOK".to_string()
-        }
-        Err(e) => format!("{}:{}", "SFAIL", e).to_string(),
-    };
-
-    status_message
-}
-
-fn print_screen(app: &mut hkg::App) {
-    match app.state_manager.get_state() {
-        Status::Startup => {}
-        Status::List => {
-            app.index.print(&mut app.stdout, &app.list_topic_items);
-        }
-        Status::Show => {
-            app.show.print(&mut app.stdout, &app.show_item);
-        }
-        Status::Dialog => {
-            // Print the underlying screen (List or Show)
-            match app.prev_state {
-                Status::List => {
-                    app.index.print(&mut app.stdout, &app.list_topic_items);
-                }
-                Status::Show => {
-                    app.show.print(&mut app.stdout, &app.show_item);
-                }
-                _ => {}
-            }
-            // Print dialog on top
-            app.dialog.print(&mut app.stdout);
-        }
-        Status::ChannelDialog => {
-            // Print the underlying screen (List or Show)
-            match app.prev_state {
-                Status::List => {
-                    app.index.print(&mut app.stdout, &app.list_topic_items);
-                }
-                Status::Show => {
-                    app.show.print(&mut app.stdout, &app.show_item);
-                }
-                _ => {}
-            }
-            // Print channel dialog on top
-            app.channel_dialog.print(&mut app.stdout);
-        }
-    }
-
-    app.status_bar.print(&app.screen_manager);
-
-    if let Err(e) = app.stdout.flush() {
-        error!("Failed to flush stdout: {}", e);
-    }
 }
