@@ -6,6 +6,7 @@ pub enum NodeType {
     Image(ImageNode),
     BlockQuote(BlockQuoteNode),
     Br(BrNode),
+    Link(LinkNode),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -26,4 +27,10 @@ pub struct BrNode {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct BlockQuoteNode {
     pub data: Vec<NodeType>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct LinkNode {
+    pub url: String,
+    pub text: String,
 }

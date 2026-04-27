@@ -4,7 +4,7 @@
 //! into structured node representations.
 
 use regex::Regex;
-use crate::reply_model::{NodeType, ImageNode, TextNode, BlockQuoteNode, BrNode};
+use crate::reply_model::{NodeType, ImageNode, TextNode, BlockQuoteNode, BrNode, LinkNode};
 
 /// Extract image URLs from HTML content
 ///
@@ -29,7 +29,7 @@ pub fn extract_image_urls(html: &str) -> Vec<String> {
 /// HTML token types for parsing
 #[derive(Debug, Clone)]
 enum HtmlToken {
-    OpenTag(String),
+    OpenTag(String, Vec<(String, String)>), // tag name, attributes
     CloseTag(String),
     SelfClosingTag(String, Vec<(String, String)>),
     Text(String),
@@ -131,25 +131,26 @@ fn tokenize_html(html: &str) -> Vec<HtmlToken> {
                         if is_self_closing {
                             tokens.push(HtmlToken::SelfClosingTag(tag_name, attrs));
                         } else {
-                            tokens.push(HtmlToken::OpenTag(tag_name));
+                            tokens.push(HtmlToken::OpenTag(tag_name, attrs));
                         }
                     }
                     None => break,
                 }
             }
             '&' => {
-                // HTML entity
+                // HTML entity - try to consume it
                 let _ = chars.next(); // consume '&'
-                let entity = read_html_entity(&mut chars);
-                if entity.is_empty() {
-                    // Invalid entity sequence, treat '&' as literal text
-                    current_text.push('&');
-                } else {
+
+                if let Some(entity) = read_html_entity(&mut chars) {
+                    // Valid entity found
                     if !current_text.is_empty() {
                         tokens.push(HtmlToken::Text(current_text.clone()));
                         current_text.clear();
                     }
                     tokens.push(HtmlToken::Entity(entity));
+                } else {
+                    // Not a valid entity, treat '&' as literal text
+                    current_text.push('&');
                 }
             }
             _ => {
@@ -264,18 +265,40 @@ fn parse_attributes(chars: &mut std::iter::Peekable<std::str::Chars>) -> Vec<(St
     attrs
 }
 
-fn read_html_entity(chars: &mut std::iter::Peekable<std::str::Chars>) -> String {
+fn read_html_entity(chars: &mut std::iter::Peekable<std::str::Chars>) -> Option<String> {
     let mut entity = String::new();
+    let mut has_semicolon = false;
 
+    // Peek ahead first to check if there's a semicolon
+    let mut temp = chars.clone();
+    let _ = temp.next(); // Skip '&'
+
+    while let Some(&c) = temp.peek() {
+        let _ = temp.next();
+        if c == ';' {
+            has_semicolon = true;
+            break;
+        }
+        entity.push(c);
+        if entity.len() > 20 {
+            // Entity too long, probably not valid
+            return None;
+        }
+    }
+
+    if !has_semicolon {
+        return None;
+    }
+
+    // Now actually consume the characters
     while let Some(&c) = chars.peek() {
         chars.next();
         if c == ';' {
             break;
         }
-        entity.push(c);
     }
 
-    entity
+    Some(entity)
 }
 
 // AST construction
@@ -284,6 +307,7 @@ enum AstNode {
     Element(String, Vec<AstNode>),
     Text(String),
     Image(String, String), // url, alt
+    Link(String, String),  // url, text
 }
 
 fn build_ast(tokens: &[HtmlToken]) -> Vec<AstNode> {
@@ -292,10 +316,44 @@ fn build_ast(tokens: &[HtmlToken]) -> Vec<AstNode> {
 
     while i < tokens.len() {
         match &tokens[i] {
-            HtmlToken::OpenTag(tag_name) => {
-                let (children, new_i) = collect_children(tokens, i + 1, tag_name);
-                result.push(AstNode::Element(tag_name.clone(), children));
-                i = new_i;
+            HtmlToken::OpenTag(tag_name, attrs) => {
+                // Special handling for <a> tags to extract href
+                if tag_name == "a" {
+                    let url = attrs.iter()
+                        .find(|(name, _)| name == "href")
+                        .map(|(_, value)| value.clone())
+                        .unwrap_or_default();
+
+                    let (children, new_i) = collect_children(tokens, i + 1, tag_name);
+
+                    // Check if children contain only text (no images, no nested elements)
+                    let is_text_only = children.iter().all(|node| {
+                        matches!(node, AstNode::Text(_))
+                    });
+
+                    if is_text_only && !url.is_empty() {
+                        // Extract text from children
+                        let text = children.iter()
+                            .filter_map(|node| {
+                                if let AstNode::Text(t) = node {
+                                    Some(t.as_str())
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                            .join("");
+                        result.push(AstNode::Link(url, text));
+                    } else {
+                        // Contains images or mixed content, keep as Element to preserve structure
+                        result.push(AstNode::Element(tag_name.clone(), children));
+                    }
+                    i = new_i;
+                } else {
+                    let (children, new_i) = collect_children(tokens, i + 1, tag_name);
+                    result.push(AstNode::Element(tag_name.clone(), children));
+                    i = new_i;
+                }
             }
             HtmlToken::SelfClosingTag(tag_name, attrs) => {
                 // Special handling for img tags to preserve attributes
@@ -350,10 +408,44 @@ fn collect_children(tokens: &[HtmlToken], start: usize, close_tag: &str) -> (Vec
             HtmlToken::CloseTag(tag) if tag == close_tag => {
                 return (children, i + 1);
             }
-            HtmlToken::OpenTag(tag_name) => {
-                let (child_children, new_i) = collect_children(tokens, i + 1, tag_name);
-                children.push(AstNode::Element(tag_name.clone(), child_children));
-                i = new_i;
+            HtmlToken::OpenTag(tag_name, attrs) => {
+                // Special handling for <a> tags to extract href
+                if tag_name == "a" {
+                    let url = attrs.iter()
+                        .find(|(name, _)| name == "href")
+                        .map(|(_, value)| value.clone())
+                        .unwrap_or_default();
+
+                    let (child_children, new_i) = collect_children(tokens, i + 1, tag_name);
+
+                    // Check if children contain only text (no images, no nested elements)
+                    let is_text_only = child_children.iter().all(|node| {
+                        matches!(node, AstNode::Text(_))
+                    });
+
+                    if is_text_only && !url.is_empty() {
+                        // Extract text from children
+                        let text = child_children.iter()
+                            .filter_map(|node| {
+                                if let AstNode::Text(t) = node {
+                                    Some(t.as_str())
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                            .join("");
+                        children.push(AstNode::Link(url, text));
+                    } else {
+                        // Contains images or mixed content, keep as Element to preserve structure
+                        children.push(AstNode::Element(tag_name.clone(), child_children));
+                    }
+                    i = new_i;
+                } else {
+                    let (child_children, new_i) = collect_children(tokens, i + 1, tag_name);
+                    children.push(AstNode::Element(tag_name.clone(), child_children));
+                    i = new_i;
+                }
             }
             HtmlToken::SelfClosingTag(tag_name, attrs) => {
                 // Special handling for img tags to preserve attributes
@@ -440,7 +532,7 @@ fn ast_to_nodes(ast: Vec<AstNode>, extract_images: bool) -> Vec<NodeType> {
                         let sub_nodes = ast_to_nodes(children, extract_images);
                         nodes.extend(sub_nodes);
                     }
-                    "b" | "strong" | "i" | "em" | "a" => {
+                    "b" | "strong" | "i" | "em" => {
                         let sub_nodes = ast_to_nodes(children, extract_images);
                         nodes.extend(sub_nodes);
                     }
@@ -464,6 +556,12 @@ fn ast_to_nodes(ast: Vec<AstNode>, extract_images: bool) -> Vec<NodeType> {
                 nodes.push(NodeType::Image(ImageNode {
                     data: url,
                     alt: alt,
+                }));
+            }
+            AstNode::Link(url, text) => {
+                nodes.push(NodeType::Link(LinkNode {
+                    url: url,
+                    text: text,
                 }));
             }
         }

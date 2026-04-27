@@ -63,6 +63,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         hkg::reply_model::NodeType::Br(_) => {
                             println!("🔃 LINE BREAK");
                         }
+                        hkg::reply_model::NodeType::Link(link) => {
+                            println!("🔗 LINK");
+                            println!("│       URL: {}", link.url);
+                            println!("│       Text: {}", link.text);
+                        }
                     }
                 }
             }
@@ -121,6 +126,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     hkg::reply_model::NodeType::Br(_) => {
                         println!("🔃 LINE BREAK");
+                    }
+                    hkg::reply_model::NodeType::Link(link) => {
+                        println!("🔗 LINK");
+                        println!("│       URL: {}", link.url);
+                        println!("│       Text: {}", link.text);
                     }
                 }
             }

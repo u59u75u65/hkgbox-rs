@@ -162,6 +162,14 @@ impl Show {
                         line = format!("{}{}", line, text);
                     }
                 }
+                NodeType::Link(n) => {
+                    if !n.text.is_empty() {
+                        let text = &n.text;
+                        let len = jks_len(&text);
+                        text_y_offset = (if w > 0 { len / w } else { 0 }) + 1;
+                        line = format!("{}{}", line, text);
+                    }
+                }
                 NodeType::Image(n) => {
                     if n.data != "" {
                         info!("Processing image: url={}, alt={}, is_external={}",
