@@ -4,6 +4,7 @@ pub mod async_services;
 pub mod api_models;
 pub mod api_utils;
 pub mod caches;
+pub mod cli;
 pub mod config;
 pub mod context;
 pub mod domain;

@@ -14,9 +14,28 @@ use hkg::requests;
 use hkg::rendering;
 use hkg::screen::common;
 use hkg::HkgError;
+use hkg::cli::Args;
 use std::thread;
 
 fn main() -> Result<(), HkgError> {
+
+    // Parse command-line arguments
+    let args = match Args::parse() {
+        Ok(a) => a,
+        Err(e) => {
+            if e == "HELP" {
+                Args::print_usage();
+                return Err(HkgError::Config("Help requested".to_string()));
+            }
+            eprintln!("Error: {}", e);
+            eprintln!();
+            Args::print_usage();
+            return Err(HkgError::Config(format!("Invalid arguments: {}", e)));
+        }
+    };
+
+    println!("Using forum service: {}", args.service);
+    println!();
 
     // Initialize logging first
     if let Err(e) = log4rs::init_file("config/log4rs.yaml", Default::default()) {
@@ -24,6 +43,7 @@ fn main() -> Result<(), HkgError> {
     }
 
     info!("app start");
+    info!("Using forum service: {:?}", args.service);
 
     // Clear the screen.
     common::clear_screen();
@@ -57,7 +77,7 @@ fn main() -> Result<(), HkgError> {
             .build(Box::new(stdout))?
     };
 
-    Requester::new(rx_req, tx_res, working.clone());
+    Requester::with_service(rx_req, tx_res, working.clone(), args.service);
 
     let respsoner = Responser::new();
 
