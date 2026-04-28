@@ -81,7 +81,7 @@ impl AsyncChannelService {
     /// let service = AsyncChannelService::new();
     /// let channel = service.get_channel_by_index(0);
     /// assert!(channel.is_some());
-    /// assert_eq!(channel.unwrap().code, "BW");
+    /// assert_eq!(channel.unwrap().channel, "BW");
     /// ```
     pub fn get_channel_by_index(&self, index: usize) -> Option<&ChannelInfo> {
         self.channels.get(index)

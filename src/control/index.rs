@@ -58,7 +58,7 @@ impl Index {
     ///
     /// match handler.handle(Key::Char('q'), &mut app) {
     ///     Some(0) => println!("Quit requested"),
-    ///     Some(1) => println!("Screen updated"),
+    ///     Some(_) => println!("Screen updated"),
     ///     None => println!("No change"),
     /// }
     /// ```

@@ -24,7 +24,7 @@ pub type AsyncResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 /// use hkg::async_api_client::AsyncHkgApiClient;
 ///
 /// #[tokio::main]
-/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 ///     let client = AsyncHkgApiClient::new().await?;
 ///     let topics = client.fetch_topics("BW", 1).await?;
 ///     Ok(())
@@ -45,9 +45,9 @@ impl AsyncHkgApiClient {
     /// ```no_run
     /// use hkg::async_api_client::AsyncHkgApiClient;
     ///
-    /// #[tokio::main]
-    /// async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    ///     let client = AsyncHkgApiClient::new().await?;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    /// let client = AsyncHkgApiClient::new().await?;
     ///     Ok(())
     /// }
     /// ```
@@ -137,10 +137,11 @@ impl AsyncHkgApiClient {
     /// ```no_run
     /// use hkg::async_api_client::AsyncHkgApiClient;
     ///
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// let client = AsyncHkgApiClient::new().await?;
     /// let thread = client.fetch_thread(8045633, 1).await?;
-    /// println!("Thread title: {}", thread.data.thread.title);
+    /// println!("Thread title: {}", thread.data.title);
     /// # Ok(())
     /// # }
     /// ```

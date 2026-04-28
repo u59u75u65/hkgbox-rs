@@ -18,11 +18,12 @@ use log::{info, debug};
 /// ```no_run
 /// use hkg::services::TopicService;
 /// use hkg::api_client::HkgApiClient;
+/// use std::sync::Arc;
 ///
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let client = HkgApiClient::new()?;
-/// let service = TopicService::new(client);
+/// let service = TopicService::new(Arc::new(client));
 /// let topics = service.fetch_topics("BW", 1, None)?;
 /// # Ok(())
 /// # }
