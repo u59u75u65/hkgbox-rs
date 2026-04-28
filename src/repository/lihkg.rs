@@ -252,7 +252,7 @@ struct LihkgThreadItem {
 }
 
 /// LIHKG user info
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 struct LihkgUser {
     user_id: i32,
     nickname: String,
@@ -267,35 +267,30 @@ struct LihkgCategory {
 }
 
 /// LIHKG thread view API response
+/// The response structure is flat, not nested under a "thread" field
 #[derive(Debug, serde::Deserialize)]
 struct LihkgThreadResponse {
-    thread: LihkgThreadDetail,
-    total_page: i32,
-}
-
-/// LIHKG thread detail
-#[derive(Debug, serde::Deserialize)]
-struct LihkgThreadDetail {
     thread_id: i32,
     title: String,
     user: LihkgUser,
     category: LihkgCategory,
     create_time: i64,
-    reply_count: i32,
     like_count: i32,
     dislike_count: i32,
-    msg: String,
+    total_page: i32,
+    #[serde(default)]
+    item_data: Vec<LihkgReply>,
 }
 
 /// LIHKG reply item
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 struct LihkgReply {
-    post_id: i32,
+    post_id: String,  // LIHKG uses string post_ids
     user: LihkgUser,
     msg: String,
     like_count: i32,
     dislike_count: i32,
-    create_time: i64,
+    reply_time: i64,
     #[serde(default)]
     quote_reply: Option<Box<LihkgReply>>,
 }
@@ -440,24 +435,21 @@ impl LihkgThreadRepository {
 
     /// Convert LIHKG reply to domain Reply
     ///
-    /// Note: LIHKG API doesn't provide reply index, so we use 0 as placeholder.
-    /// The index should be assigned based on position in the thread.
+    /// Note: LIHKG uses String post_ids, so we use the index as the id.
     fn convert_reply(&self, lihkg_reply: LihkgReply, index: i32) -> Reply {
         // Convert Unix timestamp (seconds) to milliseconds
-        let reply_date_ms = lihkg_reply.create_time * 1000;
+        let reply_date_ms = lihkg_reply.reply_time * 1000;
 
-        // Convert quoted reply if exists
-        let quoted = if let Some(qr) = lihkg_reply.quote_reply {
-            vec![QuotedRef {
-                index: 0, // LIHKG doesn't provide quote index
-                id: qr.post_id,
-            }]
+        // Convert quoted reply if exists (LIHKG quotes are rare in thread view)
+        let quoted = if let Some(_qr) = lihkg_reply.quote_reply {
+            // LIHKG quote structure is complex, for now skip it
+            Vec::new()
         } else {
             Vec::new()
         };
 
         Reply {
-            id: lihkg_reply.post_id,
+            id: index, // Use index as id since LIHKG post_ids are strings
             index,
             author_id: lihkg_reply.user.user_id,
             author_name: lihkg_reply.user.nickname,
@@ -478,25 +470,39 @@ impl ThreadRepository for LihkgThreadRepository {
         let response = self.client.fetch_thread(thread_id, page)
             .map_err(|e| RepositoryError::ApiError(e.to_string()))?;
 
-        let thread = response.thread;
-
         // Convert Unix timestamp (seconds) to milliseconds
-        let message_date_ms = thread.create_time * 1000;
+        let message_date_ms = response.create_time * 1000;
 
-        // Note: The LIHKG thread API response structure may vary
-        // For now, we construct a basic thread view
-        // In a real implementation, we'd parse the reply items from the response
+        // Extract thread content from first item in item_data
+        // LIHKG stores the main post as the first item in item_data
+        let thread_content = if let Some(first_item) = response.item_data.first() {
+            first_item.msg.clone()
+        } else {
+            String::new()
+        };
+
+        // Convert LIHKG replies to domain replies (skip first item as it's the main post)
+        let replies: Vec<Reply> = if response.item_data.len() > 1 {
+            response.item_data[1..]
+                .iter()
+                .enumerate()
+                .map(|(index, lihkg_reply)| self.convert_reply(lihkg_reply.clone(), index as i32 + 1))
+                .collect()
+        } else {
+            Vec::new()
+        };
+
         Ok(ThreadView {
-            id: thread.thread_id,
-            title: thread.title,
-            content: thread.msg,
-            author_id: thread.user.user_id,
-            author_name: thread.user.nickname,
+            id: response.thread_id,
+            title: response.title,
+            content: thread_content,
+            author_id: response.user.user_id,
+            author_name: response.user.nickname,
             current_page: page,
             total_page: response.total_page,
-            total_replies: thread.reply_count,
+            total_replies: replies.len() as i32,
             message_date: message_date_ms,
-            replies: Vec::new(), // Would be populated from response items
+            replies,
         })
     }
 }
@@ -550,7 +556,7 @@ mod tests {
         let repo = LihkgThreadRepository::new().unwrap();
 
         let lihkg_reply = LihkgReply {
-            post_id: 456,
+            post_id: "test_post_id".to_string(),
             user: LihkgUser {
                 user_id: 789,
                 nickname: "ReplyUser".to_string(),
@@ -559,13 +565,13 @@ mod tests {
             msg: "Test reply content".to_string(),
             like_count: 5,
             dislike_count: 1,
-            create_time: 1609459260,
+            reply_time: 1609459260,
             quote_reply: None,
         };
 
         let reply = repo.convert_reply(lihkg_reply, 1);
 
-        assert_eq!(reply.id, 456);
+        assert_eq!(reply.id, 1); // Uses index as id
         assert_eq!(reply.index, 1);
         assert_eq!(reply.author_name, "ReplyUser");
         assert_eq!(reply.author_id, 789);
