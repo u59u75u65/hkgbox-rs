@@ -7,6 +7,6 @@ pub mod topic;
 pub mod channel;
 pub mod image;
 
-pub use topic::TopicService;
+pub use topic::{TopicService, HkgoldenTopicService};
 pub use channel::ChannelService;
 pub use image::ImageService;
