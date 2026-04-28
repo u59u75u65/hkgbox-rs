@@ -144,3 +144,31 @@ pub struct ApiQuotedRef {
     #[serde(rename = "id")]
     pub id: i32,
 }
+
+// ============================================================================
+// CONVERSION FUNCTIONS
+// ============================================================================
+
+/// Convert HKGolden API topic to domain Topic
+///
+/// This function converts a topic from the HKGolden API format
+/// to the generic domain Topic model.
+#[must_use]
+pub fn api_topic_to_domain(api_topic: ApiTopic) -> crate::domain::Topic {
+    crate::domain::Topic {
+        id: api_topic.id,
+        title: api_topic.title,
+        forum: api_topic.forum,
+        author_id: api_topic.author_id,
+        author_name: api_topic.author_name,
+        author_gender: Some(api_topic.author_gender),
+        total_replies: api_topic.total_replies,
+        rating: Some(api_topic.rating),
+        total_page: api_topic.total_page,
+        message_date: api_topic.message_date,
+        last_reply_date: Some(api_topic.last_reply_date),
+        thumbnail: None,
+        icon_type: None,
+        icon_path: None,
+    }
+}
