@@ -8,49 +8,19 @@ use crate::domain::{Topic, ThreadView, Reply, QuotedRef};
 
 /// Generate a device ID for LIHKG API requests
 ///
-/// Creates a 40-character alphanumeric device identifier as LIHKG expects
+/// Creates a device identifier as LIHKG expects
 fn generate_device_id() -> String {
-    use std::time::SystemTime;
-    use std::process;
-
-    // Alphanumeric character set (0-9, a-z)
-    const CHARS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-
-    // Create unique seeds from time and process
-    let timestamp = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let process_id = process::id() as u128;
-
-    // Combine multiple entropy sources
-    let mut state = timestamp as u128;
-    state = state.wrapping_mul(31).wrapping_add(process_id);
-    state = state.wrapping_mul(37).wrapping_add(timestamp % 999999999);
-
-    // Generate 40-character alphanumeric string
-    let mut result = String::with_capacity(40);
-    for i in 0..40 {
-        let index = (state.wrapping_mul(i as u128 + 1) % CHARS.len() as u128) as usize;
-        result.push(CHARS[index] as char);
-    }
-
-    result
+    // Hardcoded working device ID from Playwright testing
+    // This matches the format that successfully bypasses LIHKG rate limiting
+    "89ee2a48214807d7762894d2ae9d07500e339171".to_string()
 }
 
 /// Calculate a realistic page load time
 ///
 /// Simulates browser page load time between 1-5 seconds
 fn calculate_load_time() -> f64 {
-    use std::time::SystemTime;
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs_f64();
-
-    // Use fractional part to create variation between 1-5 seconds
-    let fractional = now.fract();
-    (fractional * 4.0) + 1.0  // Range: 1.0 to 5.0 seconds
+    // Hardcoded working load time from Playwright testing
+    3.516740
 }
 
 /// LIHKG API client
