@@ -14,31 +14,13 @@
 use reqwest::blocking::Client;
 use serde_json::Value;
 
-/// Generate a device ID that mimics browser fingerprinting
+/// Generate device ID for LIHKG requests
 ///
-/// LIHKG uses this to identify the "device" making the request.
-/// We generate a deterministic hash-like identifier similar to what browsers do.
+/// Using hardcoded working device ID from Playwright investigation.
 fn generate_device_id() -> String {
-    use std::time::SystemTime;
-    use std::process;
-
-    // Create a unique identifier based on time and process ID
-    let input = format!("{}-{}-lihkg-browser",
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos(),
-        process::id()
-    );
-
-    // Generate a 32-character hex string (simulating MD5 hash)
-    format!("{:032x}",
-        (input.len() as u128) << 96 |
-        (SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos() as u128) % 0xFFFFFFFFFFFFFFFF
-    )
+    // Hardcoded working device ID from Playwright testing
+    // This matches the format that successfully bypasses LIHKG rate limiting
+    "89ee2a48214807d7762894d2ae9d07500e339171".to_string()
 }
 
 /// Calculate page load time
