@@ -3,7 +3,8 @@
 //! These tests verify the integration between different components
 //! and ensure the application works as expected.
 
-use hkg::services::{TopicService, ChannelService, ImageService};
+use hkg::services::{ChannelService, ImageService};
+use hkg::services::topic::{calculate_page_count, is_valid_page, next_page, prev_page};
 use hkg::screen::channel_dialog::ChannelInfo;
 
 #[test]
@@ -31,21 +32,21 @@ fn test_channel_service_integration() {
 #[test]
 fn test_topic_service_calculations() {
     // Test page count calculations
-    assert_eq!(TopicService::calculate_page_count(30, 30), 1);
-    assert_eq!(TopicService::calculate_page_count(60, 30), 2);
-    assert_eq!(TopicService::calculate_page_count(90, 30), 3);
+    assert_eq!(calculate_page_count(30, 30), 1);
+    assert_eq!(calculate_page_count(60, 30), 2);
+    assert_eq!(calculate_page_count(90, 30), 3);
 
     // Test page validation
-    assert!(TopicService::is_valid_page(5, 10));
-    assert!(!TopicService::is_valid_page(0, 10));
-    assert!(!TopicService::is_valid_page(11, 10));
+    assert!(is_valid_page(5, 10));
+    assert!(!is_valid_page(0, 10));
+    assert!(!is_valid_page(11, 10));
 
     // Test page navigation
-    assert_eq!(TopicService::next_page(5, 10), 6);
-    assert_eq!(TopicService::next_page(10, 10), 1);
+    assert_eq!(next_page(5, 10), 6);
+    assert_eq!(next_page(10, 10), 1);
 
-    assert_eq!(TopicService::prev_page(5, 10), 4);
-    assert_eq!(TopicService::prev_page(1, 10), 10);
+    assert_eq!(prev_page(5, 10), 4);
+    assert_eq!(prev_page(1, 10), 10);
 }
 
 #[test]
@@ -125,15 +126,15 @@ fn test_channel_filtering_patterns() {
 #[test]
 fn test_pagination_edge_cases() {
     // Test edge cases for pagination calculations
-    assert_eq!(TopicService::calculate_page_count(0, 30), 1);
-    assert_eq!(TopicService::calculate_page_count(1, 30), 1);
-    assert_eq!(TopicService::calculate_page_count(29, 30), 1);
-    assert_eq!(TopicService::calculate_page_count(30, 30), 1);
-    assert_eq!(TopicService::calculate_page_count(31, 30), 2);
+    assert_eq!(calculate_page_count(0, 30), 1);
+    assert_eq!(calculate_page_count(1, 30), 1);
+    assert_eq!(calculate_page_count(29, 30), 1);
+    assert_eq!(calculate_page_count(30, 30), 1);
+    assert_eq!(calculate_page_count(31, 30), 2);
 
     // Test wrapping behavior
-    assert_eq!(TopicService::next_page(1, 1), 1);
-    assert_eq!(TopicService::prev_page(1, 1), 1);
+    assert_eq!(next_page(1, 1), 1);
+    assert_eq!(prev_page(1, 1), 1);
 }
 
 #[test]
