@@ -6,10 +6,14 @@
 pub mod error;
 pub mod hkgolden;
 pub mod async_hkgolden;
+pub mod lihkg;
+pub mod mock_lihkg;
 
 pub use error::{RepositoryError, RepositoryResult};
 pub use hkgolden::{HkgoldenTopicRepository, HkgoldenThreadRepository};
 pub use async_hkgolden::{AsyncHkgoldenTopicRepository, AsyncHkgoldenThreadRepository};
+pub use lihkg::{LihkgTopicRepository, LihkgThreadRepository};
+pub use mock_lihkg::MockLihkgTopicRepository;
 
 use crate::domain::{Topic, ThreadView};
 
