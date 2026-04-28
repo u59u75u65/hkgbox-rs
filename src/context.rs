@@ -6,7 +6,8 @@
 use std::sync::Arc;
 use crate::config::AppConfig;
 use crate::api_client::HkgApiClient;
-use crate::services::{TopicService, ChannelService, ImageService};
+use crate::services::{HkgoldenTopicService, ChannelService, ImageService};
+use crate::repository::HkgoldenTopicRepository;
 use crate::state_manager::StateManager;
 use std::sync::mpsc::Sender;
 
@@ -37,7 +38,7 @@ pub struct ApplicationContext {
     pub api_client: Arc<HkgApiClient>,
 
     /// Topic service
-    pub topic_service: Arc<TopicService>,
+    pub topic_service: Arc<HkgoldenTopicService>,
 
     /// Channel service
     pub channel_service: Arc<ChannelService>,
@@ -82,8 +83,11 @@ impl ApplicationContext {
         // Create API client
         let api_client = Arc::new(HkgApiClient::new()?);
 
+        // Create repository with dependency injection
+        let topic_repository = HkgoldenTopicRepository::new(api_client.clone());
+
         // Create services with dependency injection
-        let topic_service = Arc::new(TopicService::new(api_client.clone()));
+        let topic_service = Arc::new(HkgoldenTopicService::new(topic_repository));
         let channel_service = Arc::new(ChannelService::new());
         let image_service = Arc::new(ImageService::new(
             config.image_cache_dir.clone(),
@@ -136,7 +140,7 @@ impl ApplicationContext {
 
     /// Get a clone of the topic service
     #[must_use]
-    pub fn topic_service(&self) -> Arc<TopicService> {
+    pub fn topic_service(&self) -> Arc<HkgoldenTopicService> {
         self.topic_service.clone()
     }
 
