@@ -63,7 +63,28 @@ pub fn imgcat_from_url(url: &str, width: usize) -> Result<String, Box<dyn std::e
 
     // Fetch the image
     info!("[imgcat] Fetching from network...");
-    let response = reqwest::blocking::get(url)?;
+
+    // Check if this is a LIHKG image URL and add required headers
+    let is_lihkg_image = url.contains("lihkg.com") || url.contains("lih.kg");
+
+    let response = if is_lihkg_image {
+        // Use LIHKG headers for LIHKG images
+        info!("[imgcat] Using LIHKG headers for LIHKG image");
+        let device_id = generate_lihkg_device_id();
+        let load_time = calculate_lihkg_load_time();
+
+        reqwest::blocking::Client::new()
+            .get(url)
+            .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
+            .header("Referer", "https://lihkg.com/")
+            .header("x-li-device-type", "browser")
+            .header("x-li-device", &device_id)
+            .header("x-li-load-time", &load_time.to_string())
+            .send()?
+    } else {
+        // Basic fetch for other images
+        reqwest::blocking::get(url)?
+    };
 
     if !response.status().is_success() {
         error!("[imgcat] HTTP error {}", response.status());
@@ -121,4 +142,38 @@ mod tests {
         let result = imgcat_from_data(data, 40);
         assert!(result.contains("width=40;"));
     }
+}
+
+/// Generate device ID for LIHKG image requests
+fn generate_lihkg_device_id() -> String {
+    use std::time::SystemTime;
+    use std::process;
+
+    let input = format!("{}-{}-lihkg-image",
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos(),
+        process::id()
+    );
+
+    format!("{:032x}",
+        (input.len() as u128) << 96 |
+        (SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u128) % 0xFFFFFFFFFFFFFFFF
+    )
+}
+
+/// Calculate load time for LIHKG image requests
+fn calculate_lihkg_load_time() -> f64 {
+    use std::time::SystemTime;
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs_f64();
+
+    let fractional = now.fract();
+    (fractional * 4.0) + 1.0  // Range: 1.0 to 5.0
 }
