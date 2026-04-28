@@ -193,6 +193,9 @@ impl Responser {
                     None => { }
                 }
             }
+            Err(ref e) if e == &std::sync::mpsc::TryRecvError::Empty => {
+                // Channel is empty, this is expected for try_recv in a loop
+            }
             Err(e) => {
                 error!("Failed to receive response: {}", e);
             }

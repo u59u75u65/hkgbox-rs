@@ -226,7 +226,8 @@ impl LihkgApiClient {
 #[derive(Debug, serde::Deserialize)]
 struct LihkgThreadListResponse {
     items: Vec<LihkgThreadItem>,
-    // total_page is not at response level, it's in individual thread items
+    #[serde(default)]
+    total_page: Option<i32>,
     is_pagination: Option<bool>,
     category: Option<LihkgCategory>,
 }
@@ -398,14 +399,13 @@ impl TopicRepository for LihkgTopicRepository {
             .map(|item| self.convert_topic(item))
             .collect();
 
-        // Calculate max page - LIHKG API doesn't provide total pages at response level
-        // Use a reasonable default based on typical LIHKG behavior
-        // If we got less than 60 items, we might be on the last page
-        let max_page = if topics.len() < 60 {
-            page // Last page
-        } else {
-            page + 10 // Default estimate if we got a full page
-        };
+        // Use total_page from LIHKG API response if available
+        // Otherwise estimate conservatively - LIHKG often returns partial pages
+        let max_page = response.total_page.unwrap_or_else(|| {
+            // Conservative estimate: always assume more pages available
+            // Users can navigate and we'll detect the actual last page when we get empty results
+            page + 10
+        });
 
         Ok((topics, max_page))
     }
