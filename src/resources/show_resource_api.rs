@@ -4,9 +4,12 @@ use crate::caches::common::*;
 use crate::api_client::HkgApiClient;
 use crate::api_models::*;
 use crate::api_utils::*;
+use crate::parser::{ContentParser, HtmlContentParser};
+use crate::domain::ContentNode;
 
 use crate::model::{ShowReplyItem, ShowItem, UrlQueryItem};
 use log::info;
+use std::sync::Arc;
 
 pub struct ShowResourceApi<'a, T: 'a + Cache> {
     client: HkgApiClient,
@@ -14,6 +17,7 @@ pub struct ShowResourceApi<'a, T: 'a + Cache> {
     pub replies: Vec<ShowReplyItem>,
     pub title: String,
     pub total_replies: i32,
+    parser: Arc<dyn ContentParser>,
 }
 
 impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
@@ -24,6 +28,21 @@ impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
             replies: Vec::new(),
             title: String::new(),
             total_replies: 0,
+            parser: Arc::new(HtmlContentParser::new()),
+        }
+    }
+
+    /// Create a new ShowResourceApi with a custom parser
+    ///
+    /// This allows dependency injection for testing or using alternative parsers
+    pub fn with_parser(cache: &'a mut Box<T>, parser: Arc<dyn ContentParser>) -> Self {
+        ShowResourceApi {
+            client: HkgApiClient::new().expect("Failed to create API client"),
+            _cache: cache,
+            replies: Vec::new(),
+            title: String::new(),
+            total_replies: 0,
+            parser,
         }
     }
 }
@@ -96,8 +115,15 @@ impl<'a, T: 'a + Cache> Resource for ShowResourceApi<'a, T> {
 
 impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
     fn convert_reply(&self, api_reply: ApiReply) -> ShowReplyItem {
-        // Parse HTML content to extract nodes (images, text, etc.)
-        let body_nodes = parse_html_content(&api_reply.content);
+        // Parse HTML content using injected parser
+        let content_nodes = self.parser.parse_content(&api_reply.content)
+            .unwrap_or_default();
+
+        // Convert ContentNode to NodeType for UI compatibility
+        let body_nodes: Vec<crate::reply_model::NodeType> = content_nodes
+            .into_iter()
+            .map(|node| node.into())
+            .collect();
 
         // Convert timestamp
         let (date, time) = timestamp_to_strings(api_reply.reply_date);
@@ -113,8 +139,15 @@ impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
     }
 
     fn convert_main_content(&self, api_data: &ApiThreadViewData) -> ShowReplyItem {
-        // Parse HTML content to extract nodes (images, text, etc.)
-        let body_nodes = parse_html_content(&api_data.content);
+        // Parse HTML content using injected parser
+        let content_nodes = self.parser.parse_content(&api_data.content)
+            .unwrap_or_default();
+
+        // Convert ContentNode to NodeType for UI compatibility
+        let body_nodes: Vec<crate::reply_model::NodeType> = content_nodes
+            .into_iter()
+            .map(|node| node.into())
+            .collect();
 
         // Use thread message_date as published time for main content
         let (date, time) = timestamp_to_strings(api_data.message_date);
