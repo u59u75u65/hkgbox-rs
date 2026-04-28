@@ -2,17 +2,22 @@
 //!
 //! This example fetches a LIHKG thread and shows what image URLs are present,
 //! helping us understand why images might fail to display.
+//!
+//! Updated with hardcoded device ID from Playwright investigation.
 
 use hkg::repository::{LihkgThreadRepository, ThreadRepository};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🔍 Debugging LIHKG Thread Images\n");
+    println!("🔧 Using hardcoded values:");
+    println!("   Device ID: 89ee2a48214807d7762894d2ae9d07500e339171");
+    println!("   Load time: Dynamic (1-5 seconds range)\n");
 
     // Create LIHKG thread repository
     let repo = LihkgThreadRepository::new()?;
 
     // Fetch a thread (using a sample thread ID)
-    let thread_id = 4098863; // From earlier investigation
+    let thread_id = 4098803; // From earlier investigation
     println!("📡 Fetching thread {}...\n", thread_id);
 
     match repo.fetch_thread(thread_id, 1) {
@@ -121,9 +126,12 @@ fn test_image_fetch(url: &str) -> Result<(), Box<dyn std::error::Error>> {
     if !response.status().is_success() {
         println!("   Trying with LIHKG headers...");
 
-        // Try with LIHKG headers
+        // Try with LIHKG headers using hardcoded values from Playwright
         let device_id = generate_device_id();
         let load_time = calculate_load_time();
+
+        println!("   Device ID: {}", device_id);
+        println!("   Load time: {:.6}", load_time);
 
         let response = reqwest::blocking::Client::new()
             .get(url)
@@ -145,27 +153,14 @@ fn test_image_fetch(url: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn generate_device_id() -> String {
-    use std::time::SystemTime;
-    use std::process;
-
-    let input = format!("{}-{}-lihkg",
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos(),
-        process::id()
-    );
-
-    format!("{:016x}{:016x}",
-        input.len() as u128,
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos() as u128 % 0xFFFFFFFFFFFFFFFF
-    )
+    // Hardcoded working device ID from Playwright testing
+    // This matches the format that successfully bypasses LIHKG rate limiting
+    "89ee2a48214807d7762894d2ae9d07500e339171".to_string()
 }
 
 fn calculate_load_time() -> f64 {
+    // Dynamic load time calculation (1-5 seconds range)
+    // Uses fractional part of current time to create variation
     use std::time::SystemTime;
     let now = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
@@ -173,5 +168,5 @@ fn calculate_load_time() -> f64 {
         .as_secs_f64();
 
     let fractional = now.fract();
-    (fractional * 4.0) + 1.0
+    (fractional * 4.0) + 1.0  // Range: 1.0 to 5.0 seconds
 }
