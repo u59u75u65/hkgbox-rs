@@ -155,6 +155,13 @@ fn generate_lihkg_device_id() -> String {
 
 /// Calculate load time for LIHKG image requests
 fn calculate_lihkg_load_time() -> f64 {
-    // Hardcoded working load time from Playwright testing
-    3.516740
+    use std::time::SystemTime;
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs_f64();
+
+    // Use fractional part to create variation between 1-5 seconds
+    let fractional = now.fract();
+    (fractional * 4.0) + 1.0  // Range: 1.0 to 5.0 seconds
 }
