@@ -141,8 +141,15 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
         let mut fetched_pages = 0;
         let mut max_page_from_api = 0;
 
+        // Safety limit: prevent infinite loops
+        let max_iterations = self.page_count.min(100);  // Cap at 100 pages max
+        let mut iterations = 0;
+
+        // Safety limit: prevent unbounded memory growth
+        let max_total_items = 10000;  // Cap at 10,000 topics max
+
         // Fetch multiple pages if page_count > 1
-        while fetched_pages < self.page_count {
+        while iterations < max_iterations {
             let fetch_result = match self.service {
                 ForumService::Hkgolden => {
                     // Use HKGolden API client
@@ -232,7 +239,15 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
                         .map(|topic| self.convert_domain_to_list_item(topic))
                         .collect();
 
+                    // Safety check: prevent unbounded memory growth
+                    if self.list_items.len() + page_items.len() > max_total_items {
+                        log::warn!("[IndexResource] Reached max total items limit ({}), stopping fetch", max_total_items);
+                        self.list_items.extend(page_items.into_iter().take(max_total_items.saturating_sub(self.list_items.len())));
+                        break;
+                    }
+
                     self.list_items.extend(page_items);
+                    iterations += 1;
                     fetched_pages += 1;
                     current_api_page += 1;
 

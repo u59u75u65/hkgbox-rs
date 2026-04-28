@@ -400,12 +400,14 @@ impl TopicRepository for LihkgTopicRepository {
             .collect();
 
         // Use total_page from LIHKG API response if available
-        // Otherwise estimate conservatively - LIHKG often returns partial pages
-        let max_page = response.total_page.unwrap_or_else(|| {
-            // Conservative estimate: always assume more pages available
-            // Users can navigate and we'll detect the actual last page when we get empty results
-            page + 10
-        });
+        // Validate that it's at least the current page
+        let max_page = response.total_page
+            .filter(|&tp| tp >= page)  // Only use if valid (>= current page)
+            .unwrap_or_else(|| {
+                // Conservative estimate: always assume more pages available
+                // Users can navigate and we'll detect the actual last page when we get empty results
+                page.saturating_add(10)  // Use saturating_add to prevent overflow
+            });
 
         Ok((topics, max_page))
     }
