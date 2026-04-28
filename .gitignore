@@ -3,3 +3,4 @@ data/cache/**
 log/**/*.log
 log/**/*.err
 .claude/
+node_modules/
