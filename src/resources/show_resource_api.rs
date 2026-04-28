@@ -5,7 +5,6 @@ use crate::api_client::HkgApiClient;
 use crate::api_models::*;
 use crate::api_utils::*;
 use crate::parser::{ContentParser, HtmlContentParser};
-use crate::domain::ContentNode;
 
 use crate::model::{ShowReplyItem, ShowItem, UrlQueryItem};
 use log::info;

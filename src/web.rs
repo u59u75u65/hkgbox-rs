@@ -8,6 +8,7 @@ use crate::resources::common::*;
 use crate::resources::index_resource_api::*;
 use crate::resources::show_resource_api::*;
 use crate::resources::image_resource::*;
+use crate::cli::ForumService;
 
 use std::sync::{Arc};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -16,6 +17,17 @@ pub struct Requester {}
 
 impl Requester {
     pub fn new(rx_req: Receiver<ChannelItem>, tx_res: Sender<ChannelItem>, working: Arc<AtomicBool>) -> Self {
+        Self::with_service(rx_req, tx_res, working, ForumService::Hkgolden)
+    }
+
+    pub fn with_service(
+        rx_req: Receiver<ChannelItem>,
+        tx_res: Sender<ChannelItem>,
+        working: Arc<AtomicBool>,
+        service: ForumService,
+    ) -> Self {
+
+        info!("[Requester] Initializing with service: {:?}", service);
 
         // web client - simplified without nested thread spawning
         thread::spawn(move || {
@@ -32,9 +44,10 @@ impl Requester {
                                 info!("request: {:?}", o);
                                 match o {
                                     ChannelItemType::Index(index_item) => {
-                                        info!("[requester] creating IndexResource with page {}, page_count {} and channel {}",
-                                              index_item.page, index_item.page_count, index_item.channel);
+                                        info!("[requester] creating IndexResource with service {:?}, page {}, page_count {} and channel {}",
+                                              service, index_item.page, index_item.page_count, index_item.channel);
                                         let mut index_resource = IndexResource::new(&mut fc);
+                                        index_resource.set_service(service);
                                         index_resource.set_forum(index_item.channel.clone());
                                         index_resource.set_page(index_item.page);
                                         index_resource.set_page_count(index_item.page_count);
@@ -47,6 +60,7 @@ impl Requester {
                                     ChannelItemType::IndexWithData(_) | ChannelItemType::IndexWithPageData(_, _, _, _) => {
                                         info!("[requester] creating IndexResource (default page)");
                                         let mut index_resource = IndexResource::new(&mut fc);
+                                        index_resource.set_service(service);
                                         info!("[requester] fetching from IndexResource");
                                         let result = index_resource.fetch(&item);
                                         info!("[requester] sending index response");
