@@ -10,6 +10,8 @@ edition = "2021"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 # Async runtime
 tokio = { version = "1.40", features = ["full"] }
+# Async trait support
+async-trait = "0.1"
 
 # HTML parsing
 kuchiki = "0.8"
