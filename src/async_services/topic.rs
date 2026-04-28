@@ -3,28 +3,48 @@
 //! This async service handles topic-related operations including fetching,
 //! pagination, filtering, and state management using non-blocking I/O.
 
-use crate::async_api_client::{AsyncHkgApiClient, AsyncResult};
-use crate::api_models::ApiTopicListResponse;
+use crate::repository::AsyncTopicRepository;
+use crate::domain::Topic;
+use crate::errors::{AppResult, ApiError};
 use std::sync::Arc;
+use log::{info, debug};
 
 /// Async service for topic-related business logic
 ///
 /// The `AsyncTopicService` encapsulates all business logic related to topics,
 /// providing validation, pagination calculations, and async data fetching.
-pub struct AsyncTopicService {
-    api_client: Arc<AsyncHkgApiClient>,
+/// It is generic over any implementation of `AsyncTopicRepository`.
+///
+/// # Examples
+/// ```no_run
+/// use hkg::async_services::AsyncTopicService;
+/// use hkg::repository::AsyncHkgoldenTopicRepository;
+/// use hkg::async_api_client::AsyncHkgApiClient;
+/// use std::sync::Arc;
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+/// let client = Arc::new(AsyncHkgApiClient::new().await?);
+/// let repo = AsyncHkgoldenTopicRepository::new(client);
+/// let service = AsyncTopicService::new(Arc::new(repo));
+/// let (topics, max_page) = service.fetch_topics("BW", 1).await?;
+/// # Ok(())
+/// # }
+/// ```
+pub struct AsyncTopicService<R: AsyncTopicRepository> {
+    repository: Arc<R>,
 }
 
-impl AsyncTopicService {
+impl<R: AsyncTopicRepository> AsyncTopicService<R> {
     /// Create a new AsyncTopicService
     ///
     /// # Arguments
-    /// * `api_client` - Async API client instance
+    /// * `repository` - Async repository for topic data access
     ///
     /// # Returns
     /// A new topic service instance
-    pub fn new(api_client: Arc<AsyncHkgApiClient>) -> Self {
-        Self { api_client }
+    #[must_use]
+    pub fn new(repository: Arc<R>) -> Self {
+        Self { repository }
     }
 
     /// Fetch topics for a specific channel and page
@@ -34,19 +54,22 @@ impl AsyncTopicService {
     /// * `page` - Page number to fetch
     ///
     /// # Returns
-    /// API response containing topic list
+    /// Tuple of (list of topics, maximum page number)
+    ///
+    /// # Errors
+    /// Returns `ApiError` if the repository request fails
     ///
     /// # Examples
     /// ```no_run
-    /// use hkg::async_api_client::AsyncHkgApiClient;
-    /// use hkg::async_services::AsyncTopicService;
-    /// use std::sync::Arc;
-    ///
+    /// # use hkg::async_services::AsyncTopicService;
+    /// # use hkg::repository::AsyncHkgoldenTopicRepository;
+    /// # use hkg::async_api_client::AsyncHkgApiClient;
+    /// # use std::sync::Arc;
     /// # async fn example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     /// let client = Arc::new(AsyncHkgApiClient::new().await?);
-    /// let service = AsyncTopicService::new(client);
-    /// let topics = service.fetch_topics("BW", 1).await?;
-    /// println!("Fetched {} topics", topics.data.list.len());
+    /// let repo = AsyncHkgoldenTopicRepository::new(client);
+    /// let service = AsyncTopicService::new(Arc::new(repo));
+    /// let (topics, max_page) = service.fetch_topics("BW", 1).await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -54,144 +77,132 @@ impl AsyncTopicService {
         &self,
         channel: &str,
         page: i32,
-    ) -> AsyncResult<ApiTopicListResponse> {
-        self.api_client.fetch_topics(channel, page).await
-    }
+    ) -> AppResult<(Vec<Topic>, i32)> {
+        info!("[AsyncTopicService] Fetching topics for channel {} page {}",
+              channel, page);
 
-    /// Fetch multiple pages concurrently
-    ///
-    /// # Arguments
-    /// * `channel` - Channel code
-    /// * `pages` - List of page numbers to fetch
-    ///
-    /// # Returns
-    /// Vector of API responses, one per page
-    ///
-    /// # Examples
-    /// ```no_run
-    /// use hkg::async_api_client::AsyncHkgApiClient;
-    /// use hkg::async_services::AsyncTopicService;
-    /// use std::sync::Arc;
-    ///
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    /// let client = Arc::new(AsyncHkgApiClient::new().await?);
-    /// let service = AsyncTopicService::new(client);
-    /// let pages = vec![1, 2, 3];
-    /// let results = service.fetch_multiple_pages("BW", pages).await?;
-    /// println!("Fetched {} pages", results.len());
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn fetch_multiple_pages(
-        &self,
-        channel: &str,
-        pages: Vec<i32>,
-    ) -> AsyncResult<Vec<ApiTopicListResponse>> {
-        self.api_client.fetch_multiple_pages(channel, pages).await
-    }
+        // In the future, we could add:
+        // - Caching logic here
+        // - Rate limiting
+        // - Request deduplication
+        // - Background prefetching
 
-    /// Calculate the number of pages needed based on terminal height
-    ///
-    /// # Arguments
-    /// * `body_height` - Available height for displaying topics
-    /// * `api_limit` - Maximum items per API page (usually 30 or -1 for unlimited)
-    ///
-    /// # Returns
-    /// Number of API pages needed to fill the screen
-    ///
-    /// # Examples
-    /// ```
-    /// use hkg::async_services::AsyncTopicService;
-    ///
-    /// let page_count = AsyncTopicService::calculate_page_count(50, 30);
-    /// assert_eq!(page_count, 2);
-    ///
-    /// let page_count = AsyncTopicService::calculate_page_count(25, 30);
-    /// assert_eq!(page_count, 1);
-    /// ```
-    pub fn calculate_page_count(body_height: usize, api_limit: i32) -> usize {
-        if api_limit == -1 {
-            1 // API returns all items in one request
-        } else {
-            let api_limit = api_limit as usize;
-            if body_height <= api_limit {
-                1
-            } else {
-                (body_height + api_limit - 1) / api_limit
-            }
-        }
-    }
+        let result = self.repository.fetch_topics(channel, page).await
+            .map_err(|e| ApiError::ApiResponse { message: e.to_string() })?;
 
-    /// Validate if a page number is valid
-    ///
-    /// # Arguments
-    /// * `page` - Page number to validate
-    /// * `max_page` - Maximum allowed page number
-    ///
-    /// # Returns
-    /// true if the page is valid, false otherwise
-    ///
-    /// # Examples
-    /// ```
-    /// use hkg::async_services::AsyncTopicService;
-    ///
-    /// assert!(AsyncTopicService::is_valid_page(1, 10));
-    /// assert!(AsyncTopicService::is_valid_page(10, 10));
-    /// assert!(!AsyncTopicService::is_valid_page(0, 10));
-    /// assert!(!AsyncTopicService::is_valid_page(11, 10));
-    /// ```
-    pub fn is_valid_page(page: usize, max_page: usize) -> bool {
-        page >= 1 && page <= max_page
-    }
+        debug!("[AsyncTopicService] Fetched {} topics", result.0.len());
 
-    /// Calculate the next page number with boundary checking
-    ///
-    /// # Arguments
-    /// * `current_page` - Current page number
-    /// * `max_page` - Maximum allowed page number
-    ///
-    /// # Returns
-    /// Next page number, or max_page if already at the end
-    ///
-    /// # Examples
-    /// ```
-    /// use hkg::async_services::AsyncTopicService;
-    ///
-    /// assert_eq!(AsyncTopicService::next_page(1, 10), 2);
-    /// assert_eq!(AsyncTopicService::next_page(9, 10), 10);
-    /// assert_eq!(AsyncTopicService::next_page(10, 10), 10);
-    /// ```
-    pub fn next_page(current_page: usize, max_page: usize) -> usize {
-        if current_page >= max_page {
-            max_page
-        } else {
-            current_page + 1
-        }
+        Ok(result)
     }
+}
 
-    /// Calculate the previous page number with boundary checking
-    ///
-    /// # Arguments
-    /// * `current_page` - Current page number
-    ///
-    /// # Returns
-    /// Previous page number, or 1 if already at the start
-    ///
-    /// # Examples
-    /// ```
-    /// use hkg::async_services::AsyncTopicService;
-    ///
-    /// assert_eq!(AsyncTopicService::prev_page(2), 1);
-    /// assert_eq!(AsyncTopicService::prev_page(1), 1);
-    /// ```
-    pub fn prev_page(current_page: usize) -> usize {
-        if current_page <= 1 {
+/// Calculate the number of pages needed based on terminal height
+///
+/// # Arguments
+/// * `body_height` - Available height for displaying topics
+/// * `api_limit` - Maximum items per API page (usually 30 or -1 for unlimited)
+///
+/// # Returns
+/// Number of API pages needed to fill the screen
+///
+/// # Examples
+/// ```
+/// use hkg::async_services::topic::calculate_page_count;
+///
+/// let page_count = calculate_page_count(50, 30);
+/// assert_eq!(page_count, 2);
+///
+/// let page_count = calculate_page_count(25, 30);
+/// assert_eq!(page_count, 1);
+/// ```
+pub fn calculate_page_count(body_height: usize, api_limit: i32) -> usize {
+    if api_limit == -1 {
+        1 // API returns all items in one request
+    } else {
+        let api_limit = api_limit as usize;
+        if body_height <= api_limit {
             1
         } else {
-            current_page - 1
+            (body_height + api_limit - 1) / api_limit
         }
     }
 }
+
+/// Validate if a page number is valid
+///
+/// # Arguments
+/// * `page` - Page number to validate
+/// * `max_page` - Maximum allowed page number
+///
+/// # Returns
+/// true if the page is valid, false otherwise
+///
+/// # Examples
+/// ```
+/// use hkg::async_services::topic::is_valid_page;
+///
+/// assert!(is_valid_page(1, 10));
+/// assert!(is_valid_page(10, 10));
+/// assert!(!is_valid_page(0, 10));
+/// assert!(!is_valid_page(11, 10));
+/// ```
+pub fn is_valid_page(page: usize, max_page: usize) -> bool {
+    page >= 1 && page <= max_page
+}
+
+/// Calculate the next page number with boundary checking
+///
+/// # Arguments
+/// * `current_page` - Current page number
+/// * `max_page` - Maximum allowed page number
+///
+/// # Returns
+/// Next page number, or max_page if already at the end
+///
+/// # Examples
+/// ```
+/// use hkg::async_services::topic::next_page;
+///
+/// assert_eq!(next_page(1, 10), 2);
+/// assert_eq!(next_page(9, 10), 10);
+/// assert_eq!(next_page(10, 10), 10);
+/// ```
+pub fn next_page(current_page: usize, max_page: usize) -> usize {
+    if current_page >= max_page {
+        max_page
+    } else {
+        current_page + 1
+    }
+}
+
+/// Calculate the previous page number with boundary checking
+///
+/// # Arguments
+/// * `current_page` - Current page number
+///
+/// # Returns
+/// Previous page number, or 1 if already at the start
+///
+/// # Examples
+/// ```
+/// use hkg::async_services::topic::prev_page;
+///
+/// assert_eq!(prev_page(2), 1);
+/// assert_eq!(prev_page(1), 1);
+/// ```
+pub fn prev_page(current_page: usize) -> usize {
+    if current_page <= 1 {
+        1
+    } else {
+        current_page - 1
+    }
+}
+
+/// Type alias for backward compatibility
+///
+/// This type alias provides the old non-generic interface for code that
+/// hasn't been migrated to use the generic AsyncTopicService.
+pub type HkgoldenAsyncTopicService = AsyncTopicService<crate::repository::AsyncHkgoldenTopicRepository>;
 
 #[cfg(test)]
 mod tests {
@@ -200,39 +211,39 @@ mod tests {
     #[test]
     fn test_calculate_page_count() {
         // When API returns all items
-        assert_eq!(AsyncTopicService::calculate_page_count(50, -1), 1);
+        assert_eq!(calculate_page_count(50, -1), 1);
 
         // When body height fits in one page
-        assert_eq!(AsyncTopicService::calculate_page_count(25, 30), 1);
+        assert_eq!(calculate_page_count(25, 30), 1);
 
         // When body height requires multiple pages
-        assert_eq!(AsyncTopicService::calculate_page_count(50, 30), 2);
-        assert_eq!(AsyncTopicService::calculate_page_count(60, 30), 2);
-        assert_eq!(AsyncTopicService::calculate_page_count(61, 30), 3);
+        assert_eq!(calculate_page_count(50, 30), 2);
+        assert_eq!(calculate_page_count(60, 30), 2);
+        assert_eq!(calculate_page_count(61, 30), 3);
     }
 
     #[test]
     fn test_is_valid_page() {
-        assert!(AsyncTopicService::is_valid_page(1, 10));
-        assert!(AsyncTopicService::is_valid_page(5, 10));
-        assert!(AsyncTopicService::is_valid_page(10, 10));
+        assert!(is_valid_page(1, 10));
+        assert!(is_valid_page(5, 10));
+        assert!(is_valid_page(10, 10));
 
-        assert!(!AsyncTopicService::is_valid_page(0, 10));
-        assert!(!AsyncTopicService::is_valid_page(11, 10));
+        assert!(!is_valid_page(0, 10));
+        assert!(!is_valid_page(11, 10));
     }
 
     #[test]
     fn test_next_page() {
-        assert_eq!(AsyncTopicService::next_page(1, 10), 2);
-        assert_eq!(AsyncTopicService::next_page(5, 10), 6);
-        assert_eq!(AsyncTopicService::next_page(9, 10), 10);
-        assert_eq!(AsyncTopicService::next_page(10, 10), 10);
+        assert_eq!(next_page(1, 10), 2);
+        assert_eq!(next_page(5, 10), 6);
+        assert_eq!(next_page(9, 10), 10);
+        assert_eq!(next_page(10, 10), 10);
     }
 
     #[test]
     fn test_prev_page() {
-        assert_eq!(AsyncTopicService::prev_page(5), 4);
-        assert_eq!(AsyncTopicService::prev_page(2), 1);
-        assert_eq!(AsyncTopicService::prev_page(1), 1);
+        assert_eq!(prev_page(5), 4);
+        assert_eq!(prev_page(2), 1);
+        assert_eq!(prev_page(1), 1);
     }
 }

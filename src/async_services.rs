@@ -7,6 +7,6 @@ pub mod topic;
 pub mod channel;
 pub mod image;
 
-pub use topic::AsyncTopicService;
+pub use topic::{AsyncTopicService, HkgoldenAsyncTopicService};
 pub use channel::AsyncChannelService;
 pub use image::AsyncImageService;
