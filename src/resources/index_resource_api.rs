@@ -41,16 +41,12 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn set_service(&mut self, service: ForumService) {
         match service {
             ForumService::Hkgolden => {
-                let client = self.hkg_client.as_ref()
-                    .map(|c| c.clone())
-                    .unwrap_or_else(|| Arc::new(HkgApiClient::new().expect("Failed to create API client")));
-                self.repository = Some(Box::new(HkgoldenTopicRepository::new(client)));
+                // HKGolden repository is created in constructor, no need to recreate
+                log::info!("[IndexResource] Using HKGolden service");
             }
             ForumService::Lihkg => {
-                // Let LIHKG repository handle channel interpretation
-                let cat_id = self.forum.parse().unwrap_or(1);
-                self.repository = Some(Box::new(LihkgTopicRepository::new(cat_id)
-                    .expect("Failed to create LIHKG repository")));
+                // LIHKG repository will be created in set_forum with the correct channel
+                log::info!("[IndexResource] Using LIHKG service (repository will be created in set_forum)");
             }
         }
     }
@@ -65,12 +61,17 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
 impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn set_forum(&mut self, forum: String) {
-        self.forum = forum;
-        // Update repository for LIHKG when forum changes
-        if let Ok(cat_id) = self.forum.parse::<i32>() {
-            log::info!("[IndexResource] Updating repository for forum: {}", self.forum);
+        self.forum = forum.clone();
+        // Create/update repository based on forum type
+        // Numeric channels are LIHKG, alphabetic are HKGolden
+        if let Ok(cat_id) = forum.parse::<i32>() {
+            // LIHKG: create repository with specific cat_id
+            log::info!("[IndexResource] Creating LIHKG repository with cat_id: {} for forum: {}", cat_id, forum);
             self.repository = Some(Box::new(LihkgTopicRepository::new(cat_id)
                 .expect("Failed to create LIHKG repository")));
+        } else {
+            // HKGolden: repository already created in set_service or new()
+            log::info!("[IndexResource] Using HKGolden repository for forum: {}", forum);
         }
     }
 
