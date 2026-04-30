@@ -126,6 +126,10 @@ impl TopicRepository for MockLihkgTopicRepository {
             _ => channel_code,
         }.to_string()
     }
+
+    fn get_app_title(&self) -> &str {
+        "連登"
+    }
 }
 
 #[cfg(test)]

@@ -36,7 +36,10 @@ pub use errors::{AppError, ApiError, CacheError, UIError, DataError, ConfigError
 pub use errors::{AppResult, ApiResult, CacheResult, UIResult, DataResult, ConfigResult};
 
 use std::sync::mpsc::{Receiver, Sender};
+use std::sync::Arc;
 use crate::cli::ForumService;
+use crate::repository::{TopicRepository, HkgoldenTopicRepository, LihkgTopicRepository};
+use crate::api_client::HkgApiClient;
 use log::info;
 
 pub struct App <'a>{
@@ -123,19 +126,39 @@ impl<'a> AppBuilder<'a> {
         let rx_res = self.rx_res
             .ok_or_else(|| HkgError::Config("Response channel not provided".into()))?;
 
-        // Set default channel based on service
+        // Set default channel and app title based on service
+        // Note: Using service enum for initialization-time configuration.
+        // Runtime data (channel titles, etc.) comes from repository.
         let (default_channel, default_channel_title) = match service {
             ForumService::Hkgolden => (String::from("BW"), String::from("吹水台")),
             ForumService::Lihkg => (String::from("1"), String::from("吹水台")),
         };
 
-        log::info!("[App] Building with service: {:?}, default channel: {}, title: {}",
-                 service, default_channel, default_channel_title);
+        // Create a temporary repository to get the app title
+        // This ensures the repository is the single source of truth
+        let temp_repo: Box<dyn TopicRepository> = match service {
+            ForumService::Hkgolden => {
+                let temp_client = Arc::new(HkgApiClient::new().map_err(|e| HkgError::Config(e.to_string()))?);
+                Box::new(HkgoldenTopicRepository::new(temp_client))
+            }
+            ForumService::Lihkg => {
+                Box::new(LihkgTopicRepository::new(1).map_err(|e| HkgError::Config(e.to_string()))?)
+            }
+        };
 
-        // Create index with temporary default
+        let app_title = temp_repo.get_app_title().to_string();
+
+        log::info!("[App] Building with service: {:?}, default channel: {}, title: {}, app_title: {}",
+                 service, default_channel, default_channel_title, app_title);
+
+        // Create index with service-appropriate title and channel
         let mut index = screen::index::Index::new();
-        // Update with service-appropriate channel
+        index.set_title(app_title.clone());
         index.set_channel(default_channel.clone(), default_channel_title.clone());
+
+        // Create show with service-appropriate title
+        let mut show = screen::show::Show::new(icon_collection);
+        show.set_title(app_title);
 
         Ok(App {
             index_builder: builders::index::Index::new(),
@@ -150,7 +173,7 @@ impl<'a> AppBuilder<'a> {
             current_channel_title: default_channel_title,
             status_bar: screen::status_bar::StatusBar::new(),
             index,
-            show: screen::show::Show::new(icon_collection),
+            show,
             dialog: screen::dialog::Dialog::new(),
             channel_dialog: screen::channel_dialog::ChannelDialog::with_service(service),
             prev_state: status::Status::List,

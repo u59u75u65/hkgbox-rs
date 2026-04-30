@@ -32,6 +32,11 @@ impl Show {
             icon_collection: icon_collection
         }
     }
+
+    pub fn set_title(&mut self, title: String) {
+        self.title = title;
+    }
+
     pub fn print(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
 
         self.y = 2;

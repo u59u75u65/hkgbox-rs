@@ -47,6 +47,12 @@ pub trait TopicRepository: Send + Sync {
     /// # Returns
     /// The display title for the channel, or the original code if not found
     fn get_channel_title(&self, channel_code: &str) -> String;
+
+    /// Get the app title for this service
+    ///
+    /// # Returns
+    /// The app title (e.g., "高登" for HKGolden, "連登" for LIHKG)
+    fn get_app_title(&self) -> &str;
 }
 
 /// Trait for fetching thread data

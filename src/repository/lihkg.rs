@@ -453,6 +453,10 @@ impl TopicRepository for LihkgTopicRepository {
             _ => channel_code,
         }.to_string()
     }
+
+    fn get_app_title(&self) -> &str {
+        "連登"
+    }
 }
 
 /// LIHKG thread repository

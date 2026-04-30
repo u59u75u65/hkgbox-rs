@@ -99,6 +99,10 @@ impl TopicRepository for HkgoldenTopicRepository {
             _ => channel_code,
         }.to_string()
     }
+
+    fn get_app_title(&self) -> &str {
+        "高登"
+    }
 }
 
 impl HkgoldenTopicRepository {

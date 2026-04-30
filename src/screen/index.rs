@@ -37,6 +37,10 @@ impl Index {
         self.channel_title = channel_title;
     }
 
+    pub fn set_title(&mut self, title: String) {
+        self.title = title;
+    }
+
     pub fn get_channel(&self) -> &str {
         &self.channel_code
     }
