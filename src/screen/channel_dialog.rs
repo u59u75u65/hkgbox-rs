@@ -103,18 +103,57 @@ impl ChannelDialog {
     }
 
     fn load_lihkg_channels() -> Vec<ChannelInfo> {
-        // LIHKG channels are obtained from API dynamically
-        // For now, return a placeholder - this will be loaded from API when needed
         vec![
+            // 推薦
             ChannelInfo { title: "吹水台".to_string(), channel: "1".to_string() },
-            ChannelInfo { title: "硬件".to_string(), channel: "12".to_string() },
-            ChannelInfo { title: "潮流".to_string(), channel: "13".to_string() },
-            ChannelInfo { title: "潮流時事".to_string(), channel: "17".to_string() },
-            ChannelInfo { title: "感情".to_string(), channel: "23".to_string() },
-            ChannelInfo { title: "音樂".to_string(), channel: "24".to_string() },
-            ChannelInfo { title: "汽車".to_string(), channel: "28".to_string() },
-            ChannelInfo { title: "遊戲".to_string(), channel: "29".to_string() },
-            ChannelInfo { title: "成人".to_string(), channel: "30".to_string() },
+            ChannelInfo { title: "自選台".to_string(), channel: "999".to_string() },
+            ChannelInfo { title: "熱　門".to_string(), channel: "2".to_string() },
+            ChannelInfo { title: "最　新".to_string(), channel: "3".to_string() },
+            // 時事
+            ChannelInfo { title: "時事台".to_string(), channel: "5".to_string() },
+            ChannelInfo { title: "政事台".to_string(), channel: "33".to_string() },
+            ChannelInfo { title: "World".to_string(), channel: "38".to_string() },
+            ChannelInfo { title: "財經台".to_string(), channel: "15".to_string() },
+            ChannelInfo { title: "房屋台".to_string(), channel: "37".to_string() },
+            // 體育娛樂
+            ChannelInfo { title: "體育台".to_string(), channel: "6".to_string() },
+            ChannelInfo { title: "娛樂台".to_string(), channel: "7".to_string() },
+            ChannelInfo { title: "動漫台".to_string(), channel: "8".to_string() },
+            ChannelInfo { title: "遊戲台".to_string(), channel: "10".to_string() },
+            ChannelInfo { title: "影視台".to_string(), channel: "11".to_string() },
+            ChannelInfo { title: "講故台".to_string(), channel: "12".to_string() },
+            // 科技
+            ChannelInfo { title: "手機台".to_string(), channel: "4".to_string() },
+            ChannelInfo { title: "Apps台".to_string(), channel: "9".to_string() },
+            ChannelInfo { title: "硬件台".to_string(), channel: "22".to_string() },
+            ChannelInfo { title: "軟件台".to_string(), channel: "26".to_string() },
+            ChannelInfo { title: "電器台".to_string(), channel: "41".to_string() },
+            // 興趣
+            ChannelInfo { title: "音樂台".to_string(), channel: "21".to_string() },
+            ChannelInfo { title: "攝影台".to_string(), channel: "23".to_string() },
+            ChannelInfo { title: "玩具台".to_string(), channel: "24".to_string() },
+            ChannelInfo { title: "寵物台".to_string(), channel: "25".to_string() },
+            ChannelInfo { title: "汽車台".to_string(), channel: "20".to_string() },
+            ChannelInfo { title: "創意台".to_string(), channel: "31".to_string() },
+            // 生活
+            ChannelInfo { title: "感情台".to_string(), channel: "30".to_string() },
+            ChannelInfo { title: "健康台".to_string(), channel: "36".to_string() },
+            ChannelInfo { title: "家庭台".to_string(), channel: "39".to_string() },
+            ChannelInfo { title: "上班台".to_string(), channel: "14".to_string() },
+            ChannelInfo { title: "飲食台".to_string(), channel: "16".to_string() },
+            ChannelInfo { title: "旅遊台".to_string(), channel: "17".to_string() },
+            ChannelInfo { title: "學術台".to_string(), channel: "18".to_string() },
+            ChannelInfo { title: "校園台".to_string(), channel: "19".to_string() },
+            // 潮流
+            ChannelInfo { title: "潮流台".to_string(), channel: "13".to_string() },
+            ChannelInfo { title: "美容台".to_string(), channel: "40".to_string() },
+            // 其他
+            ChannelInfo { title: "活動台".to_string(), channel: "27".to_string() },
+            ChannelInfo { title: "站務台".to_string(), channel: "28".to_string() },
+            ChannelInfo { title: "成人台".to_string(), channel: "29".to_string() },
+            ChannelInfo { title: "黑　洞".to_string(), channel: "32".to_string() },
+            ChannelInfo { title: "直播台".to_string(), channel: "34".to_string() },
+            ChannelInfo { title: "電訊台".to_string(), channel: "35".to_string() },
         ]
     }
 
