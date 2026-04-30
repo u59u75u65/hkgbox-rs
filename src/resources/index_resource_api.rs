@@ -226,12 +226,21 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
             log::info!("  ... and {} more topics", self.list_items.len() - 5);
         }
 
+        // Get channel title from repository
+        let channel_title = if let Some(repo) = self.repository.as_ref() {
+            repo.get_channel_title(&self.forum)
+        } else {
+            // Fallback to channel code if no repository available
+            self.forum.clone()
+        };
+
         ChannelItem {
             extra: Some(ChannelItemType::IndexWithPageData(
                 self.list_items.clone(),
                 self.page,
                 self.max_page,
-                self.forum.clone()
+                self.forum.clone(),
+                channel_title
             )),
             result: String::new(),
         }

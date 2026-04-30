@@ -38,6 +38,15 @@ pub trait TopicRepository: Send + Sync {
         channel: &str,
         page: i32,
     ) -> RepositoryResult<(Vec<Topic>, i32)>;
+
+    /// Get the display title for a channel code
+    ///
+    /// # Arguments
+    /// * `channel_code` - Channel code (e.g., "BW" for HKGolden, "1" for LIHKG)
+    ///
+    /// # Returns
+    /// The display title for the channel, or the original code if not found
+    fn get_channel_title(&self, channel_code: &str) -> String;
 }
 
 /// Trait for fetching thread data

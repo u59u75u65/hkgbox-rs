@@ -51,6 +51,54 @@ impl TopicRepository for HkgoldenTopicRepository {
 
         Ok((topics, max_page))
     }
+
+    fn get_channel_title(&self, channel_code: &str) -> String {
+        match channel_code {
+            "BW" => "吹水台",
+            "HT" => "高登熱",
+            "NW" => "最　新",
+            "CA" => "時事台",
+            "ET" => "娛樂台",
+            "SP" => "體育台",
+            "FN" => "財經台",
+            "ST" => "學術台",
+            "SY" => "講故台",
+            "EP" => "創意台",
+            "SN" => "超自然台",
+            "CP" => "優惠台",
+            "HW" => "硬件台",
+            "IN" => "電訊台",
+            "SW" => "軟件台",
+            "MP" => "手機台",
+            "AP" => "Apps台",
+            "blockchain" => "Crypto台",
+            "AI" => "AI技術台",
+            "GM" => "遊戲台",
+            "ED" => "飲食台",
+            "TR" => "旅遊台",
+            "CO" => "潮流台",
+            "AN" => "動漫台",
+            "TO" => "玩具台",
+            "MU" => "音樂台",
+            "VI" => "影視台",
+            "DC" => "攝影台",
+            "TS" => "汽車台",
+            "WK" => "上班台",
+            "LV" => "感情台",
+            "SC" => "校園台",
+            "BB" => "親子台",
+            "PT" => "寵物台",
+            "HL" => "健康台",
+            "MB" => "站務台",
+            "RA" => "電　台",
+            "AC" => "活動台",
+            "BS" => "買賣台",
+            "JT" => "直播台",
+            "AU" => "成人台",
+            "OP" => "考古台",
+            _ => channel_code,
+        }.to_string()
+    }
 }
 
 impl HkgoldenTopicRepository {
@@ -245,5 +293,20 @@ mod tests {
 
         assert_eq!(quoted.index, 5);
         assert_eq!(quoted.id, 500);
+    }
+
+    #[test]
+    fn test_get_channel_title() {
+        let client = Arc::new(HkgApiClient::new().unwrap());
+        let repo = HkgoldenTopicRepository::new(client);
+
+        // Test common channels
+        assert_eq!(repo.get_channel_title("BW"), "吹水台");
+        assert_eq!(repo.get_channel_title("HT"), "高登熱");
+        assert_eq!(repo.get_channel_title("CA"), "時事台");
+        assert_eq!(repo.get_channel_title("MU"), "音樂台");
+
+        // Test unknown channel returns original code
+        assert_eq!(repo.get_channel_title("UNKNOWN"), "UNKNOWN");
     }
 }

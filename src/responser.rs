@@ -141,8 +141,8 @@ impl Responser {
                                 app.state_manager.set_to_print_screen(true);
                                 app.state_manager.set_web_request(false);
                             }
-                            ChannelItemType::IndexWithPageData(items, page, max_page, channel) => {
-                                // New API mode - data already parsed with page info
+                            ChannelItemType::IndexWithPageData(items, page, max_page, channel, channel_title) => {
+                                // New API mode - data already parsed with page info and channel title
                                 info!("[Responser] Received {} topics for channel '{}' (page {}/{})",
                                       items.len(), channel, page, max_page);
                                 info!("[Responser] First 5 topic titles:");
@@ -162,8 +162,7 @@ impl Responser {
                                 app.index_max_page = max_page;
                                 app.index.set_page(page, max_page);
 
-                                // Get channel title from channel code
-                                let channel_title = get_channel_title(&channel);
+                                // Use channel title from repository
                                 app.index.set_channel(channel.clone(), channel_title.clone());
                                 app.current_channel = channel;
                                 app.current_channel_title = channel_title;
@@ -244,96 +243,4 @@ fn image_request(url: &str, _state_manager: &mut StateManager, tx_req: &Sender<C
     };
 
     status_message
-}
-
-fn get_channel_title(channel_code: &str) -> String {
-    match channel_code {
-        // HKGolden channels
-        "BW" => "吹水台",
-        "HT" => "高登熱",
-        "NW" => "最　新",
-        "CA" => "時事台",
-        "ET" => "娛樂台",
-        "SP" => "體育台",
-        "FN" => "財經台",
-        "ST" => "學術台",
-        "SY" => "講故台",
-        "EP" => "創意台",
-        "SN" => "超自然台",
-        "CP" => "優惠台",
-        "HW" => "硬件台",
-        "IN" => "電訊台",
-        "SW" => "軟件台",
-        "MP" => "手機台",
-        "AP" => "Apps台",
-        "blockchain" => "Crypto台",
-        "AI" => "AI技術台",
-        "GM" => "遊戲台",
-        "ED" => "飲食台",
-        "TR" => "旅遊台",
-        "CO" => "潮流台",
-        "AN" => "動漫台",
-        "TO" => "玩具台",
-        "MU" => "音樂台",
-        "VI" => "影視台",
-        "DC" => "攝影台",
-        "TS" => "汽車台",
-        "WK" => "上班台",
-        "LV" => "感情台",
-        "SC" => "校園台",
-        "BB" => "親子台",
-        "PT" => "寵物台",
-        "HL" => "健康台",
-        "MB" => "站務台",
-        "RA" => "電　台",
-        "AC" => "活動台",
-        "BS" => "買賣台",
-        "JT" => "直播台",
-        "AU" => "成人台",
-        "OP" => "考古台",
-        // LIHKG channels (numeric IDs)
-        "1" => "吹水台",
-        "999" => "自選台",
-        "2" => "熱　門",
-        "3" => "最　新",
-        "5" => "時事台",
-        "33" => "政事台",
-        "38" => "World",
-        "15" => "財經台",
-        "37" => "房屋台",
-        "6" => "體育台",
-        "7" => "娛樂台",
-        "8" => "動漫台",
-        "10" => "遊戲台",
-        "11" => "影視台",
-        "12" => "講故台",
-        "4" => "手機台",
-        "9" => "Apps台",
-        "22" => "硬件台",
-        "26" => "軟件台",
-        "41" => "電器台",
-        "21" => "音樂台",
-        "23" => "攝影台",
-        "24" => "玩具台",
-        "25" => "寵物台",
-        "20" => "汽車台",
-        "31" => "創意台",
-        "30" => "感情台",
-        "36" => "健康台",
-        "39" => "家庭台",
-        "14" => "上班台",
-        "16" => "飲食台",
-        "17" => "旅遊台",
-        "18" => "學術台",
-        "19" => "校園台",
-        "13" => "潮流台",
-        "40" => "美容台",
-        "27" => "活動台",
-        "28" => "站務台",
-        "29" => "成人台",
-        "32" => "黑　洞",
-        "34" => "直播台",
-        "35" => "電訊台",
-        _ => channel_code,
-    }.to_string()
 }

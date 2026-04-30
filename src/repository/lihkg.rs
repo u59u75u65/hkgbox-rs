@@ -405,6 +405,54 @@ impl TopicRepository for LihkgTopicRepository {
 
         Ok((topics, max_page))
     }
+
+    fn get_channel_title(&self, channel_code: &str) -> String {
+        match channel_code {
+            "1" => "吹水台",
+            "999" => "自選台",
+            "2" => "熱　門",
+            "3" => "最　新",
+            "5" => "時事台",
+            "33" => "政事台",
+            "38" => "World",
+            "15" => "財經台",
+            "37" => "房屋台",
+            "6" => "體育台",
+            "7" => "娛樂台",
+            "8" => "動漫台",
+            "10" => "遊戲台",
+            "11" => "影視台",
+            "12" => "講故台",
+            "4" => "手機台",
+            "9" => "Apps台",
+            "22" => "硬件台",
+            "26" => "軟件台",
+            "41" => "電器台",
+            "21" => "音樂台",
+            "23" => "攝影台",
+            "24" => "玩具台",
+            "25" => "寵物台",
+            "20" => "汽車台",
+            "31" => "創意台",
+            "30" => "感情台",
+            "36" => "健康台",
+            "39" => "家庭台",
+            "14" => "上班台",
+            "16" => "飲食台",
+            "17" => "旅遊台",
+            "18" => "學術台",
+            "19" => "校園台",
+            "13" => "潮流台",
+            "40" => "美容台",
+            "27" => "活動台",
+            "28" => "站務台",
+            "29" => "成人台",
+            "32" => "黑　洞",
+            "34" => "直播台",
+            "35" => "電訊台",
+            _ => channel_code,
+        }.to_string()
+    }
 }
 
 /// LIHKG thread repository
@@ -576,5 +624,20 @@ mod tests {
         assert_eq!(reply.author_id, 789);
         assert_eq!(reply.content, "Test reply content");
         assert!(reply.quoted.is_empty());
+    }
+
+    #[test]
+    fn test_get_channel_title() {
+        let repo = LihkgTopicRepository::new(1).unwrap();
+
+        // Test common channels
+        assert_eq!(repo.get_channel_title("1"), "吹水台");
+        assert_eq!(repo.get_channel_title("2"), "熱　門");
+        assert_eq!(repo.get_channel_title("5"), "時事台");
+        assert_eq!(repo.get_channel_title("21"), "音樂台");
+        assert_eq!(repo.get_channel_title("999"), "自選台");
+
+        // Test unknown channel returns original code
+        assert_eq!(repo.get_channel_title("9999"), "9999");
     }
 }

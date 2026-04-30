@@ -57,7 +57,7 @@ impl Requester {
                                         let _ = tx_res2.send(result);
                                         info!("[requester] index response sent");
                                     }
-                                    ChannelItemType::IndexWithData(_) | ChannelItemType::IndexWithPageData(_, _, _, _) => {
+                                    ChannelItemType::IndexWithData(_) | ChannelItemType::IndexWithPageData(..) => {
                                         info!("[requester] creating IndexResource (default page)");
                                         let mut index_resource = IndexResource::new(&mut fc);
                                         index_resource.set_service(service);
