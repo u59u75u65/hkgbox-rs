@@ -361,10 +361,14 @@ impl LihkgTopicRepository {
         let author_id = item.user_id
             .unwrap_or_else(|| item.user.user_id);
 
+        // Use cat_id as forum identifier (channel ID) instead of Chinese name
+        // This ensures proper navigation when clicking on topics
+        let channel_id = item.cat_id.unwrap_or(self.cat_id).to_string();
+
         Topic {
             id: item.thread_id,
             title: item.title,
-            forum: category_name,
+            forum: channel_id,  // Use numeric channel ID for proper navigation
             author_id,
             author_name,
             author_gender: Some(1), // Default gender
@@ -547,7 +551,7 @@ mod tests {
         assert_eq!(topic.author_id, 789);
         assert_eq!(topic.rating, Some(8)); // 10 - 2
         assert_eq!(topic.total_replies, 42);
-        assert_eq!(topic.forum, "吹水台");
+        assert_eq!(topic.forum, "1"); // Use numeric cat_id instead of Chinese name
         assert_eq!(topic.total_page, 3); // Use actual total_page from item
     }
 
