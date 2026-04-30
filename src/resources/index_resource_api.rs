@@ -166,6 +166,14 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
 
             match fetch_result {
                 Ok((topics, _max_page)) => {
+                    log::info!("[IndexResource] Got {} topics for page {}:", topics.len(), current_api_page);
+                    for (i, topic) in topics.iter().enumerate().take(5) {
+                        log::info!("  [{}] {} (channel: {})", i+1, topic.title, topic.forum);
+                    }
+                    if topics.len() > 5 {
+                        log::info!("  ... and {} more topics", topics.len() - 5);
+                    }
+
                     // Convert domain topics to list items
                     let page_items: Vec<ListTopicItem> = topics
                         .into_iter()
@@ -210,6 +218,13 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
 
         log::info!("[IndexResource] Total fetched {} topics from {} API pages (requested {} pages)",
                  self.list_items.len(), fetched_pages, self.page_count);
+        log::info!("[IndexResource] Returning to app - first 5 topic titles:");
+        for (i, item) in self.list_items.iter().enumerate().take(5) {
+            log::info!("  [{}] {}", i+1, item.title.text);
+        }
+        if self.list_items.len() > 5 {
+            log::info!("  ... and {} more topics", self.list_items.len() - 5);
+        }
 
         ChannelItem {
             extra: Some(ChannelItemType::IndexWithPageData(

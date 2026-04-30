@@ -143,6 +143,16 @@ impl Responser {
                             }
                             ChannelItemType::IndexWithPageData(items, page, max_page, channel) => {
                                 // New API mode - data already parsed with page info
+                                info!("[Responser] Received {} topics for channel '{}' (page {}/{})",
+                                      items.len(), channel, page, max_page);
+                                info!("[Responser] First 5 topic titles:");
+                                for (i, item) in items.iter().enumerate().take(5) {
+                                    info!("  [{}] {}", i+1, item.title.text);
+                                }
+                                if items.len() > 5 {
+                                    info!("  ... and {} more topics", items.len() - 5);
+                                }
+
                                 app.list_topic_items.clear();
                                 for item in items {
                                     app.list_topic_items.push(item);
