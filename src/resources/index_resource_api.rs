@@ -61,6 +61,7 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
 impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn set_forum(&mut self, forum: String) {
+        log::info!("[IndexResource] set_forum called with: '{}'", forum);
         self.forum = forum.clone();
         // Create/update repository based on forum type
         // Numeric channels are LIHKG, alphabetic are HKGolden
@@ -69,6 +70,7 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
             log::info!("[IndexResource] Creating LIHKG repository with cat_id: {} for forum: {}", cat_id, forum);
             self.repository = Some(Box::new(LihkgTopicRepository::new(cat_id)
                 .expect("Failed to create LIHKG repository")));
+            log::info!("[IndexResource] LIHKG repository created successfully");
         } else {
             // HKGolden: repository already created in set_service or new()
             log::info!("[IndexResource] Using HKGolden repository for forum: {}", forum);
@@ -94,8 +96,9 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
 impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
     fn fetch(&mut self, _item: &ChannelItem) -> ChannelItem {
-        log::info!("[IndexResource] Starting fetch for forum: {}, page: {}, page_count: {}",
+        log::info!("[IndexResource] fetch() called - forum: '{}', page: {}, page_count: {}",
                   self.forum, self.page, self.page_count);
+        log::info!("[IndexResource] Repository exists: {}", self.repository.is_some());
 
         self.list_items.clear();
         let mut current_api_page = self.page;
@@ -112,6 +115,8 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
         // Fetch multiple pages if page_count > 1
         while iterations < max_iterations {
             let repo = self.repository.as_ref().expect("Repository not initialized");
+
+            log::info!("[IndexResource] Calling repository.fetch_topics with channel: '{}', page: {}", self.forum, current_api_page);
 
             let fetch_result = match repo.fetch_topics(&self.forum, current_api_page as i32) {
                 Ok((topics, max_page)) => {

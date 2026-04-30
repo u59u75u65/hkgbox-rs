@@ -377,8 +377,12 @@ impl TopicRepository for LihkgTopicRepository {
         _channel: &str,
         page: i32,
     ) -> RepositoryResult<(Vec<Topic>, i32)> {
+        log::info!("[LihkgTopicRepository] fetch_topics called with cat_id: {}, channel param: '{}', page: {}",
+                  self.cat_id, _channel, page);
         let response = self.client.fetch_latest_threads(self.cat_id, page, 60)
             .map_err(|e| RepositoryError::ApiError(e.to_string()))?;
+
+        log::info!("[LihkgTopicRepository] Got {} topics from API", response.items.len());
 
         let topics: Vec<Topic> = response.items
             .into_iter()
