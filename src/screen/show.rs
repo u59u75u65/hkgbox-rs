@@ -210,7 +210,7 @@ impl Show {
                             }
                         } else {
                             // Local emotion icon
-                            match self.get_icon_reference(&n.alt) {
+                            match self.get_icon_reference(&n.alt, &n.data) {
                                 Some(icon_reference) => {
                                     if line.is_empty() {
                                         img_offset += 1;
@@ -275,11 +275,40 @@ impl Show {
         }
     }
 
-    fn get_icon_reference(&mut self, alt: &str) -> Option<String> {
-        match self.icon_collection.iter().find(|icon_item| icon_item.alt.contains(&alt) ) {
-            Some(item) => Some(format!("data/icon/{}", &item.src)),
-            None => None
+    fn get_icon_reference(&mut self, alt: &str, url: &str) -> Option<String> {
+        // First try to match by alt text (for HKGolden emojis)
+        if !alt.is_empty() {
+            if let Some(item) = self.icon_collection.iter().find(|icon_item| icon_item.alt.contains(&alt)) {
+                return Some(format!("data/icon/{}", &item.src));
+            }
         }
+
+        // For LIHKG emojis, match by URL path
+        // Extract emoji name from URL like "/assets/faces/lm2/tear.gif"
+        if url.starts_with("/assets/faces/") || url.starts_with("/assets/stickers/") {
+            if let Some(filename) = url.split('/').last() {
+                let emoji_name = filename.trim_end_matches(".gif").trim_end_matches(".png");
+
+                // Extract category from path like "/assets/faces/lm2/tear.gif"
+                // Split: ["", "assets", "faces", "lm2", "tear.gif"]
+                let parts: Vec<&str> = url.split('/').collect();
+                let category = if parts.len() >= 4 { parts[3] } else { "unknown" };
+
+                let possible_names = vec![
+                    format!("lihkg_{}_{}.png", category, emoji_name),
+                    format!("lihkg_{}_{}", category, emoji_name),
+                ];
+
+                for possible_name in possible_names {
+                    let icon_path = format!("data/icon/lihkg/{}", possible_name);
+                    if std::path::Path::new(&icon_path).exists() {
+                        return Some(icon_path);
+                    }
+                }
+            }
+        }
+
+        None
     }
 
     fn build_separator_arguments(&mut self) -> (usize, usize, String) {

@@ -1,0 +1,30 @@
+    /// Convert domain ThreadView to ShowReplyItem format
+    fn convert_domain_thread_view_to_show_items(&self, thread_view: &ThreadView) -> Vec<ShowReplyItem> {
+        thread_view.replies
+            .iter()
+            .map(|domain_reply| {
+                // Parse HTML content using injected parser
+                let content_nodes = self.parser.parse_content(&domain_reply.content)
+                    .unwrap_or_default();
+
+                // Convert ContentNode to NodeType for UI compatibility
+                let body_nodes: Vec<crate::reply_model::NodeType> = content_nodes
+                    .into_iter()
+                    .map(|node| node.into())
+                    .collect();
+
+                // Convert timestamp
+                let (date, time) = timestamp_to_strings(domain_reply.reply_date);
+                let published_at = format!("{} {}", date, time);
+
+                ShowReplyItem {
+                    userid: domain_reply.author_id.to_string(),
+                    username: domain_reply.author_name.clone(),
+                    content: domain_reply.content.clone(),
+                    body: body_nodes,
+                    published_at,
+                }
+            })
+            .collect()
+    }
+}
