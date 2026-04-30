@@ -93,6 +93,7 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
         if self.service == ForumService::Lihkg && !self.use_mock_lihkg {
             log::warn!("[IndexResource] Falling back to mock LIHKG repository");
             let cat_id = self.map_channel_to_cat_id(&self.forum);
+            log::info!("[IndexResource] Creating mock LIHKG repository with cat_id: {} for channel: {}", cat_id, self.forum);
             self.lihkg_repo = Some(LihkgRepositoryHolder::Mock(
                 MockLihkgTopicRepository::new(cat_id)
             ));
@@ -100,11 +101,23 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
         }
     }
 
-    /// Map HKGolden channel codes to LIHKG category IDs
+    /// Map channel codes to LIHKG category IDs
+    /// For LIHKG: channels are already numeric (e.g., "1", "5", "22")
+    /// For HKGolden: maps traditional channel codes to LIHKG equivalents
     fn map_channel_to_cat_id(&self, channel: &str) -> i32 {
+        // First, try to parse as numeric (LIHKG channels)
+        if let Ok(cat_id) = channel.parse::<i32>() {
+            return cat_id;
+        }
+
+        // Fallback: map HKGolden channel codes to LIHKG category IDs
         match channel {
-            "BW" => 1,  // 吹水台
-            _ => 1,     // Default to 吹水台
+            "BW" => 1,    // 吹水台
+            "HT" => 2,    // 高登熱 -> 熱門
+            "NW" => 3,    // 最新 -> 最新
+            "CA" => 5,    // 時事台
+            "FN" => 15,   // 財經台
+            _ => 1,       // Default to 吹水台
         }
     }
 }
@@ -112,6 +125,17 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn set_forum(&mut self, forum: String) {
         self.forum = forum;
+
+        // Re-initialize LIHKG repository if service is LIHKG
+        if self.service == ForumService::Lihkg {
+            let cat_id = self.map_channel_to_cat_id(&self.forum);
+            log::info!("[IndexResource] Updating LIHKG repository with cat_id: {} for channel: {}", cat_id, self.forum);
+
+            self.lihkg_repo = Some(LihkgRepositoryHolder::Real(
+                LihkgTopicRepository::new(cat_id)
+                    .expect("Failed to create LIHKG repository")
+            ));
+        }
     }
 
     pub fn set_page(&mut self, page: usize) {
