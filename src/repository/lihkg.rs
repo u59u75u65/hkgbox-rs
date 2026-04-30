@@ -52,7 +52,7 @@ impl LihkgApiClient {
         })
     }
 
-    /// Fetch latest threads from a category
+    /// Fetch threads from a specific category
     ///
     /// # Arguments
     /// * `cat_id` - Category ID (e.g., 1 for 吹水台)
@@ -64,6 +64,10 @@ impl LihkgApiClient {
     ///
     /// # Errors
     /// Returns error if HTTP request fails or response is invalid
+    ///
+    /// # Note
+    /// Uses /thread/category endpoint (not /thread/latest) to ensure
+    /// threads are filtered by the specified cat_id parameter
     fn fetch_latest_threads(
         &self,
         cat_id: i32,
@@ -71,11 +75,11 @@ impl LihkgApiClient {
         count: i32,
     ) -> Result<LihkgThreadListResponse, Box<dyn std::error::Error>> {
         let url = format!(
-            "{}/thread/latest?cat_id={}&page={}&count={}&type=now",
+            "{}/thread/category?cat_id={}&page={}&count={}&type=now",
             self.base_url, cat_id, page, count
         );
 
-        log::info!("[LihkgApiClient] Fetching from: {}", url);
+        log::info!("[LihkgApiClient] Fetching category threads from: {}", url);
 
         // Generate required LIHKG headers based on Playwright investigation
         let device_id = generate_device_id();
