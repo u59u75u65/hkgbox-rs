@@ -74,7 +74,7 @@ fn main() -> Result<(), HkgError> {
             .channels(&tx_req, &rx_res)
             .icon_collection(icon_collection)
             .state_channel(tx_state)
-            .build(Box::new(stdout))?
+            .build(args.service, Box::new(stdout))?
     };
 
     Requester::with_service(rx_req, tx_res, working.clone(), args.service);

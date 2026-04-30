@@ -61,6 +61,7 @@ pub struct App <'a>{
     pub tx_req: &'a Sender<resources::ChannelItem>,
     pub rx_res: &'a Receiver<resources::ChannelItem>,
 
+    pub service: cli::ForumService,
     pub stdout: Box<termion::raw::RawTerminal<std::io::StdoutLock<'a>>>
 }
 
@@ -107,7 +108,7 @@ impl<'a> AppBuilder<'a> {
         self
     }
 
-    pub fn build(self, stdout: Box<termion::raw::RawTerminal<std::io::StdoutLock<'a>>>) -> Result<App<'a>> {
+    pub fn build(self, service: cli::ForumService, stdout: Box<termion::raw::RawTerminal<std::io::StdoutLock<'a>>>) -> Result<App<'a>> {
         let icon_collection = self.icon_collection
             .ok_or_else(|| HkgError::Config("Icon collection not provided".into()))?;
 
@@ -135,10 +136,11 @@ impl<'a> AppBuilder<'a> {
             index: screen::index::Index::new(),
             show: screen::show::Show::new(icon_collection),
             dialog: screen::dialog::Dialog::new(),
-            channel_dialog: screen::channel_dialog::ChannelDialog::new(),
+            channel_dialog: screen::channel_dialog::ChannelDialog::with_service(service),
             prev_state: status::Status::List,
             tx_req,
             rx_res,
+            service,
             stdout,
         })
     }

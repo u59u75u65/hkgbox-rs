@@ -1,5 +1,6 @@
 use std::io::Write;
 use crate::utility::string::*;
+use crate::cli::ForumService;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChannelInfo {
@@ -17,11 +18,40 @@ pub struct ChannelDialog {
     filter_mode: bool,
     filter_pattern: String,
     filtered_channels: Vec<usize>,
+    service: ForumService,
 }
 
 impl ChannelDialog {
     pub fn new() -> Self {
-        let channels = vec![
+        Self::with_service(ForumService::Hkgolden)
+    }
+
+    pub fn with_service(service: ForumService) -> Self {
+        let channels = Self::load_channels(&service);
+
+        ChannelDialog {
+            title: String::from("Select Channel"),
+            channels,
+            visible: false,
+            selected_index: 0,
+            scroll_offset: 0,
+            items_per_page: 12, // Show 12 channels at a time
+            filter_mode: false,
+            filter_pattern: String::new(),
+            filtered_channels: Vec::new(),
+            service,
+        }
+    }
+
+    fn load_channels(service: &ForumService) -> Vec<ChannelInfo> {
+        match service {
+            ForumService::Hkgolden => Self::load_hkgolden_channels(),
+            ForumService::Lihkg => Self::load_lihkg_channels(),
+        }
+    }
+
+    fn load_hkgolden_channels() -> Vec<ChannelInfo> {
+        vec![
             // 推薦
             ChannelInfo { title: "吹水台".to_string(), channel: "BW".to_string() },
             ChannelInfo { title: "高登熱".to_string(), channel: "HT".to_string() },
@@ -69,19 +99,23 @@ impl ChannelDialog {
             ChannelInfo { title: "直播台".to_string(), channel: "JT".to_string() },
             ChannelInfo { title: "成人台".to_string(), channel: "AU".to_string() },
             ChannelInfo { title: "考古台".to_string(), channel: "OP".to_string() },
-        ];
+        ]
+    }
 
-        ChannelDialog {
-            title: String::from("Select Channel"),
-            channels,
-            visible: false,
-            selected_index: 0,
-            scroll_offset: 0,
-            items_per_page: 12, // Show 12 channels at a time
-            filter_mode: false,
-            filter_pattern: String::new(),
-            filtered_channels: Vec::new(),
-        }
+    fn load_lihkg_channels() -> Vec<ChannelInfo> {
+        // LIHKG channels are obtained from API dynamically
+        // For now, return a placeholder - this will be loaded from API when needed
+        vec![
+            ChannelInfo { title: "吹水台".to_string(), channel: "1".to_string() },
+            ChannelInfo { title: "硬件".to_string(), channel: "12".to_string() },
+            ChannelInfo { title: "潮流".to_string(), channel: "13".to_string() },
+            ChannelInfo { title: "潮流時事".to_string(), channel: "17".to_string() },
+            ChannelInfo { title: "感情".to_string(), channel: "23".to_string() },
+            ChannelInfo { title: "音樂".to_string(), channel: "24".to_string() },
+            ChannelInfo { title: "汽車".to_string(), channel: "28".to_string() },
+            ChannelInfo { title: "遊戲".to_string(), channel: "29".to_string() },
+            ChannelInfo { title: "成人".to_string(), channel: "30".to_string() },
+        ]
     }
 
     pub fn show(&mut self) {

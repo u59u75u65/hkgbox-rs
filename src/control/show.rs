@@ -13,7 +13,6 @@ use crate::control::common as control_common;
 /// the `Status::Show` state, managing thread content navigation and interaction.
 ///
 /// # Key Bindings
-/// - `c` - Open channel selection dialog
 /// - `Ctrl+O` - Open thread by ID dialog
 /// - `q` - Quit application
 /// - `r` / `Ctrl+R` - Refresh current page (fetch from API)
@@ -29,12 +28,6 @@ impl Show {
     pub fn new () -> Self { Show {} }
     pub fn handle(&mut self, c: ::termion::event::Key, app: &mut crate::App) -> Option<i32> {
         match c {
-            Key::Char('c') => {
-                app.prev_state = app.state_manager.get_state();
-                app.channel_dialog.show();
-                app.state_manager.update_state(Status::ChannelDialog);
-                Some(1)
-            }
             Key::Ctrl('o') => {
                 app.prev_state = app.state_manager.get_state();
                 app.dialog.show();
