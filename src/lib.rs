@@ -37,6 +37,7 @@ pub use errors::{AppResult, ApiResult, CacheResult, UIResult, DataResult, Config
 
 use std::sync::mpsc::{Receiver, Sender};
 use crate::cli::ForumService;
+use log::info;
 
 pub struct App <'a>{
     pub index_builder: builders::index::Index,
@@ -128,6 +129,14 @@ impl<'a> AppBuilder<'a> {
             ForumService::Lihkg => (String::from("1"), String::from("吹水台")),
         };
 
+        log::info!("[App] Building with service: {:?}, default channel: {}, title: {}",
+                 service, default_channel, default_channel_title);
+
+        // Create index with temporary default
+        let mut index = screen::index::Index::new();
+        // Update with service-appropriate channel
+        index.set_channel(default_channel.clone(), default_channel_title.clone());
+
         Ok(App {
             index_builder: builders::index::Index::new(),
             show_builder: builders::show::Show::new(),
@@ -140,7 +149,7 @@ impl<'a> AppBuilder<'a> {
             current_channel: default_channel,
             current_channel_title: default_channel_title,
             status_bar: screen::status_bar::StatusBar::new(),
-            index: screen::index::Index::new(),
+            index,
             show: screen::show::Show::new(icon_collection),
             dialog: screen::dialog::Dialog::new(),
             channel_dialog: screen::channel_dialog::ChannelDialog::with_service(service),
