@@ -5,37 +5,15 @@ use crate::api_client::HkgApiClient;
 use crate::api_models::*;
 use crate::api_utils::*;
 use crate::cli::ForumService;
-use crate::repository::{TopicRepository, LihkgTopicRepository, MockLihkgTopicRepository};
+use crate::repository::{TopicRepository, HkgoldenTopicRepository, LihkgTopicRepository, MockLihkgTopicRepository};
 use crate::domain::Topic;
 
 use crate::model::{ListTopicItem, ListTopicTitleItem, UrlQueryItem, ListTopicAuthorItem};
-
-// Enum to hold either real or mock LIHKG repository
-enum LihkgRepositoryHolder {
-    Real(LihkgTopicRepository),
-    Mock(MockLihkgTopicRepository),
-}
-
-impl LihkgRepositoryHolder {
-    fn fetch_topics(&self, channel: &str, page: i32) -> Result<(Vec<Topic>, i32), Box<dyn std::error::Error>> {
-        match self {
-            LihkgRepositoryHolder::Real(repo) => {
-                repo.fetch_topics(channel, page)
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
-            }
-            LihkgRepositoryHolder::Mock(repo) => {
-                repo.fetch_topics(channel, page)
-                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
-            }
-        }
-    }
-}
+use std::sync::Arc;
 
 pub struct IndexResource<'a, T: 'a + Cache> {
-    service: ForumService,
-    hkg_client: Option<HkgApiClient>,
-    lihkg_repo: Option<LihkgRepositoryHolder>,
-    use_mock_lihkg: bool,
+    repository: Option<Box<dyn TopicRepository>>,
+    hkg_client: Option<Arc<HkgApiClient>>,
     _cache: &'a mut Box<T>,
     forum: String,
     page: usize,
@@ -46,13 +24,12 @@ pub struct IndexResource<'a, T: 'a + Cache> {
 
 impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn new(cache: &'a mut Box<T>) -> Self {
+        let hkg_client = Arc::new(HkgApiClient::new().expect("Failed to create API client"));
         IndexResource {
-            service: ForumService::Hkgolden,
-            hkg_client: Some(HkgApiClient::new().expect("Failed to create API client")),
-            lihkg_repo: None,
-            use_mock_lihkg: false,
+            repository: Some(Box::new(HkgoldenTopicRepository::new(hkg_client.clone()))),
+            hkg_client: Some(hkg_client),
             _cache: cache,
-            forum: "BW".to_string(),  // Default forum
+            forum: "BW".to_string(),
             page: 1,
             page_count: 1,
             max_page: 1,
@@ -62,78 +39,38 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
     /// Set the forum service to use
     pub fn set_service(&mut self, service: ForumService) {
-        self.service = service;
-
-        // Initialize the appropriate client/repository
         match service {
             ForumService::Hkgolden => {
-                if self.hkg_client.is_none() {
-                    self.hkg_client = Some(HkgApiClient::new().expect("Failed to create API client"));
-                }
-                self.lihkg_repo = None;
-                self.use_mock_lihkg = false;
+                let client = self.hkg_client.as_ref()
+                    .map(|c| c.clone())
+                    .unwrap_or_else(|| Arc::new(HkgApiClient::new().expect("Failed to create API client")));
+                self.repository = Some(Box::new(HkgoldenTopicRepository::new(client)));
             }
             ForumService::Lihkg => {
-                // Always (re)create LIHKG repository with current forum to ensure correct cat_id
-                let cat_id = self.map_channel_to_cat_id(&self.forum);
-                log::info!("[IndexResource] set_service: Creating LIHKG repository with cat_id: {} for channel: {}", cat_id, self.forum);
-                self.lihkg_repo = Some(LihkgRepositoryHolder::Real(
-                    LihkgTopicRepository::new(cat_id)
-                        .expect("Failed to create LIHKG repository")
-                ));
-                self.hkg_client = None;
-                self.use_mock_lihkg = false;
+                // Let LIHKG repository handle channel interpretation
+                let cat_id = self.forum.parse().unwrap_or(1);
+                self.repository = Some(Box::new(LihkgTopicRepository::new(cat_id)
+                    .expect("Failed to create LIHKG repository")));
             }
         }
     }
 
     /// Fall back to mock LIHKG repository when real API fails
     pub fn use_mock_lihkg(&mut self) {
-        if self.service == ForumService::Lihkg && !self.use_mock_lihkg {
-            log::warn!("[IndexResource] Falling back to mock LIHKG repository");
-            let cat_id = self.map_channel_to_cat_id(&self.forum);
-            log::info!("[IndexResource] Creating mock LIHKG repository with cat_id: {} for channel: {}", cat_id, self.forum);
-            self.lihkg_repo = Some(LihkgRepositoryHolder::Mock(
-                MockLihkgTopicRepository::new(cat_id)
-            ));
-            self.use_mock_lihkg = true;
-        }
-    }
-
-    /// Map channel codes to LIHKG category IDs
-    /// For LIHKG: channels are already numeric (e.g., "1", "5", "22")
-    /// For HKGolden: maps traditional channel codes to LIHKG equivalents
-    fn map_channel_to_cat_id(&self, channel: &str) -> i32 {
-        // First, try to parse as numeric (LIHKG channels)
-        if let Ok(cat_id) = channel.parse::<i32>() {
-            return cat_id;
-        }
-
-        // Fallback: map HKGolden channel codes to LIHKG category IDs
-        match channel {
-            "BW" => 1,    // 吹水台
-            "HT" => 2,    // 高登熱 -> 熱門
-            "NW" => 3,    // 最新 -> 最新
-            "CA" => 5,    // 時事台
-            "FN" => 15,   // 財經台
-            _ => 1,       // Default to 吹水台
-        }
+        let cat_id = self.forum.parse().unwrap_or(1);
+        log::warn!("[IndexResource] Falling back to mock LIHKG repository with cat_id: {}", cat_id);
+        self.repository = Some(Box::new(MockLihkgTopicRepository::new(cat_id)));
     }
 }
 
 impl<'a, T: 'a + Cache> IndexResource<'a, T> {
     pub fn set_forum(&mut self, forum: String) {
         self.forum = forum;
-
-        // Re-initialize LIHKG repository if service is LIHKG
-        if self.service == ForumService::Lihkg {
-            let cat_id = self.map_channel_to_cat_id(&self.forum);
-            log::info!("[IndexResource] Updating LIHKG repository with cat_id: {} for channel: {}", cat_id, self.forum);
-
-            self.lihkg_repo = Some(LihkgRepositoryHolder::Real(
-                LihkgTopicRepository::new(cat_id)
-                    .expect("Failed to create LIHKG repository")
-            ));
+        // Update repository for LIHKG when forum changes
+        if let Ok(cat_id) = self.forum.parse::<i32>() {
+            log::info!("[IndexResource] Updating repository for forum: {}", self.forum);
+            self.repository = Some(Box::new(LihkgTopicRepository::new(cat_id)
+                .expect("Failed to create LIHKG repository")));
         }
     }
 
@@ -156,8 +93,8 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
 
 impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
     fn fetch(&mut self, _item: &ChannelItem) -> ChannelItem {
-        log::info!("[IndexResource] Starting fetch for forum: {}, service: {:?}, page: {}, page_count: {}",
-                  self.forum, self.service, self.page, self.page_count);
+        log::info!("[IndexResource] Starting fetch for forum: {}, page: {}, page_count: {}",
+                  self.forum, self.page, self.page_count);
 
         self.list_items.clear();
         let mut current_api_page = self.page;
@@ -173,83 +110,50 @@ impl<'a, T: 'a + Cache> Resource for IndexResource<'a, T> {
 
         // Fetch multiple pages if page_count > 1
         while iterations < max_iterations {
-            let fetch_result = match self.service {
-                ForumService::Hkgolden => {
-                    // Use HKGolden API client
-                    let client = self.hkg_client.as_ref().expect("HKGolden client not initialized");
-                    match client.fetch_topics(&self.forum, current_api_page as i32) {
-                        Ok(response) => {
-                            log::info!("[IndexResource] Got {} topics from HKGolden API page {}",
-                                     response.data.list.len(), current_api_page);
+            let repo = self.repository.as_ref().expect("Repository not initialized");
 
-                            // Update max_page from first API response
-                            if fetched_pages == 0 {
-                                max_page_from_api = response.data.max_page as usize;
-                                self.max_page = max_page_from_api;
-                            }
+            let fetch_result = match repo.fetch_topics(&self.forum, current_api_page as i32) {
+                Ok((topics, max_page)) => {
+                    log::info!("[IndexResource] Got {} topics from repository page {}",
+                             topics.len(), current_api_page);
 
-                            // Convert API topics to domain topics, then to list items
-                            let topics: Vec<Topic> = response.data.list
-                                .into_iter()
-                                .map(|api_topic| crate::api_models::api_topic_to_domain(api_topic))
-                                .collect();
-
-                            Ok((topics, max_page_from_api as i32))
-                        }
-                        Err(e) => {
-                            log::error!("[IndexResource] HKGolden API error on page {}: {}", current_api_page, e);
-                            Err(e.to_string())
-                        }
+                    // Update max_page from first API response
+                    if fetched_pages == 0 {
+                        max_page_from_api = max_page as usize;
+                        self.max_page = max_page_from_api;
                     }
+
+                    Ok((topics, max_page))
                 }
-                ForumService::Lihkg => {
-                    // Use LIHKG repository (or mock if fallback triggered)
-                    let repo = self.lihkg_repo.as_ref().expect("LIHKG repository not initialized");
-                    match repo.fetch_topics(&self.forum, current_api_page as i32) {
-                        Ok((topics, max_page)) => {
-                            log::info!("[IndexResource] Got {} topics from LIHKG API page {}",
-                                     topics.len(), current_api_page);
+                Err(e) => {
+                    log::error!("[IndexResource] Repository error on page {}: {}", current_api_page, e);
 
-                            // Update max_page from first API response
-                            if fetched_pages == 0 {
-                                max_page_from_api = max_page as usize;
-                                self.max_page = max_page_from_api;
-                            }
+                    // Check if it's a Cloudflare error and fall back to mock
+                    if e.to_string().contains("Cloudflare") {
+                        log::warn!("[IndexResource] API blocked by Cloudflare, falling back to mock data");
 
-                            Ok((topics, max_page))
-                        }
-                        Err(e) => {
-                            log::error!("[IndexResource] LIHKG API error on page {}: {}", current_api_page, e);
+                        // Switch to mock repository and retry this page
+                        self.use_mock_lihkg();
+                        let mock_repo = self.repository.as_ref().expect("Mock repository not initialized");
+                        match mock_repo.fetch_topics(&self.forum, current_api_page as i32) {
+                            Ok((topics, max_page)) => {
+                                log::info!("[IndexResource] Got {} topics from mock repository page {}",
+                                         topics.len(), current_api_page);
 
-                            // Check if it's a Cloudflare error and fall back to mock
-                            if !self.use_mock_lihkg && e.to_string().contains("Cloudflare") {
-                                log::warn!("[IndexResource] LIHKG API blocked by Cloudflare, falling back to mock data");
-                                log::warn!("[IndexResource] The mock LIHKG repository returns sample data for demonstration.");
-
-                                // Switch to mock repository and retry this page
-                                self.use_mock_lihkg();
-                                let mock_repo = self.lihkg_repo.as_ref().expect("Mock LIHKG repository not initialized");
-                                match mock_repo.fetch_topics(&self.forum, current_api_page as i32) {
-                                    Ok((topics, max_page)) => {
-                                        log::info!("[IndexResource] Got {} topics from mock LIHKG repository page {}",
-                                                 topics.len(), current_api_page);
-
-                                        if fetched_pages == 0 {
-                                            max_page_from_api = max_page as usize;
-                                            self.max_page = max_page_from_api;
-                                        }
-
-                                        Ok((topics, max_page))
-                                    }
-                                    Err(mock_e) => {
-                                        log::error!("[IndexResource] Mock LIHKG repository also failed: {}", mock_e);
-                                        Err(format!("LIHKG API unavailable: {}. Mock also failed: {}", e, mock_e))
-                                    }
+                                if fetched_pages == 0 {
+                                    max_page_from_api = max_page as usize;
+                                    self.max_page = max_page_from_api;
                                 }
-                            } else {
-                                Err(e.to_string())
+
+                                Ok((topics, max_page))
+                            }
+                            Err(mock_e) => {
+                                log::error!("[IndexResource] Mock repository also failed: {}", mock_e);
+                                Err(format!("API unavailable: {}. Mock also failed: {}", e, mock_e))
                             }
                         }
+                    } else {
+                        Err(e.to_string())
                     }
                 }
             };

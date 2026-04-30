@@ -341,19 +341,6 @@ impl LihkgTopicRepository {
         let message_date_ms = item.create_time * 1000;
         let last_reply_date_ms = item.last_reply_time.unwrap_or(item.create_time) * 1000;
 
-        // Use category from nested object or fallback to top-level cat_id
-        let category_name = item.category
-            .map(|c| c.name)
-            .unwrap_or_else(|| {
-                // Map cat_id to category name
-                match item.cat_id.unwrap_or(1) {
-                    1 => "吹水台",
-                    2 => "熱門",
-                    5 => "時事台",
-                    _ => "未知分類",
-                }.to_string()
-            });
-
         // Get author info from top-level fields (primary) or nested user object (fallback)
         let author_name = item.user_nickname
             .unwrap_or_else(|| item.user.nickname.clone());
