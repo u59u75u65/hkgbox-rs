@@ -36,6 +36,7 @@ pub use errors::{AppError, ApiError, CacheError, UIError, DataError, ConfigError
 pub use errors::{AppResult, ApiResult, CacheResult, UIResult, DataResult, ConfigResult};
 
 use std::sync::mpsc::{Receiver, Sender};
+use crate::cli::ForumService;
 
 pub struct App <'a>{
     pub index_builder: builders::index::Index,
@@ -121,6 +122,12 @@ impl<'a> AppBuilder<'a> {
         let rx_res = self.rx_res
             .ok_or_else(|| HkgError::Config("Response channel not provided".into()))?;
 
+        // Set default channel based on service
+        let (default_channel, default_channel_title) = match service {
+            ForumService::Hkgolden => (String::from("BW"), String::from("吹水台")),
+            ForumService::Lihkg => (String::from("1"), String::from("吹水台")),
+        };
+
         Ok(App {
             index_builder: builders::index::Index::new(),
             show_builder: builders::show::Show::new(),
@@ -130,8 +137,8 @@ impl<'a> AppBuilder<'a> {
             show_item: Default::default(),
             index_page: 1,
             index_max_page: 1,
-            current_channel: String::from("BW"),
-            current_channel_title: String::from("吹水台"),
+            current_channel: default_channel,
+            current_channel_title: default_channel_title,
             status_bar: screen::status_bar::StatusBar::new(),
             index: screen::index::Index::new(),
             show: screen::show::Show::new(icon_collection),
