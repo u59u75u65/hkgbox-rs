@@ -74,14 +74,13 @@ impl<'a, T: 'a + Cache> IndexResource<'a, T> {
                 self.use_mock_lihkg = false;
             }
             ForumService::Lihkg => {
-                if self.lihkg_repo.is_none() {
-                    // Map channel to LIHKG category ID
-                    let cat_id = self.map_channel_to_cat_id(&self.forum);
-                    self.lihkg_repo = Some(LihkgRepositoryHolder::Real(
-                        LihkgTopicRepository::new(cat_id)
-                            .expect("Failed to create LIHKG repository")
-                    ));
-                }
+                // Always (re)create LIHKG repository with current forum to ensure correct cat_id
+                let cat_id = self.map_channel_to_cat_id(&self.forum);
+                log::info!("[IndexResource] set_service: Creating LIHKG repository with cat_id: {} for channel: {}", cat_id, self.forum);
+                self.lihkg_repo = Some(LihkgRepositoryHolder::Real(
+                    LihkgTopicRepository::new(cat_id)
+                        .expect("Failed to create LIHKG repository")
+                ));
                 self.hkg_client = None;
                 self.use_mock_lihkg = false;
             }
