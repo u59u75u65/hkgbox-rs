@@ -105,28 +105,20 @@ impl Show {
     pub fn print_body(&mut self, stdout: &mut ::termion::raw::RawTerminal<std::io::StdoutLock>, item: &ShowItem) {
         let _width = self.body_width();
         let rows = self.body_height();
-        let max_y = self.scroll_y + 1 + rows;
 
         // Print main content first if exists
         if let Some(main_content) = &item.main_content {
-            // Check if we have space before printing
-            if self.y + 2 < max_y {
-                self.print_reply(stdout, &main_content.body, 0);
+            self.print_reply(stdout, &main_content.body, 0);
 
-                self.print_separator_top(stdout, &main_content);
-                self.y += 1;
+            self.print_separator_top(stdout, &main_content);
+            self.y += 1;
 
-                self.print_separator_bottom(stdout);
-                self.y += 1;
-            }
+            self.print_separator_bottom(stdout);
+            self.y += 1;
         }
 
         // Then print replies
-        for (_i, reply) in item.replies.iter().enumerate() {
-            // Stop if we've exceeded the available space
-            if self.y + 2 >= max_y {
-                break;
-            }
+        for (_i, reply) in item.replies.iter().take(rows).enumerate() {
 
             self.print_reply(stdout, &reply.body, 0);
 
@@ -482,11 +474,7 @@ fn make_separator_replier_name(_separator_width: usize,
                                replier_name: &str)
                                -> String {
     let replier_name_len = jks_len(&replier_name);
-    let replier_name_spacing_width = if replier_max_width > replier_name_len {
-        replier_max_width - replier_name_len
-    } else {
-        0
-    };
+    let replier_name_spacing_width = replier_max_width - replier_name_len;
     let is_replier_name_spacing_width_odd = replier_name_spacing_width & 1 == 1;
     let replier_name_right_spacing_width = replier_name_spacing_width / 2;
     let replier_name_left_spacing_width = if is_replier_name_spacing_width_odd {

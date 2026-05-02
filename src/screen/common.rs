@@ -39,47 +39,12 @@ pub fn imgcat_from_url(url: &str, height: usize) -> Result<String, String> {
         Err(_why) => {
             info!("imgcat_from_url: Not cached, fetching from network...");
 
-            // Check if this is a LIHKG image and add required headers
-            let is_lihkg_image = url.contains("lihkg.com") || url.contains("lih.kg");
-
             // Fetch from network
-            let response = if is_lihkg_image {
-                // Use LIHKG headers for LIHKG images
-                info!("imgcat_from_url: Using LIHKG headers");
-                let device_id = "89ee2a48214807d7762894d2ae9d07500e339171";
-                let load_time = {
-                    use std::time::SystemTime;
-                    let now = SystemTime::now()
-                        .duration_since(SystemTime::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs_f64();
-                    let fractional = now.fract();
-                    (fractional * 4.0) + 1.0
-                };
-
-                match reqwest::blocking::Client::new()
-                    .get(url)
-                    .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
-                    .header("Referer", "https://lihkg.com/")
-                    .header("x-li-device-type", "browser")
-                    .header("x-li-device", device_id)
-                    .header("x-li-load-time", &load_time.to_string())
-                    .send()
-                {
-                    Ok(resp) => resp,
-                    Err(e) => {
-                        error!("imgcat_from_url: Network error: {}", e);
-                        return Err(format!("Network error: {}", e));
-                    }
-                }
-            } else {
-                // Basic fetch for other images (including HKGolden)
-                match reqwest::blocking::get(url) {
-                    Ok(resp) => resp,
-                    Err(e) => {
-                        error!("imgcat_from_url: Network error: {}", e);
-                        return Err(format!("Network error: {}", e));
-                    }
+            let response = match reqwest::blocking::get(url) {
+                Ok(resp) => resp,
+                Err(e) => {
+                    error!("imgcat_from_url: Network error: {}", e);
+                    return Err(format!("Network error: {}", e));
                 }
             };
 
