@@ -4,3 +4,4 @@ pub mod index;
 pub mod show;
 pub mod dialog;
 pub mod channel_dialog;
+pub mod page_dialog;

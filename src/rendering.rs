@@ -53,6 +53,17 @@ pub fn print_screen(app: &mut App) {
             // Print channel dialog on top
             app.channel_dialog.print(&mut app.stdout);
         }
+        Status::PageDialog => {
+            // Print the underlying screen (should only be Show)
+            match app.prev_state {
+                Status::Show => {
+                    app.show.print(&mut app.stdout, &app.show_item);
+                }
+                _ => {}
+            }
+            // Print page dialog on top
+            app.page_dialog.print(&mut app.stdout);
+        }
     }
 
     app.status_bar.print(&app.screen_manager);

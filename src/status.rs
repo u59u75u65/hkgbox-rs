@@ -6,4 +6,5 @@ pub enum Status {
     Show,
     Dialog,
     ChannelDialog,
+    PageDialog,
 }

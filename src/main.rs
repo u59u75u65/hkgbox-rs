@@ -85,6 +85,7 @@ fn main() -> Result<(), HkgError> {
     let mut show_control = hkg::control::show::Show::new();
     let mut dialog_control = hkg::control::dialog::Dialog::new();
     let mut channel_dialog_control = hkg::control::channel_dialog::ChannelDialog::new();
+    let mut page_dialog_control = hkg::control::page_dialog::PageDialog::new();
 
     // topics request
     let status_message = requests::list_page(&mut app.state_manager, &tx_req, app.index_page, &app.current_channel);
@@ -188,6 +189,21 @@ fn main() -> Result<(), HkgError> {
                                 }
                             }
                             None => error!("channel_dialog_control handle receive none.")
+                        }
+                    }
+                    Status::PageDialog => {
+                        match page_dialog_control.handle(c, &mut app) {
+                            Some(i) => {
+                                if i == 0 {
+                                    match control.upgrade() {
+                                        Some(working) => (*working).store(false, Ordering::Relaxed),
+                                        None => {}
+                                    }
+                                } else {
+                                    rendering::print_screen(&mut app);
+                                }
+                            }
+                            None => error!("page_dialog_control handle receive none.")
                         }
                     }
                 }

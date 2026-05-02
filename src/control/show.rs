@@ -14,6 +14,7 @@ use crate::control::common as control_common;
 ///
 /// # Key Bindings
 /// - `Ctrl+O` - Open thread by ID dialog
+/// - `Ctrl+P` - Go to page dialog
 /// - `q` - Quit application
 /// - `r` / `Ctrl+R` - Refresh current page (fetch from API)
 /// - `←/→` - Navigate pages
@@ -32,6 +33,12 @@ impl Show {
                 app.prev_state = app.state_manager.get_state();
                 app.dialog.show();
                 app.state_manager.update_state(Status::Dialog);
+                Some(1)
+            }
+            Key::Ctrl('p') => {
+                app.prev_state = app.state_manager.get_state();
+                app.page_dialog.show(app.show_item.page, app.show_item.max_page);
+                app.state_manager.update_state(Status::PageDialog);
                 Some(1)
             }
             Key::Char('q') => {

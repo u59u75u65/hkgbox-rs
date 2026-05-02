@@ -60,6 +60,7 @@ pub struct App <'a>{
     pub show: screen::show::Show,
     pub dialog: screen::dialog::Dialog,
     pub channel_dialog: screen::channel_dialog::ChannelDialog,
+    pub page_dialog: screen::page_dialog::PageDialog,
 
     pub prev_state: status::Status,
 
@@ -176,6 +177,7 @@ impl<'a> AppBuilder<'a> {
             show,
             dialog: screen::dialog::Dialog::new(),
             channel_dialog: screen::channel_dialog::ChannelDialog::with_service(service),
+            page_dialog: screen::page_dialog::PageDialog::new(),
             prev_state: status::Status::List,
             tx_req,
             rx_res,
