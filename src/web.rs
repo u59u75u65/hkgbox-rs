@@ -68,8 +68,9 @@ impl Requester {
                                         info!("[requester] index response sent");
                                     }
                                     ChannelItemType::Show(_) | ChannelItemType::ShowWithData(_) => {
-                                        info!("[requester] creating ShowResourceApi");
+                                        info!("[requester] creating ShowResourceApi with service {:?}", service);
                                         let mut show_resource = ShowResourceApi::new(&mut fc);
+                                        show_resource.set_service(service);
                                         info!("[requester] fetching from ShowResourceApi");
                                         let result = show_resource.fetch(&item);
                                         info!("[requester] sending show response");
