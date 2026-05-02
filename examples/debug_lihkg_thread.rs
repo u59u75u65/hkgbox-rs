@@ -1,0 +1,169 @@
+// Debug parse_html_content for any LIHKG thread ID
+use hkg::repository::{LihkgThreadRepository, ThreadRepository};
+use std::env;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+
+    let thread_id = if args.len() > 1 {
+        args[1].parse::<i32>()?
+    } else {
+        4099450
+    };
+
+    println!("=== Debug LIHKG Thread {} ===\n", thread_id);
+
+    let repo = LihkgThreadRepository::new()?;
+
+    println!("Fetching from LIHKG API: thread {} page 1\n", thread_id);
+
+    match repo.fetch_thread(thread_id, 1) {
+        Ok(thread_view) => {
+            println!("Thread: {}", thread_view.title);
+            println!("Author: {}", thread_view.author_name);
+            println!("Total replies: {}", thread_view.total_replies);
+            println!("Current page: {}/{}", thread_view.current_page, thread_view.total_page);
+            println!();
+
+            // Show main thread content if exists
+            if !thread_view.content.is_empty() {
+                println!("┌─────────────────────────────────────────────────────────────");
+                println!("│ MAIN THREAD CONTENT");
+                println!("├─────────────────────────────────────────────────────────────");
+                println!("│ Raw HTML ({} chars):", thread_view.content.len());
+                println!("│ {}", thread_view.content);
+                println!("├─────────────────────────────────────────────────────────────");
+                println!("│ Parsed Content:");
+
+                use hkg::api_utils::parse_html_content;
+                let nodes = parse_html_content(&thread_view.content);
+
+                if nodes.is_empty() {
+                    println!("│ (No content)");
+                } else {
+                    for (j, node) in nodes.iter().enumerate() {
+                        print!("│   [{}] ", j + 1);
+                        match node {
+                            hkg::reply_model::NodeType::Image(img) => {
+                                println!("📷 IMAGE");
+                                println!("│       URL: {}", img.data);
+                                println!("│       Alt: {}", img.alt);
+                            }
+                            hkg::reply_model::NodeType::Text(text) => {
+                                println!("📝 TEXT");
+                                println!("│       {}", escape_debug(&text.data));
+                            }
+                            hkg::reply_model::NodeType::BlockQuote(bq) => {
+                                println!("💬 BLOCKQUOTE");
+                                println!("│       Nested items: {}", bq.data.len());
+                                for (k, child) in bq.data.iter().enumerate() {
+                                    if let hkg::reply_model::NodeType::Text(t) = child {
+                                        println!("│         [{}] {}", k + 1, escape_debug(&t.data));
+                                    }
+                                }
+                            }
+                            hkg::reply_model::NodeType::Br(_) => {
+                                println!("🔃 LINE BREAK");
+                            }
+                            hkg::reply_model::NodeType::Link(link) => {
+                                println!("🔗 LINK");
+                                println!("│       URL: {}", link.url);
+                                println!("│       Text: {}", link.text);
+                            }
+                        }
+                    }
+                }
+                println!("└─────────────────────────────────────────────────────────────");
+                println!();
+            }
+
+            // Show all replies
+            for (i, reply) in thread_view.replies.iter().enumerate() {
+                println!("┌─────────────────────────────────────────────────────────────");
+                println!("│ Reply {} - Author: {}", i + 1, reply.author_name);
+                println!("├─────────────────────────────────────────────────────────────");
+                println!("│ Raw reply_date: {} ms ({} since epoch)", reply.reply_date, reply.reply_date);
+                println!("│ Current time: {} ms ({} since epoch)",
+                    chrono::Utc::now().timestamp_millis(),
+                    chrono::Utc::now().timestamp()
+                );
+                println!("│ Time difference: {} ms", chrono::Utc::now().timestamp_millis() - reply.reply_date);
+
+                use hkg::api_utils::timestamp_to_strings;
+                let (date, time) = timestamp_to_strings(reply.reply_date);
+                println!("│ Computed local time: {} {}", date, time);
+
+                println!("├─────────────────────────────────────────────────────────────");
+                println!("│ Raw HTML ({} chars):", reply.content.len());
+                println!("│ {}", reply.content);
+                println!("├─────────────────────────────────────────────────────────────");
+                println!("│ Parsed Content:");
+
+                use hkg::api_utils::parse_html_content;
+                let nodes = parse_html_content(&reply.content);
+
+                if nodes.is_empty() {
+                    println!("│ (No content)");
+                } else {
+                    for (j, node) in nodes.iter().enumerate() {
+                        print!("│   [{}] ", j + 1);
+                        match node {
+                            hkg::reply_model::NodeType::Image(img) => {
+                                println!("📷 IMAGE");
+                                println!("│       URL: {}", img.data);
+                                println!("│       Alt: {}", img.alt);
+                            }
+                            hkg::reply_model::NodeType::Text(text) => {
+                                println!("📝 TEXT");
+                                println!("│       {}", escape_debug(&text.data));
+                            }
+                            hkg::reply_model::NodeType::BlockQuote(bq) => {
+                                println!("💬 BLOCKQUOTE");
+                                println!("│       Nested items: {}", bq.data.len());
+                                for (k, child) in bq.data.iter().enumerate() {
+                                    if let hkg::reply_model::NodeType::Text(t) = child {
+                                        println!("│         [{}] {}", k + 1, escape_debug(&t.data));
+                                    }
+                                }
+                            }
+                            hkg::reply_model::NodeType::Br(_) => {
+                                println!("🔃 LINE BREAK");
+                            }
+                            hkg::reply_model::NodeType::Link(link) => {
+                                println!("🔗 LINK");
+                                println!("│       URL: {}", link.url);
+                                println!("│       Text: {}", link.text);
+                            }
+                        }
+                    }
+                }
+                println!("└─────────────────────────────────────────────────────────────");
+                println!();
+            }
+
+            println!("✅ Successfully fetched and parsed LIHKG thread {}", thread_id);
+            Ok(())
+        }
+        Err(e) => {
+            println!("❌ Error fetching LIHKG thread {}: {}\n", thread_id, e);
+            println!("🔧 Troubleshooting:");
+            println!("   1. Verify thread ID {} exists on LIHKG", thread_id);
+            println!("   2. Check your internet connection");
+            println!("   3. LIHKG API might be rate-limited or protected by Cloudflare");
+            println!();
+            Err(e.into())
+        }
+    }
+}
+
+fn escape_debug(text: &str) -> String {
+    text.chars()
+        .map(|c| match c {
+            '\n' => "\\n".to_string(),
+            '\r' => "\\r".to_string(),
+            '\t' => "\\t".to_string(),
+            c if c.is_control() => format!("\\x{:02x}", c as u8),
+            c => c.to_string(),
+        })
+        .collect::<String>()
+}

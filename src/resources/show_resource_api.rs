@@ -5,7 +5,7 @@ use crate::api_client::HkgApiClient;
 use crate::api_models::*;
 use crate::api_utils::*;
 use crate::cli::ForumService;
-use crate::repository::{ThreadRepository, LihkgThreadRepository};
+use crate::repository::{ThreadRepository, HkgoldenThreadRepository, LihkgThreadRepository};
 use crate::domain::{ThreadView, Reply};
 use crate::parser::{ContentParser, HtmlContentParser};
 
@@ -15,45 +15,17 @@ use std::sync::Arc;
 
 // Enum to hold either HKGolden or LIHKG thread repository
 enum ThreadRepositoryHolder {
-    Hkgolden(HkgApiClient),
+    Hkgolden(HkgoldenThreadRepository),
     Lihkg(LihkgThreadRepository),
 }
 
 impl ThreadRepositoryHolder {
     fn fetch_thread(&self, thread_id: i32, page: i32) -> Result<ThreadView, Box<dyn std::error::Error>> {
         match self {
-            ThreadRepositoryHolder::Hkgolden(client) => {
-                // Fetch from HKGolden API
-                let response = client.fetch_thread(thread_id, page)?;
-
-                // Convert HKGolden API replies to domain replies
-                let replies: Vec<Reply> = response.data.replies
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, api_reply)| Reply {
-                        id: api_reply.id,
-                        index: i as i32 + 1,
-                        author_id: api_reply.author_id,
-                        author_name: api_reply.author_name.clone(),
-                        author_gender: Some(api_reply.author_gender),
-                        reply_date: api_reply.reply_date,
-                        content: api_reply.content,
-                        quoted: Vec::new(),
-                    })
-                    .collect();
-
-                Ok(ThreadView {
-                    id: response.data.id,
-                    title: response.data.title,
-                    content: response.data.content,
-                    author_id: response.data.author_id,
-                    author_name: response.data.author_name,
-                    current_page: page,
-                    total_page: response.data.total_page,
-                    total_replies: response.data.total_replies,
-                    message_date: response.data.message_date,
-                    replies,
-                })
+            ThreadRepositoryHolder::Hkgolden(repo) => {
+                // Fetch from HKGolden repository
+                repo.fetch_thread(thread_id, page)
+                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
             }
             ThreadRepositoryHolder::Lihkg(repo) => {
                 // Fetch from LIHKG repository
@@ -76,10 +48,11 @@ pub struct ShowResourceApi<'a, T: 'a + Cache> {
 
 impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
     pub fn new(cache: &'a mut Box<T>) -> Self {
+        let hkg_client = Arc::new(HkgApiClient::new().expect("Failed to create API client"));
         ShowResourceApi {
             service: ForumService::Hkgolden,
             thread_repo: Some(ThreadRepositoryHolder::Hkgolden(
-                HkgApiClient::new().expect("Failed to create API client")
+                HkgoldenThreadRepository::new(hkg_client)
             )),
             _cache: cache,
             replies: Vec::new(),
@@ -96,8 +69,9 @@ impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
         // Initialize the appropriate repository
         match service {
             ForumService::Hkgolden => {
+                let hkg_client = Arc::new(HkgApiClient::new().expect("Failed to create API client"));
                 self.thread_repo = Some(ThreadRepositoryHolder::Hkgolden(
-                    HkgApiClient::new().expect("Failed to create API client")
+                    HkgoldenThreadRepository::new(hkg_client)
                 ));
             }
             ForumService::Lihkg => {
@@ -112,10 +86,11 @@ impl<'a, T: 'a + Cache> ShowResourceApi<'a, T> {
     ///
     /// This allows dependency injection for testing or using alternative parsers
     pub fn with_parser(cache: &'a mut Box<T>, parser: Arc<dyn ContentParser>) -> Self {
+        let hkg_client = Arc::new(HkgApiClient::new().expect("Failed to create API client"));
         ShowResourceApi {
             service: ForumService::Hkgolden,
             thread_repo: Some(ThreadRepositoryHolder::Hkgolden(
-                HkgApiClient::new().expect("Failed to create API client")
+                HkgoldenThreadRepository::new(hkg_client)
             )),
             _cache: cache,
             replies: Vec::new(),
